@@ -4,6 +4,8 @@
     info = ingest.ingest("examples/docs")
 """
 
+import numpy as np
+
 from spectrag.config import make_settings
 from spectrag.utils.chunker import chunk_documents
 from spectrag.utils.edges import build_edge_signals, count_edges
@@ -15,7 +17,7 @@ from spectrag.utils.loader import load_docs
 from spectrag.utils.questions import add_utility_questions
 from spectrag.utils.references import add_references
 from spectrag.utils.spectral import compute_spectral
-from spectrag.utils.store import save_index
+from spectrag.utils.store import edges_to_array, save_index
 
 
 class SpectRAGIngestion:
@@ -28,11 +30,10 @@ class SpectRAGIngestion:
         self.entity_fn = entity_fn        # optional: text -> list of entities
         self.question_fn = question_fn    # optional: text -> list of utility questions
 
-    def make_chunks(self, path):
-        """Load the documents and split them into chunks with entities, references, questions."""
-        docs = load_docs(path)
+    def make_chunks(self, docs):
+        """Split documents into chunks with entities, references and utility questions."""
         if not docs:
-            raise ValueError("No documents with text found in " + str(path))
+            raise ValueError("No documents with text to ingest")
         chunks = chunk_documents(docs, self.settings, embed_fn=self.embed)
         add_entities(chunks, self.entity_fn)
         add_references(chunks)
@@ -53,8 +54,15 @@ class SpectRAGIngestion:
         return coords, eigenvalues, clusters
 
     def ingest(self, path):
-        """Run the whole offline pipeline, save the index folder, and return a summary."""
-        chunks = self.make_chunks(path)
+        """Ingest a file or a folder (.txt, .md, .pdf), save the index, return a summary."""
+        docs = load_docs(path)
+        if not docs:
+            raise ValueError("No documents with text found in " + str(path))
+        return self.ingest_documents(docs)
+
+    def ingest_documents(self, docs):
+        """Ingest documents already in memory: [{"doc_id": ..., "text": ...}, ...]."""
+        chunks = self.make_chunks(docs)
         embeddings = self.embed([chunk["text"] for chunk in chunks], kind="document")
         signals, question_vectors, owners = build_edge_signals(
             chunks, embeddings, self.embed, self.settings)
@@ -68,9 +76,11 @@ class SpectRAGIngestion:
                 "spectral_dims": coords.shape[1],
                 "clusters": len(set(clusters.tolist()))}
         save_index(self.index_dir, {
-            "chunks": chunks, "embeddings": embeddings, "signals": signals, "edges": edges,
+            "chunks": chunks, "embeddings": embeddings, "edges": edges_to_array(edges),
+            "signals": {name: edges_to_array(found) for name, found in signals.items()},
             "spectral": coords, "eigenvalues": eigenvalues,
-            "question_vectors": question_vectors, "question_owners": owners,
+            "question_vectors": question_vectors,
+            "question_owners": np.asarray(owners, dtype=np.int64),
             "settings": self.settings, "info": info,
         })
         return info

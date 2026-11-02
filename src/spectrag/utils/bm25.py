@@ -17,14 +17,18 @@ def tokenize(text):
 
 
 def build_bm25(texts):
-    """Build the keyword index once: word -> [(chunk number, count), ...] plus chunk lengths."""
-    postings = {}
+    """Build the keyword index once: word -> (chunk numbers, counts) as numpy arrays."""
+    lists = {}
     lengths = []
     for chunk_id, text in enumerate(texts):
         counts = Counter(tokenize(text))
         lengths.append(sum(counts.values()))
         for word, count in counts.items():
-            postings.setdefault(word, []).append((chunk_id, count))
+            lists.setdefault(word, ([], []))
+            lists[word][0].append(chunk_id)
+            lists[word][1].append(count)
+    postings = {word: (np.array(ids), np.array(counts, dtype=float))
+                for word, (ids, counts) in lists.items()}
     average = sum(lengths) / len(lengths) if lengths else 0.0
     return {"postings": postings, "lengths": np.array(lengths, dtype=float),
             "average_length": average or 1.0}
@@ -39,10 +43,11 @@ def bm25_scores(bm25, query, k1=1.5, b=0.75):
     """BM25 score of every chunk for the query (0 for chunks that share no word)."""
     lengths = bm25["lengths"]
     scores = np.zeros(len(lengths))
+    length_norm = k1 * (1 - b + b * lengths / bm25["average_length"])  # one value per chunk
     for word in set(tokenize(query)):
-        postings = bm25["postings"].get(word, [])  # only chunks that contain the word
-        weight = idf(len(postings), len(lengths))
-        for chunk_id, count in postings:
-            length_norm = k1 * (1 - b + b * lengths[chunk_id] / bm25["average_length"])
-            scores[chunk_id] += weight * count * (k1 + 1) / (count + length_norm)
+        if word not in bm25["postings"]:
+            continue
+        ids, counts = bm25["postings"][word]  # only chunks that contain the word
+        weight = idf(len(ids), len(lengths))
+        scores[ids] += weight * counts * (k1 + 1) / (counts + length_norm[ids])
     return scores

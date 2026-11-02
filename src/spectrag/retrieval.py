@@ -13,7 +13,7 @@ from spectrag.utils.graph import neighbors
 from spectrag.utils.prompt import build_prompt, format_context
 from spectrag.utils.seeding import find_seeds
 from spectrag.utils.selection import select_context
-from spectrag.utils.store import load_index
+from spectrag.utils.store import array_to_edges, load_index
 
 
 class SpectRAGRetrieval:
@@ -25,7 +25,9 @@ class SpectRAGRetrieval:
         settings: retrieval settings to change, e.g. {"token_budget": 4000, "seed_count": 10}.
         embed_fn: pass the same function again if the index was built with your own embedder.
         """
-        self.index = load_index(index_dir)
+        self.index = load_index(index_dir, skip=("signals",))  # raw signals are not needed here
+        self.index["edges"] = array_to_edges(self.index["edges"])
+        self.index["question_owners"] = [int(owner) for owner in self.index["question_owners"]]
         self.settings = make_settings(dict(self.index["settings"], **(settings or {})))
         if embed_fn is not None:
             self.settings["embedder"] = embed_fn

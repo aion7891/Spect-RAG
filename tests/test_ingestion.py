@@ -9,9 +9,9 @@ from spectrag import SpectRAGIngestion
 from spectrag.utils.store import load_index
 
 EXAMPLES = Path(__file__).parent.parent / "examples" / "docs"
-EXPECTED_FILES = ["chunks.json", "edges.json", "eigenvalues.npy", "embeddings.npy", "info.json",
-                  "question_owners.json", "question_vectors.npy", "settings.json",
-                  "signals.json", "spectral.npy"]
+EXPECTED_FILES = ["chunks.json", "edges.npy", "eigenvalues.npy", "embeddings.npy", "info.json",
+                  "question_owners.npy", "question_vectors.npy", "settings.json",
+                  "signals.npz", "spectral.npy"]
 
 
 def test_ingest_writes_a_complete_index(tmp_path):
@@ -48,7 +48,7 @@ def test_question_fn_and_entity_fn_are_used(tmp_path):
     index = load_index(tmp_path)
     assert info["weights_used"]["utility"] > 0
     assert index["question_vectors"].shape == (info["chunks"], 768)
-    assert index["question_owners"] == list(range(info["chunks"]))
+    assert index["question_owners"].tolist() == list(range(info["chunks"]))
     assert all(c["entities"] == ["shared"] for c in index["chunks"])
 
 
@@ -65,7 +65,7 @@ def test_ingest_is_deterministic(tmp_path):
     SpectRAGIngestion(tmp_path / "a").ingest(EXAMPLES)
     SpectRAGIngestion(tmp_path / "b").ingest(EXAMPLES)
     a, b = load_index(tmp_path / "a"), load_index(tmp_path / "b")
-    assert a["edges"] == b["edges"]
+    assert np.array_equal(a["edges"], b["edges"])
     assert np.allclose(np.abs(a["spectral"]), np.abs(b["spectral"]))
 
 

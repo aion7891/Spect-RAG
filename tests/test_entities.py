@@ -32,3 +32,10 @@ def test_add_entities_with_custom_function():
     chunks = [{"text": "anything"}]
     add_entities(chunks, entity_fn=lambda text: ["b", "a", "a"])
     assert chunks[0]["entities"] == ["a", "b"]
+
+
+def test_months_single_letters_and_new_are_not_entities():
+    entities = extract_entities("He met them in New Delhi in October 2023. The U.S. team won.")
+    assert "october" not in entities and "new" not in entities
+    assert "u" not in entities and "s" not in entities
+    assert "delhi" in entities and "2023" in entities

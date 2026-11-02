@@ -15,8 +15,10 @@ def test_tokenize():
 
 def test_build_bm25_postings_and_lengths():
     bm25 = build_bm25(TEXTS)
-    assert bm25["postings"]["aurora"] == [(1, 2)]
-    assert bm25["postings"]["builds"] == [(0, 1), (1, 1)]
+    ids, counts = bm25["postings"]["aurora"]
+    assert ids.tolist() == [1] and counts.tolist() == [2]
+    ids, counts = bm25["postings"]["builds"]
+    assert ids.tolist() == [0, 1] and counts.tolist() == [1, 1]
     assert list(bm25["lengths"]) == [5, 8, 9]
     assert bm25["average_length"] == pytest.approx(22 / 3)
 

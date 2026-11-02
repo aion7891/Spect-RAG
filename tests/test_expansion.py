@@ -22,7 +22,8 @@ def test_cap_keeps_strongest_links():
     star = neighbors([[0, 1, 0.1], [0, 2, 0.9], [0, 3, 0.5], [0, 4, 0.7]], 5)
     candidates, _ = expand_graph([0], star, hops=2, max_candidates=3)
     assert candidates == [0, 2, 4]
-    assert next_layer([0], star, {0: 0})[0] == [2, 4, 3, 1]
+    found = np.array([True, False, False, False, False])
+    assert next_layer([0], star, found)[0] == [2, 4, 3, 1]
 
 
 def test_isolated_seed_and_zero_hops():

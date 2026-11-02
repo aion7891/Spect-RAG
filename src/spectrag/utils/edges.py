@@ -9,19 +9,24 @@ Before calling build_edge_signals(), each chunk needs:
 from spectrag.utils.edges_content import (embed_questions, entity_edges, semantic_edges,
                                           utility_edges)
 from spectrag.utils.edges_structure import adjacency_edges, citation_edges, section_edges
+from spectrag.utils.graph import keep_strongest
 
 SIGNALS = ["semantic", "adjacency", "section", "entity", "utility", "citation"]
 
 
 def build_edge_signals(chunks, embeddings, embed, settings):
-    """Return ({signal name: [[i, j, weight], ...]}, question_vectors, question_owners)."""
+    """Return ({signal name: [[i, j, weight], ...]}, question_vectors, question_owners).
+
+    Section and entity signals can link many chunks to each other (a long section, a name
+    that appears often), so each chunk keeps only its graph_k strongest edges of that signal.
+    """
     k = settings["semantic_k"]
     question_vectors, owners = embed_questions(chunks, embed)
     signals = {
         "semantic": semantic_edges(embeddings, k),
         "adjacency": adjacency_edges(chunks),
-        "section": section_edges(chunks),
-        "entity": entity_edges(chunks),
+        "section": keep_strongest(section_edges(chunks), settings["graph_k"]),
+        "entity": keep_strongest(entity_edges(chunks), settings["graph_k"]),
         "utility": utility_edges(question_vectors, owners, len(chunks), k),
         "citation": citation_edges(chunks),
     }

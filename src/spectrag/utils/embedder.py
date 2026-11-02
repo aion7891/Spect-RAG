@@ -6,6 +6,7 @@ Three choices, picked with settings["embedder"]:
   a function - your own embed function: texts -> list of vectors
 """
 
+import functools
 import hashlib
 import json
 import re
@@ -31,6 +32,7 @@ def text_features(text):
     return words + pairs
 
 
+@functools.lru_cache(maxsize=500_000)  # the same words come back again and again
 def hash_feature(feature, dims):
     """Map a feature to a fixed (position, sign). md5 gives the same answer every run."""
     number = int(hashlib.md5(feature.encode("utf-8")).hexdigest(), 16)
@@ -40,12 +42,9 @@ def hash_feature(feature, dims):
 def hash_embed(texts, dims=768):
     """Offline embedder: each feature adds +1 or -1 at its hashed position."""
     vectors = np.zeros((len(texts), dims), dtype=np.float32)
-    seen = {}  # feature -> (position, sign), so each word is hashed only once
     for row, text in enumerate(texts):
         for feature in text_features(text):
-            if feature not in seen:
-                seen[feature] = hash_feature(feature, dims)
-            position, sign = seen[feature]
+            position, sign = hash_feature(feature, dims)
             vectors[row, position] += sign
     return normalize(vectors)
 

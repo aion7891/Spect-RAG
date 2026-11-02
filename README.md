@@ -8,9 +8,9 @@ Retrieval-Augmented Generation"** (Sahinoglu et al., arXiv:2610.36991v2), includ
 This repository rebuilds the method as a **lightweight, beginner-friendly Python package**:
 short files, small functions, `numpy` as the only required dependency, and tests for every phase.
 
-> **Project status:** Phases 1–4 of 10 are done: paper analysis, architecture, package skeleton,
-> settings, document loader, token counter, chunking, embeddings, and index saving. The six edge
-> signals (Phase 5) are next. See
+> **Project status:** Phases 1–5 of 10 are done: paper analysis, architecture, package skeleton,
+> settings, document loader, token counter, chunking, embeddings, index saving, and the six edge
+> signals. Graph fusion, spectral coordinates and `SpectRAGIngestion` (Phase 6) are next. See
 > [Section 11](#11-implementation-phases-and-progress) for progress and
 > [Section 15](#15-what-is-implemented-so-far) for the code that exists today.
 
@@ -153,8 +153,8 @@ flowchart LR
         S["Settings<br/>config.py"]:::done
         A["Documents<br/>.txt / .md / .pdf<br/>loader.py + tokens.py"]:::done --> B["Chunker<br/>chunker.py"]:::done
         B --> C["Embedder<br/>embedder.py"]:::done
-        C --> D["Edge signals x6"]:::doing
-        D --> E["Weighted graph"]:::todo
+        C --> D["Edge signals x6<br/>edges.py"]:::done
+        D --> E["Weighted graph"]:::doing
         E --> F["Spectral coordinates"]:::todo
     end
     F --> G[("Index folder, store.py<br/>chunks.json, embeddings.npy: done<br/>edges.json, spectral.npy: pending")]:::doing
@@ -198,13 +198,15 @@ flowchart TD
     E --> F["merge_small_chunks()<br/>&lt; 32 tokens"]:::done
     F --> G["make_embedder()<br/>'search_document:' prefix"]:::done
     G -. "embed_fn for semantic breaks" .-> D
-    G --> H1["semantic_edges()"]:::doing
-    G --> H6["utility_edges()"]:::doing
-    F --> H2["adjacency_edges()"]:::doing
-    F --> H3["section_edges()"]:::doing
-    F --> H4["entity_edges()"]:::doing
-    F --> H5["citation_edges()"]:::doing
-    H1 & H2 & H3 & H4 & H5 & H6 --> I["fuse_edges()<br/>w = Σ α·w_r, drop w &lt; τ"]:::todo
+    F --> X1["add_entities()<br/>add_references()<br/>add_utility_questions()"]:::done
+    G --> H1["semantic_edges()"]:::done
+    G --> H6["utility_edges()"]:::done
+    F --> H2["adjacency_edges()"]:::done
+    F --> H3["section_edges()"]:::done
+    X1 --> H4["entity_edges()"]:::done
+    X1 --> H5["citation_edges()"]:::done
+    X1 --> H6
+    H1 & H2 & H3 & H4 & H5 & H6 --> I["fuse_edges()<br/>w = Σ α·w_r, drop w &lt; τ"]:::doing
     I --> J["normalized_laplacian()"]:::todo
     J --> K["spectral_coords()<br/>32 smallest non-trivial"]:::todo
     K --> L["cluster_coords()<br/>k-means for ClusterGain"]:::todo
@@ -297,7 +299,12 @@ Spect-RAG/
 │           ├── chunker.py          # pack units into chunks
 │           ├── embedder.py         # hashing embedder + Ollama nomic-embed-text
 │           ├── entities.py         # simple entity extraction
-│           ├── edges.py            # the six edge signals
+│           ├── references.py       # "Section 2.1" and file-name references
+│           ├── questions.py        # utility questions with any LLM (optional)
+│           ├── edge_list.py        # add_edge / as_list helpers
+│           ├── edges_structure.py  # adjacency, section, citation signals
+│           ├── edges_content.py    # semantic, entity, utility signals
+│           ├── edges.py            # build all six signals
 │           ├── graph.py            # fuse weights, adjacency, neighbours
 │           ├── spectral.py         # Laplacian, eigenvectors, clusters
 │           ├── store.py            # save/load the index
@@ -333,8 +340,12 @@ Every function is meant to be about 5–20 lines and do one job.
 | `utils/semantic_split.py` | `split_by_meaning()`, `find_breakpoints()` | Break where sentence distance reaches the 90th percentile |
 | `utils/chunker.py` | `pack_units()`, `take_overlap()`, `merge_small_chunks()`, `chunk_documents()` | Chunks with size limit and overlap |
 | `utils/embedder.py` | `make_embedder()`, `hash_embed()`, `ollama_embed()`, `normalize()` | Offline default embedder; optional real `nomic-embed-text`; or your own function |
-| `utils/entities.py` | `extract_entities(text)` | Capitalised phrases, acronyms, numbers, dates (regex) |
-| `utils/edges.py` | `semantic_edges()`, `adjacency_edges()`, `section_edges()`, `entity_edges()`, `citation_edges()`, `utility_edges()` | Six lists of `(i, j, weight)` |
+| `utils/entities.py` | `extract_entities(text)`, `add_entities(chunks)` | Capitalised phrases and their words, years (regex) |
+| `utils/references.py` | `extract_references(text)`, `add_references(chunks)` | Section numbers and file names a chunk refers to |
+| `utils/questions.py` | `make_question_fn(llm_fn)`, `add_utility_questions()`, `ollama_llm()` | Optional LLM-generated utility questions |
+| `utils/edges_structure.py` | `adjacency_edges()`, `section_edges()`, `citation_edges()` | Structure signals |
+| `utils/edges_content.py` | `semantic_edges()`, `entity_edges()`, `utility_edges()`, `knn_edges()` | Content signals |
+| `utils/edges.py` | `build_edge_signals()` | Six lists of `[i, j, weight]` |
 | `utils/graph.py` | `fuse_edges()`, `build_matrix()`, `neighbors()` | Weighted sum, threshold `τ`, adjacency matrix |
 | `utils/spectral.py` | `normalized_laplacian()`, `spectral_coords()`, `cluster_coords()` | Eq. 11–13 plus k-means labels |
 | `utils/store.py` | `save_index()`, `load_index()` | Any dict → `.npy` (arrays) and `.json` (everything else) |
@@ -386,11 +397,8 @@ Every function is meant to be about 5–20 lines and do one job.
 | D1 | Neo4j graph database | In-memory Python dict, saved as JSON | No server needed; BFS over a dict is easy to follow |
 | D2 | FAISS `IndexFlatIP` | `numpy` dot product on normalised vectors | Same exact result with no extra dependency |
 | D3 | `nomic-embed-text` | Default: offline hashing embedder (words + word pairs, md5-hashed into 768 slots with ±1 signs). Optional: real `nomic-embed-text` through Ollama (`urllib`, no new package), with the `search_document:` / `search_query:` prefixes. Or any function `texts -> vectors` | Tests run offline and fast; the real model stays available |
-| D22 | FAISS `IndexFlatIP` file | Vectors saved as `embeddings.npy` (float32, L2-normalised); search is `embeddings @ query` | Same exact scores, one fewer dependency |
-| D23 | `chunks.pkl` (pickle) | `chunks.json` (readable), loaded with `np.load(allow_pickle=False)` for arrays | Readable files, and loading an index never runs pickled code |
-| D24 | Prefixes for the hash embedder | Not added: prefix words would only add noise to word-hash vectors | Prefixes are an instruction for `nomic-embed-text` only |
-| D4 | `gpt-4o-mini` entity extraction | Default: regex extractor. Optional: pass your own `entity_fn` | No API key needed |
-| D5 | `gpt-4o-mini` utility questions | Default: **off** (its weight is shared among the other signals). Optional: pass `question_fn` | Avoids any LLM requirement |
+| D4 | `gpt-4o-mini` entity extraction | Default: regex extractor (capitalised phrases and their words, years; single words that start a sentence are skipped). Optional: pass your own `entity_fn` | No API key needed |
+| D5 | `gpt-4o-mini` utility questions | Default: **off** (its weight is shared among the other signals). Optional: `make_question_fn(llm_fn)` with any LLM, e.g. `ollama_llm("gemma3:4b")` | Avoids any LLM requirement |
 | D6 | Generation with `gpt-4o-mini` | `search()` returns the context; `answer()` takes any `llm_fn(prompt)` | Works with any LLM provider |
 | D7 | `cl100k_base` tokenizer | `tiktoken` if installed, else about 0.75 words per token | `tiktoken` stays optional |
 | D8 | PDF table extraction | Markdown tables are kept whole; PDF text read with optional `pypdf` | Reliable PDF table parsing is out of scope |
@@ -407,6 +415,14 @@ Every function is meant to be about 5–20 lines and do one job.
 | D19 | Overlap always present | Dropped for the next chunk when overlap + the next unit would go over the limit | Keeps every chunk within `chunk_tokens` |
 | D20 | Section headings | The heading line is kept as the first line of its section's first chunk; a heading with no body text (e.g. `## 2. Products`) gives no chunk but stays in its children's section path | Keeps heading words searchable without empty chunks |
 | D21 | Numbered headings | A line like `2.1 Datasets` counts as a heading only if it starts with a capital letter after the number, has ≤ 10 words, and does not end in `.`, `:`, `,` or `;` | Avoids treating numbered list items as headings |
+| D22 | FAISS `IndexFlatIP` file | Vectors saved as `embeddings.npy` (float32, L2-normalised); search is `embeddings @ query` | Same exact scores, one fewer dependency |
+| D23 | `chunks.pkl` (pickle) | `chunks.json` (readable), loaded with `np.load(allow_pickle=False)` for arrays | Readable files, and loading an index never runs pickled code |
+| D24 | Prefixes for the hash embedder | Not added: prefix words would only add noise to word-hash vectors | Prefixes are an instruction for `nomic-embed-text` only |
+| D25 | Entity weight "overlap in named entities" (no formula) | Jaccard: shared ÷ all entities of the two chunks; only for pairs sharing ≥ 1 entity | Standard, in [0, 1], and does not over-reward chunks with many entities |
+| D26 | Hierarchy weight "shared headings or a common parent section" (no formula) | Same section = 1.0; siblings or parent–child = shared prefix ÷ longer path (e.g. 2.1 vs 2.2 = 2/3); more distant = no edge; never across documents | Graded by depth, and restricting to direct relatives keeps the graph sparse |
+| D27 | Citation edges: "references, hyperlinks, footnotes" | Two kinds: `Section 2.1` / `Sec. 3` / `§4` → chunks of that section in the same document; file names (`notes.md`, Markdown links) → every chunk of that document; weight 1.0 | Footnote and bibliography links are too ambiguous without layout information |
+| D28 | Utility edges: "similarity between generated questions" | Each chunk's question vectors are averaged, then linked to its `semantic_k` nearest neighbours by cosine. Per-question vectors are kept for query-time matching (Phase 7) | A full question × question matrix grows too fast; averaging keeps it `O(n²)` in chunks |
+| D29 | Question vectors | Embedded as `kind="document"` (prefix `search_document:`) | At query time the user's question is the `search_query:` side |
 
 ---
 
@@ -417,8 +433,8 @@ flowchart LR
     P1["1. Paper analysis<br/>& architecture"]:::done --> P2["2. Package skeleton,<br/>config, loader, tokens"]:::done
     P2 --> P3["3. Chunking"]:::done
     P3 --> P4["4. Embeddings<br/>& index store"]:::done
-    P4 --> P5["5. Six edge signals"]:::doing
-    P5 --> P6["6. Graph + spectral<br/>= SpectRAGIngestion"]:::todo
+    P4 --> P5["5. Six edge signals"]:::done
+    P5 --> P6["6. Graph + spectral<br/>= SpectRAGIngestion"]:::doing
     P6 --> P7["7. BM25 + hybrid<br/>seeding (RRF)"]:::todo
     P7 --> P8["8. Expansion +<br/>diffusion re-score"]:::todo
     P8 --> P9["9. Token-budget selection<br/>= SpectRAGRetrieval"]:::todo
@@ -436,8 +452,8 @@ Legend: 🟩 done · 🟨 in progress · ⬜ pending
 | 2 | `pyproject.toml`, `config.py`, `loader.py`, `tokens.py`, sample docs | Load sample docs, count tokens, split sentences | 🟩 Done (18 tests) |
 | 3 | `sections.py`, `units.py`, `semantic_split.py`, `chunker.py` | Chunks respect size, overlap, sentences, tables | 🟩 Done (44 tests in total) |
 | 4 | `embedder.py`, `store.py` | Vectors are normalised; save/load gives the same data back | 🟩 Done (57 tests in total) |
-| 5 | `entities.py`, `edges.py` | Each signal finds the expected links on a toy corpus | 🟨 Next |
-| 6 | `graph.py`, `spectral.py`, `ingestion.py` | `SpectRAGIngestion().ingest()` writes a full index | ⬜ Pending |
+| 5 | `entities.py`, `references.py`, `questions.py`, `edge_list.py`, `edges_structure.py`, `edges_content.py`, `edges.py` | Each signal finds the expected links on a toy corpus | 🟩 Done (81 tests + 1 opt-in) |
+| 6 | `graph.py`, `spectral.py`, `ingestion.py` | `SpectRAGIngestion().ingest()` writes a full index | 🟨 Next |
 | 7 | `bm25.py`, `seeding.py` | Seeds contain the obvious matching chunks | ⬜ Pending |
 | 8 | `expansion.py`, `diffusion.py` | Bridge chunks gain score through the graph | ⬜ Pending |
 | 9 | `selection.py`, `prompt.py`, `retrieval.py` | `search()` respects the budget and diversifies documents | ⬜ Pending |
@@ -533,6 +549,35 @@ What this shows:
 With `60 20` you get 13 chunks, all ≤ 60 tokens. Long sections are split across several chunks,
 and each next chunk starts with the last sentence(s) of the previous one.
 
+Runnable now (Phase 5 demo):
+
+```bash
+python examples/edges_example.py                    # offline: hash embedder, no utility questions
+python examples/edges_example.py ollama gemma3:4b   # nomic-embed-text + LLM utility questions
+```
+
+Actual output (offline, shortened):
+
+```text
+[2] aurora_labs.md#2           refs=['2.1']
+     entities: 2017, 2018, 2020, aurora, aurora s1, aurora s2, dashboard, fieldview
+[3] aurora_labs.md#3           refs=['river_valley_farming.md']
+...
+Edges per signal: {'semantic': 16, 'adjacency': 5, 'section': 3, 'entity': 14, 'utility': 0, 'citation': 3}
+
+section
+  0.500  aurora_labs.md#0 -- aurora_labs.md#3
+  0.667  aurora_labs.md#1 -- aurora_labs.md#2
+entity
+  0.280  aurora_labs.md#0 -- helios_energy.txt#0      <- bridge: both mention Maya Chen
+citation
+  1.000  aurora_labs.md#1 -- aurora_labs.md#2          <- "described in Section 2.1"
+  1.000  aurora_labs.md#3 -- river_valley_farming.md#0 <- "See river_valley_farming.md"
+```
+
+With `ollama gemma3:4b`, every chunk also gets 3 questions, for example *"Who was hired as chief
+technology officer in 2019?"* for the Helios chunk, and the utility signal adds 16 edges.
+
 Planned API (runnable from Phases 6 and 9):
 
 ```python
@@ -600,7 +645,9 @@ chunking receives it as `embed_fn`.
 - **Offline by default**: no test needs the internet, an API key, or Ollama. Ollama calls are
   tested with a fake server. One live test, `test_real_nomic_embed_text`, runs only when Ollama
   is reachable on `localhost:11434`; otherwise it is skipped.
-- Run all tests: `pytest -q`. Run one file: `pytest tests/test_embedder.py -q`. See skipped tests
+- **Opt-in LLM test**: `SPECTRAG_LIVE_LLM=1 pytest tests/test_questions.py` calls a real Ollama
+  LLM (default `gemma3:4b`; change it with `SPECTRAG_LLM_MODEL=qwen3:4b`).
+- Run all tests: `pytest -q`. Run one file: `pytest tests/test_edges.py -q`. See skipped tests
   with `pytest -q -rs`.
 
 ---
@@ -623,8 +670,16 @@ chunking receives it as `embed_fn`.
   never cut a sentence.
 - Only Markdown pipe tables (`| a | b |`) are recognised as tables. Tables from PDFs come out as
   plain text.
-- Chunks do not yet store `references` (Table 1 lists them). They will be extracted with the
-  citation edges in Phase 5.
+- The regex entity extractor misses lowercase technical terms (e.g. "soil moisture") and picks up
+  table header words (`product`, `year`). Pass an LLM-based `entity_fn` for better entities.
+- Semantic edge weights depend on the embedder: `nomic-embed-text` cosines are usually 0.6–0.9,
+  hash cosines 0.1–0.4. The edge threshold `τ` (Phase 6) therefore removes different edges for
+  each embedder.
+- With few chunks, `semantic_k = 10` links almost every pair. The demo uses `semantic_k = 3`.
+- `section_edges()` and `knn_edges()` compare all pairs (`O(n²)`), and `entity_edges()` links
+  every pair that shares a common entity. Fine for thousands of chunks, slow for millions.
+- Citation edges to a file link to every chunk of that file, which can add many edges for a
+  large target document.
 - With `tiktoken` installed, the first call to `count_tokens()` may download the `cl100k_base`
   file. If that fails (for example, offline), the counter silently falls back to the word estimate.
 - PDF text comes from `pypdf`'s `extract_text()`, so layout such as columns and tables can come
@@ -786,4 +841,71 @@ Run the Phase 4 tests:
 
 ```bash
 pytest -v -rs tests/test_embedder.py tests/test_store.py
+```
+
+### Phase 5: the six edge signals
+
+```mermaid
+flowchart TD
+    CH["chunks + embeddings"] --> AE["add_entities()<br/>chunk.entities"]
+    CH --> AR["add_references()<br/>chunk.references"]
+    CH --> AQ["add_utility_questions(question_fn)<br/>chunk.utility_questions"]
+    CH --> SEM["semantic_edges()<br/>kNN cosine, k = semantic_k"]
+    CH --> ADJ["adjacency_edges()<br/>position n and n+1"]
+    CH --> SEC["section_edges()<br/>same / sibling / parent"]
+    AE --> ENT["entity_edges()<br/>Jaccard"]
+    AR --> CIT["citation_edges()<br/>Section X, file names"]
+    AQ --> EQ["embed_questions()"] --> UTL["utility_edges()<br/>mean question vector, kNN"]
+    SEM & ADJ & SEC & ENT & CIT & UTL --> OUT["build_edge_signals()<br/>{signal: [[i, j, w], ...]}"]
+```
+
+Every signal is a sorted list of `[i, j, weight]` with `i < j` and `0 < weight ≤ 1`, where `i`
+and `j` are chunk ids. Each pair appears at most once per signal. Phase 6 combines the six lists
+with the weights `α` from `settings["edge_weights"]` (paper Eq. 10).
+
+| Signal | Rule in this code | Example from the sample docs |
+|---|---|---|
+| semantic | `max(0, cos)` to each chunk's `semantic_k` nearest neighbours | Aurora history ↔ Helios intro (0.353) |
+| adjacency | 1.0 between positions `n` and `n+1` of one document | `aurora_labs.md#0` ↔ `#1` |
+| section | 1.0 same section; siblings or parent–child = shared prefix ÷ longer path | 2.1 Sensors ↔ 2.2 Software (0.667) |
+| entity | Jaccard of entity sets | Aurora history ↔ Helios (0.280, "maya chen", "helios energy") |
+| utility | cosine of averaged question vectors, kNN | Only when a `question_fn` is given |
+| citation | 1.0 to the referenced section or document | FieldView chunk → Section 2.1 chunk |
+
+| File | Function | What it does |
+|---|---|---|
+| `utils/entities.py` | `extract_entities(text)` | Sorted, lowercased capitalised phrases (`maya chen`), their words (`maya`), and years. Works line by line, so headings never merge into sentences. |
+| | `sentence_phrases(sentence)` | Phrases in one sentence. Skips a lone capitalised word at the start (`Farmers check ...`) and heading numbers (`## 1. History`). |
+| | `clean_phrase(phrase)` | Trims stopwords: `The Aurora S1` → `aurora s1`. |
+| | `add_entities(chunks, entity_fn)` | Stores `chunk["entities"]`; `entity_fn` can replace the regex extractor. |
+| `utils/references.py` | `extract_references(text)` | Finds `Section 2.1`, `Sec. 3`, `§4.2` and file names/links such as `report.pdf`. |
+| | `section_numbers(path)` | `["Doc", "2. Products", "2.1 Sensors"]` → `{"2", "2.1"}`. |
+| | `add_references(chunks)` | Stores `chunk["references"]` (the field from paper Table 1). |
+| `utils/questions.py` | `make_question_fn(llm_fn, count=3)` | Turns any `llm_fn(prompt) -> text` into a question generator. |
+| | `parse_questions(reply)` | Keeps lines ending in `?` and removes numbering and bullets. |
+| | `add_utility_questions(chunks, question_fn)` | Stores `chunk["utility_questions"]` (empty list when `question_fn` is `None`). |
+| | `ollama_llm(model)` | Optional `llm_fn` that calls a local Ollama model at temperature 0. |
+| `utils/edge_list.py` | `add_edge(edges, i, j, w)` | Stores the pair once as `(min, max)`, keeps the larger weight, ignores self-loops and zero weights, caps at 1.0. |
+| | `as_list(edges)` | Dict → sorted `[[i, j, w], ...]` (JSON-friendly). |
+| `utils/edges_structure.py` | `adjacency_edges(chunks)` | Neighbouring chunks of one document. |
+| | `shared_prefix()`, `section_weight()` | The section rule from the table above. |
+| | `section_edges(chunks)` | Applies `section_weight` to every pair in the same document. |
+| | `reference_targets()`, `citation_edges(chunks)` | Resolves each reference to chunks and links them. |
+| `utils/edges_content.py` | `knn_edges(vectors, k)` | Shared kNN routine (paper Eq. 3), used by semantic and utility edges. |
+| | `semantic_edges(embeddings, k)` | kNN over chunk embeddings. |
+| | `jaccard()`, `entity_edges(chunks)` | Inverted index entity → chunks, then Jaccard for pairs that share an entity. |
+| | `embed_questions(chunks, embed)` | All question vectors plus `owners` (the chunk each question belongs to), reused at query time in Phase 7. |
+| | `utility_edges(vectors, owners, n, k)` | Averages each chunk's question vectors, then kNN. |
+| `utils/edges.py` | `build_edge_signals(chunks, embeddings, embed, settings)` | Runs all six and returns `(signals, question_vectors, owners)`. |
+| | `count_edges(signals)` | Edge count per signal. |
+| `examples/edges_example.py` | `main()` | Prints entities, references, questions and every edge. Arguments: `[embedder] [llm-model]`. |
+| `tests/test_entities.py` | 6 tests | Names, products and years; sentence-start rule; two-word names at the start; stopwords; headings kept separate; custom `entity_fn`. |
+| `tests/test_references.py` | 5 tests | Section forms, files and links, duplicates, `section_numbers`, `add_references`. |
+| `tests/test_questions.py` | 4 tests + 1 opt-in | Parsing, prompt and limit, off by default, Ollama request format (fake server); live LLM with `SPECTRAG_LIVE_LLM=1`. |
+| `tests/test_edges.py` | 9 tests | `add_edge` rules, adjacency, every section-weight case, no cross-document section edges, citation by section and by file, kNN limits and negatives, Jaccard, utility averaging, and the full pipeline on sample docs (all 6 signals present, valid weights, the Maya Chen bridge, the Section 2.1 citation). |
+
+Run the Phase 5 tests:
+
+```bash
+pytest -v -rs tests/test_entities.py tests/test_references.py tests/test_questions.py tests/test_edges.py
 ```

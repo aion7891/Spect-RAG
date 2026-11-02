@@ -4,16 +4,18 @@ A readable Python implementation of the supplied SpectRAG paper, developed in
 reviewable phases. There are two public classes; helper functions live in
 `src/spect_rag/utility/`.
 
-**Current status: Phase 3 complete.** `SpectRAGIngestion.prepare()` loads and
+**Current status: Phase 4 complete.** `SpectRAGIngestion.prepare()` loads and
 chunks documents. `enrich()` adds normalized embeddings, optional semantic
 boundaries, concepts, utility questions, and citation targets using caller-supplied
-callbacks. Full indexing (`ingest`) and retrieval (`retrieve`) remain unimplemented.
-No retrieval or real-model quality has been measured.
+callbacks. `ingest()` builds and saves the graph, spectrum, FAISS indexes, and
+BM25 data. `SpectRAGRetrieval.load()` verifies and reloads an index. Query-time
+`retrieve()` is planned for Phase 5. No retrieval or real-model quality has been measured.
 
 - [Paper analysis and implementation decisions](docs/paper_analysis.md)
 - [Phases and review checkpoints](docs/implementation_plan.md)
 - [Phase 2: loading, chunking, and validation](docs/phase2.md)
 - [Phase 3: callbacks, enrichment, and caching](docs/phase3.md)
+- [Phase 4: graph, spectrum, and index snapshots](docs/phase4.md)
 - [Supplied research paper](docs/2610.36991v2.pdf)
 
 ## Install and inspect
@@ -40,6 +42,11 @@ src/spect_rag/
         extraction.py    # concept/question prompt and response validation
         citations.py     # textual references and local corpus targets
         cache.py         # versioned, atomic JSON caches
+        graph_signals.py # six bounded signal extractors
+        graph.py         # configurable weighted fusion and sparsification
+        spectral.py      # component-aware Laplacian eigenvectors
+        validation.py    # shared enriched-record checks
+        indexing.py      # versioned snapshots, FAISS, BM25, and reload checks
 ```
 
 The existing retrieval prototype is preserved in
@@ -94,21 +101,34 @@ Run it twice to see the cache eliminate callback calls. Replace the demo callbac
 with real model clients in your application; fake callbacks are outside the
 installed package.
 
-## Intended usage after later phases
+## Build and reload an index now
 
-This describes the target interface; full indexing/retrieval cannot run yet:
+Using an ingestion instance configured with the callbacks described in the
+[Phase 3 guide](docs/phase3.md):
 
 ```python
-from spect_rag import SpectRAGIngestion, SpectRAGRetrieval
+from spect_rag import SpectRAGRetrieval
 
-ingestion = SpectRAGIngestion(index_dir="indexes/my_docs")
-ingestion.ingest(["docs/my_document.pdf", "docs/notes.md"])
+index = ingestion.ingest(["docs/my_document.pdf", "docs/notes.md"])
+print(index["graph"].graph["stats"])
+print(index["spectral_coords"].shape)
 
-retrieval = SpectRAGRetrieval(index_dir="indexes/my_docs")
-evidence = retrieval.retrieve("How are the two topics connected?", token_budget=12_000)
-for chunk in evidence:
-    print(chunk["chunk_id"], chunk["score"], chunk["text"])
+reloaded = SpectRAGRetrieval(ingestion.index_dir).load()
+print(reloaded["manifest"]["counts"])
 ```
+
+Runnable demo with test callbacks:
+
+```bash
+uv run python examples/ingest_documents.py examples/documents/getting_started.md examples/documents/storage_notes.txt --demo --index-dir indexes/demo
+```
+
+Each rebuild publishes a new snapshot under the index directory and retains
+older snapshots. The manifest records models, settings, row order, and checksums;
+loading rejects missing or inconsistent artifacts. See the [Phase 4 guide](docs/phase4.md)
+for signal formulas, neighbor limits, spectral conventions, and the file layout.
+
+Query retrieval and grounded generation are still pending in Phases 5-6.
 
 Embedding and extraction callbacks are now configurable on ingestion.
 The proposed first implementation uses local files and NetworkX, avoiding a

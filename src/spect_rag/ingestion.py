@@ -1,7 +1,6 @@
 """Offline pipeline from the paper's Table 1.
 
-Phases 2-3 implement inspectable preparation and model-assisted enrichment.
-Phase 4 adds graph construction, spectral coordinates, and index persistence.
+Offline ingestion: prepare -> enrich -> graph -> spectrum -> save -> verify.
 """
 
 from collections.abc import Callable, Iterable
@@ -13,12 +12,15 @@ from .utility.citations import resolve_citations
 from .utility.embeddings import embed_texts
 from .utility.extraction import extract_metadata
 from .utility.loading import load_documents
+from .utility.graph import build_chunk_graph, graph_settings
+from .utility.indexing import load_index, save_index
+from .utility.spectral import spectral_coordinates
 
 
 class SpectRAGIngestion:
     """Load documents and build a reusable graph and spectral index.
 
-    Planned flow: load -> chunk -> embed -> extract signals -> build graph
+    Pipeline: load -> chunk -> embed -> extract signals -> build graph
     -> compute spectral coordinates -> save index.
     """
 
@@ -116,9 +118,34 @@ class SpectRAGIngestion:
             offset += count
         return resolve_citations(enriched)
 
-    def ingest(self, document_paths: Iterable[str | Path]) -> None:
-        """Build a full index; implemented once Phases 3-4 are complete."""
-        raise NotImplementedError(
-            "Use prepare() or enrich() to inspect document chunks and model outputs. "
-            "Full graph/spectral indexing follows in Phase 4."
+    def ingest(
+        self, document_paths: Iterable[str | Path], *,
+        chunk_size: int = 1_200, chunk_overlap: int = 100, min_chunk_tokens: int = 32,
+        semantic_chunking: bool = True, graph_neighbors: int = 10,
+        relation_neighbors: int = 20, edge_threshold: float = 0.05,
+        edge_weights: dict | None = None, spectral_dimension: int = 32,
+    ) -> dict:
+        """Build a complete local index and reload it to verify saved artifacts."""
+        settings = graph_settings(
+            graph_neighbors=graph_neighbors, relation_neighbors=relation_neighbors,
+            edge_threshold=edge_threshold, edge_weights=edge_weights,
+        )
+        if type(spectral_dimension) is not int or spectral_dimension < 0:
+            raise ValueError("Spectral dimension must be a non-negative integer.")
+        chunks = self.enrich(
+            document_paths, chunk_size=chunk_size, chunk_overlap=chunk_overlap,
+            min_chunk_tokens=min_chunk_tokens, semantic_chunking=semantic_chunking,
+        )
+        graph = build_chunk_graph(chunks, **settings)
+        spectrum = spectral_coordinates(graph, dimension=spectral_dimension)
+        save_index(
+            self.index_dir, chunks, graph, spectrum,
+            chunking_settings={
+                "chunk_size": chunk_size, "chunk_overlap": chunk_overlap,
+                "min_chunk_tokens": min_chunk_tokens, "semantic_chunking": semantic_chunking,
+            },
+        )
+        return load_index(
+            self.index_dir, embedding_model=self.embedding_model,
+            embedding_dimension=self.embedding_dimension, document_prefix=self.document_prefix,
         )

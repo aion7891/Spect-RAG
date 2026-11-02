@@ -6,8 +6,8 @@ retrieval. Both use the same index directory. All helper functions belong under
 `src/spect_rag/utility/`; use plain dictionaries and arrays for internal records
 instead of adding a framework of classes.
 
-Phases 1-3 are complete. **Stop after every phase for user review.**
-Phases 4-6 below describe planned work, not implemented capabilities.
+Phases 1-4 are complete. **Stop after every phase for user review.**
+Phases 5-6 below describe planned work, not implemented capabilities.
 
 | Phase | Scope | Reviewable result and validation |
 | --- | --- | --- |
@@ -20,7 +20,7 @@ Phases 4-6 below describe planned work, not implemented capabilities.
 
 ## Target class responsibilities
 
-`SpectRAGIngestion.ingest(document_paths)` will build the persisted index. Its
+`SpectRAGIngestion.ingest(document_paths)` builds the persisted index. Its
 body should read in pipeline order, calling small utility functions whose
 docstrings cite the corresponding paper section. It will not also answer queries.
 
@@ -29,24 +29,27 @@ and return evidence with text, source metadata, and scores. Optional generation
 can later be another method on this same class. Provider-specific embedding and
 LLM code will be callbacks; the package will not hard-code API keys or a provider.
 
-The full `ingest` and `retrieve` methods still raise `NotImplementedError`.
+`ingest` is implemented; query-time `retrieve` still raises `NotImplementedError`.
 Phase 2 adds `SpectRAGIngestion.prepare(document_paths)`, which loads documents
 and returns inspectable chunk records without writing an index. Phase 3 adds
 optional semantic chunking and `enrich(document_paths)`, which embeds chunks,
 extracts concepts/questions through callbacks, and resolves local citations.
-Explicitly configured caches can persist model outputs; graph/index persistence
-still belongs to Phase 4. Constructors do not create files or load models.
+Explicitly configured caches can persist model outputs. Phase 4 adds six graph
+signals, fusion/sparsification, spectral coordinates, FAISS indexes, BM25 rebuild
+data, and checked index snapshots. `SpectRAGRetrieval.load()` verifies/reloads
+those artifacts. Constructors do not create files or load models.
 
-## Proposed persisted artifacts
+## Persisted artifacts
 
-Use a versioned manifest with chunk ordering, model identity/dimension, tokenizer,
-graph settings, and input hashes; UTF-8 JSON for records; NumPy arrays for chunk,
+Each snapshot has a versioned manifest with chunk ordering, model identity/dimension, tokenizer,
+graph settings, artifact checksums, and input hashes; UTF-8 JSON for records; NumPy arrays for chunk,
 question, and spectral vectors; sparse graph data; and FAISS index files. Rebuild
-BM25 from saved tokenized text. Avoid pickle for the new implementation. Preserve
+BM25 from saved tokenized text. No pickle is used. Preserve
 question text as well as vectors so the extraction can be inspected.
 
-Index loading must reject incompatible or incomplete artifacts instead of mixing
-models, chunk orders, or graph versions. Updating the corpus initially means a
+Index loading rejects incompatible or incomplete artifacts instead of mixing
+models, chunk orders, or graph versions. A CURRENT pointer publishes a complete
+snapshot; rebuilding preserves old snapshots. Updating the corpus means a
 full rebuild; incremental indexing is outside the first implementation.
 
 ## Review decisions

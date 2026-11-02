@@ -8,8 +8,10 @@ Retrieval-Augmented Generation"** (Sahinoglu et al., arXiv:2610.36991v2), includ
 This repository rebuilds the method as a **lightweight, beginner-friendly Python package**:
 short files, small functions, `numpy` as the only required dependency, and tests for every phase.
 
-> **Project status:** Phase 1 of 10 is done (paper analysis and architecture design).
-> There is no runnable code yet. The sections below describe what will be built.
+> **Project status:** Phases 1–2 of 10 are done: paper analysis, architecture, package skeleton,
+> settings, document loader, and token counter. Chunking (Phase 3) is next. See
+> [Section 11](#11-implementation-phases-and-progress) for progress and
+> [Section 15](#15-what-is-implemented-so-far) for the code that exists today.
 
 ---
 
@@ -29,6 +31,7 @@ short files, small functions, `numpy` as the only required dependency, and tests
 12. [Installation and usage (planned)](#12-installation-and-usage-planned)
 13. [Testing strategy](#13-testing-strategy)
 14. [Known issues](#14-known-issues)
+15. [What is implemented so far](#15-what-is-implemented-so-far)
 
 ---
 
@@ -146,23 +149,29 @@ Two main classes share one index folder on disk:
 ```mermaid
 flowchart LR
     subgraph OFFLINE["SpectRAGIngestion (run once)"]
-        A["Documents<br/>.txt / .md / .pdf"] --> B["Chunker"]
-        B --> C["Embedder"]
-        C --> D["Edge signals x6"]
-        D --> E["Weighted graph"]
-        E --> F["Spectral coordinates"]
+        S["Settings<br/>config.py"]:::done
+        A["Documents<br/>.txt / .md / .pdf<br/>loader.py + tokens.py"]:::done --> B["Chunker"]:::todo
+        B --> C["Embedder"]:::todo
+        C --> D["Edge signals x6"]:::todo
+        D --> E["Weighted graph"]:::todo
+        E --> F["Spectral coordinates"]:::todo
     end
-    F --> G[("Index folder<br/>chunks.json<br/>embeddings.npy<br/>edges.json<br/>spectral.npy")]
+    F --> G[("Index folder<br/>chunks.json<br/>embeddings.npy<br/>edges.json<br/>spectral.npy")]:::todo
     subgraph ONLINE["SpectRAGRetrieval (per question)"]
-        H["Question"] --> I["Hybrid seeds<br/>dense + BM25 + utility"]
-        I --> J["2-hop graph expansion"]
-        J --> K["Proximity re-scoring<br/>spectral + PageRank"]
-        K --> L["Token-budget selection"]
-        L --> M["Context + sources"]
-        M -.optional.-> N["LLM answer"]
+        H["Question"] --> I["Hybrid seeds<br/>dense + BM25 + utility"]:::todo
+        I --> J["2-hop graph expansion"]:::todo
+        J --> K["Proximity re-scoring<br/>spectral + PageRank"]:::todo
+        K --> L["Token-budget selection"]:::todo
+        L --> M["Context + sources"]:::todo
+        M -.optional.-> N["LLM answer"]:::todo
     end
     G --> I
+    classDef done fill:#2e7d32,color:#fff,stroke:#1b5e20
+    classDef doing fill:#f9a825,color:#000,stroke:#f57f17
+    classDef todo fill:#9e9e9e,color:#fff,stroke:#616161
 ```
+
+Colours: green = done, yellow = in progress, grey = pending.
 
 **Design rules**
 
@@ -381,8 +390,8 @@ Every function is meant to be about 5–20 lines and do one job.
 
 ```mermaid
 flowchart LR
-    P1["1. Paper analysis<br/>& architecture"]:::done --> P2["2. Package skeleton,<br/>config, loader, tokens"]:::todo
-    P2 --> P3["3. Chunking"]:::todo
+    P1["1. Paper analysis<br/>& architecture"]:::done --> P2["2. Package skeleton,<br/>config, loader, tokens"]:::done
+    P2 --> P3["3. Chunking"]:::doing
     P3 --> P4["4. Embeddings<br/>& index store"]:::todo
     P4 --> P5["5. Six edge signals"]:::todo
     P5 --> P6["6. Graph + spectral<br/>= SpectRAGIngestion"]:::todo
@@ -400,8 +409,8 @@ Legend: 🟩 done · 🟨 in progress · ⬜ pending
 | Phase | Scope | Testable result | Status |
 |---|---|---|---|
 | 1 | Paper analysis, architecture, plan, diagrams | This README | 🟩 Done |
-| 2 | `pyproject.toml`, `config.py`, `loader.py`, `tokens.py`, sample docs | Load sample docs, count tokens, split sentences | ⬜ Pending |
-| 3 | `chunker.py`, `semantic_split.py` | Chunks respect size, overlap, sentences, tables | ⬜ Pending |
+| 2 | `pyproject.toml`, `config.py`, `loader.py`, `tokens.py`, sample docs | Load sample docs, count tokens, split sentences | 🟩 Done (18 tests) |
+| 3 | `chunker.py`, `semantic_split.py` | Chunks respect size, overlap, sentences, tables | 🟨 Next |
 | 4 | `embedder.py`, `store.py` | Vectors are normalised; save/load gives the same data back | ⬜ Pending |
 | 5 | `entities.py`, `edges.py` | Each signal finds the expected links on a toy corpus | ⬜ Pending |
 | 6 | `graph.py`, `spectral.py`, `ingestion.py` | `SpectRAGIngestion().ingest()` writes a full index | ⬜ Pending |
@@ -412,19 +421,44 @@ Legend: 🟩 done · 🟨 in progress · ⬜ pending
 
 ---
 
-## 12. Installation and usage (planned)
+## 12. Installation and usage
 
-> These commands work from Phase 2 onward. Usage examples become runnable in Phases 6 and 9.
+Installation works now:
 
 ```bash
 git clone <your-repo-url> && cd Spect-RAG
 python3 -m venv .venv && source .venv/bin/activate
 pip install -e .              # installs numpy
 pip install -e ".[dev]"       # adds pytest
-pip install -e ".[extras]"    # optional: tiktoken, pypdf
+pip install -e ".[extras]"    # optional: tiktoken (exact token counts), pypdf (PDF files)
 ```
 
-Planned API:
+Runnable now (Phase 2 demo):
+
+```bash
+python examples/load_example.py
+```
+
+Expected output with `tiktoken` installed:
+
+```text
+Chunk size setting: 256 tokens
+Token counter: tiktoken cl100k_base
+
+aurora_labs.md
+  tokens: 315  sentences: 24
+  first sentence: # Aurora Labs
+helios_energy.txt
+  tokens: 162  sentences: 10
+  first sentence: Helios Energy is a solar power company based in Porto.
+river_valley_farming.md
+  tokens: 143  sentences: 12
+  first sentence: # River Valley Cooperative
+```
+
+Without `tiktoken`, the counter line says `word estimate`, and the token counts are 280, 164, and 145.
+
+Planned API (runnable from Phases 6 and 9):
 
 ```python
 from spectrag import SpectRAGIngestion, SpectRAGRetrieval
@@ -456,15 +490,71 @@ To use the real `nomic-embed-text` model (optional), install [Ollama](https://ol
 - **Integration tests**: from Phase 6, ingest `examples/docs` into a temporary folder; from
   Phase 9, run `search()` on it.
 - **Offline by default**: no test needs the internet, an API key, or Ollama.
-- Run all tests: `pytest -q`. Run one: `pytest tests/test_chunker.py -q`.
+- Run all tests: `pytest -q`. Run one file: `pytest tests/test_tokens.py -q`.
 
 ---
 
 ## 14. Known issues
 
-- Phase 1 contains documentation only; there is no runnable code yet.
+- `split_sentences()` is rule-based. It handles common abbreviations (`Dr.`, `e.g.`, `Fig.`) and
+  decimals (`2.1`), but an unusual abbreviation followed by a capital letter can still cause a
+  wrong split.
+- `split_sentences()` treats a Markdown heading or a whole table block as one "sentence". Phase 3
+  will detect headings and tables before sentence splitting.
+- With `tiktoken` installed, the first call to `count_tokens()` may download the `cl100k_base`
+  file. If that fails (for example, offline), the counter silently falls back to the word estimate.
+- PDF text comes from `pypdf`'s `extract_text()`, so layout such as columns and tables can come
+  out jumbled.
 - The hashing embedder captures word overlap, not meaning. Use Ollama `nomic-embed-text` for real
   semantic quality.
 - Dense eigen-decomposition (`numpy.linalg.eigh`) is `O(n³)`. It is fine up to a few thousand
   chunks; larger corpora would need `scipy.sparse.linalg.eigsh` (a possible later option).
 - Values marked ⚠️ in Section 9 are our guesses, not tuned values from the paper.
+
+---
+
+## 15. What is implemented so far
+
+### Phase 2: package skeleton, settings, loader, token counter
+
+```mermaid
+flowchart LR
+    F["file or folder"] --> LF["list_files()<br/>.txt .md .markdown .pdf"]
+    LF --> RF["read_file()"]
+    RF -- ".pdf" --> RP["read_pdf()<br/>needs pypdf"]
+    RF --> LD["load_docs()<br/>skip empty files"]
+    RP --> LD
+    LD --> DOCS["list of docs<br/>doc_id, path, text"]
+    DOCS --> CT["count_tokens()<br/>tiktoken or estimate"]
+    DOCS --> SS["split_sentences()"]
+    SS --> MA["merge_abbreviations()"]
+```
+
+| File | Function | What it does |
+|---|---|---|
+| `pyproject.toml` | — | Package metadata. `numpy` is required; `[extras]` adds `tiktoken` and `pypdf`, `[dev]` adds `pytest`. |
+| `src/spectrag/__init__.py` | — | Package entry point. Exports `DEFAULTS` and `make_settings` for now. |
+| `src/spectrag/config.py` | `DEFAULTS` | Every setting in one dict, from Section 9. |
+| | `EDGE_WEIGHTS_CONFIG_1` / `_2` | The paper's two edge-weight configurations (Tables 9 and 10). |
+| | `make_settings(overrides)` | Returns a fresh copy of `DEFAULTS` with your changes. A misspelled key raises `KeyError`, so typos are caught early. |
+| `src/spectrag/utils/loader.py` | `list_files(path)` | Finds supported files in a file or folder, including subfolders, in sorted order. |
+| | `read_file(path)` | Reads a text file as UTF-8, or hands PDFs to `read_pdf`. |
+| | `read_pdf(path)` | Extracts PDF text with `pypdf`, with a clear error if it is not installed. |
+| | `make_doc_id(file, root)` | Builds a readable id such as `sub/b.md`, relative to the folder you loaded. |
+| | `load_docs(path)` | Returns `[{"doc_id", "path", "text"}, ...]` and skips empty files. |
+| `src/spectrag/utils/tokens.py` | `get_encoder()` | Loads `tiktoken`'s `cl100k_base` once (the paper's tokenizer), or returns `None`. |
+| | `estimate_tokens(text)` | Fallback count: number of words divided by 0.75. |
+| | `count_tokens(text)` | Exact count with `tiktoken` when possible, otherwise the estimate. |
+| | `split_sentences(text)` | Splits on `.`, `!`, or `?` followed by a capital letter, digit, or quote. A blank line always ends a sentence. |
+| | `merge_abbreviations(parts)` | Re-joins pieces wrongly split after `Dr.`, `e.g.`, `Fig.`, and similar. |
+| `examples/docs/*` | — | Three small fictional documents: two Markdown files with headings, a table, and a cross-reference, and one plain-text file. They contain a multi-hop chain (Aurora Labs → Maya Chen → Helios Energy). |
+| `examples/load_example.py` | `main()` | Phase 2 demo: loads the sample docs and prints token and sentence counts. |
+| `tests/test_config.py` | 4 tests | Paper defaults, weights summing to 1, overrides not changing `DEFAULTS`, typo detection. |
+| `tests/test_loader.py` | 7 tests | Folder and file loading, subfolders, unsupported or empty files, missing path, Unicode, PDF (skipped without `pypdf`). |
+| `tests/test_tokens.py` | 7 tests | Estimate maths, fallback without `tiktoken`, sentence splitting, abbreviations, decimals, blank lines. |
+
+Run the Phase 2 tests:
+
+```bash
+pytest -v tests/test_config.py tests/test_loader.py tests/test_tokens.py
+```

@@ -40,9 +40,12 @@ def hash_feature(feature, dims):
 def hash_embed(texts, dims=768):
     """Offline embedder: each feature adds +1 or -1 at its hashed position."""
     vectors = np.zeros((len(texts), dims), dtype=np.float32)
+    seen = {}  # feature -> (position, sign), so each word is hashed only once
     for row, text in enumerate(texts):
         for feature in text_features(text):
-            position, sign = hash_feature(feature, dims)
+            if feature not in seen:
+                seen[feature] = hash_feature(feature, dims)
+            position, sign = seen[feature]
             vectors[row, position] += sign
     return normalize(vectors)
 

@@ -6,7 +6,7 @@ from spectrag.config import make_settings
 from spectrag.utils.chunker import chunk_documents
 from spectrag.utils.edge_list import add_edge, as_list
 from spectrag.utils.edges import SIGNALS, build_edge_signals, count_edges
-from spectrag.utils.edges_content import entity_edges, jaccard, knn_edges, utility_edges
+from spectrag.utils.edges_content import entity_edges, knn_edges, utility_edges
 from spectrag.utils.edges_structure import (adjacency_edges, citation_edges, section_edges,
                                             section_weight)
 from spectrag.utils.embedder import make_embedder
@@ -62,6 +62,25 @@ def test_citation_edges_for_sections_and_files():
     assert citation_edges(chunks) == [[0, 1, 1.0], [2, 3, 1.0]]
 
 
+def test_knn_edges_blocks_match_one_big_block():
+    vectors = np.random.default_rng(1).normal(size=(50, 8)).astype(np.float32)
+    vectors /= np.linalg.norm(vectors, axis=1, keepdims=True)
+    assert knn_edges(vectors, k=4, block_size=7) == knn_edges(vectors, k=4, block_size=1000)
+    assert knn_edges(vectors[:1], k=4) == []                        # one node: no edges
+
+
+def test_knn_edges_finds_true_nearest_neighbours():
+    vectors = np.random.default_rng(2).normal(size=(30, 5)).astype(np.float32)
+    vectors /= np.linalg.norm(vectors, axis=1, keepdims=True)
+    pairs = {(i, j) for i, j, _ in knn_edges(vectors, k=3)}
+    similarities = vectors @ vectors.T
+    np.fill_diagonal(similarities, -1)
+    for i in range(30):
+        for j in np.argsort(-similarities[i])[:3]:                 # slow, exact reference
+            if similarities[i, j] > 0:
+                assert (min(i, j), max(i, j)) in pairs
+
+
 def test_knn_edges_limits_neighbours_and_drops_negative():
     vectors = np.array([[1, 0], [0.9, 0.1], [0, 1], [-1, 0]], dtype=np.float32)
     vectors = vectors / np.linalg.norm(vectors, axis=1, keepdims=True)
@@ -73,7 +92,11 @@ def test_knn_edges_limits_neighbours_and_drops_negative():
 
 
 def test_entity_edges_use_jaccard():
-    assert jaccard({"a", "b"}, {"b", "c"}) == 1 / 3
+    chunks = [chunk(0, "a", 0, entities=["a", "b"]), chunk(1, "b", 0, entities=["b", "c"]),
+              chunk(2, "c", 0, entities=["a", "b", "c", "c"])]       # duplicates count once
+    weights = {(i, j): w for i, j, w in entity_edges(chunks)}
+    assert weights[(0, 1)] == round(1 / 3, 4)                       # {b} / {a, b, c}
+    assert weights[(0, 2)] == round(2 / 3, 4) and weights[(1, 2)] == round(2 / 3, 4)
     chunks = [chunk(0, "a", 0, entities=["maya chen", "helios"]),
               chunk(1, "b", 0, entities=["maya chen"]),
               chunk(2, "c", 0, entities=["grapes"])]
@@ -105,3 +128,16 @@ def test_build_edge_signals_on_sample_docs():
     entity_pairs = [(i, j) for i, j, _ in signals["entity"]]
     assert (0, 4) in entity_pairs                   # bridge: Aurora history <-> Helios (Maya Chen)
     assert [1, 2, 1.0] in signals["citation"]       # "Section 2.1" in the FieldView chunk
+
+
+def test_very_common_entities_are_skipped_in_large_corpora():
+    chunks = [chunk(i, "d%d" % i, 0, entities=["everywhere", "pair%d" % (i // 2)])
+              for i in range(100)]                                  # 'everywhere' in 100%
+    edges = entity_edges(chunks)
+    assert len(edges) == 50                                         # only the 50 'pairN' pairs
+    assert all(j == i + 1 for i, j, _ in edges)
+
+
+def test_common_entities_kept_in_small_corpora():
+    chunks = [chunk(i, "d", i, entities=["everywhere"]) for i in range(8)]
+    assert len(entity_edges(chunks)) == 28                          # 8 chunks: all 28 pairs

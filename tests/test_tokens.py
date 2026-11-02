@@ -38,3 +38,7 @@ def test_blank_line_ends_sentence_and_whitespace_is_tidied():
 
 def test_decimals_do_not_split():
     assert split_sentences("Version 2.1 is out. Good.") == ["Version 2.1 is out.", "Good."]
+
+
+def test_accented_capital_starts_a_sentence():
+    assert split_sentences("Helios is in Porto. Évora is big.") == ["Helios is in Porto.", "Évora is big."]

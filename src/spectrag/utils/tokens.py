@@ -57,6 +57,8 @@ def split_sentences(text):
         paragraph = " ".join(paragraph.split())  # tidy whitespace
         if not paragraph:
             continue
-        parts = re.split(r"(?<=[.!?])\s+(?=[\"'(\[A-Z0-9])", paragraph)
+        # Split after . ! ? when the next sentence starts with a capital (also É, Ö, ...),
+        # a digit, a quote or a bracket.
+        parts = re.split(r"(?<=[.!?])\s+(?=[\"'(\[0-9A-ZÀ-ÖØ-Þ])", paragraph)
         sentences.extend(merge_abbreviations(parts))
     return sentences

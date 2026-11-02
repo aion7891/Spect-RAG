@@ -1,15 +1,27 @@
-"""Spectral coordinates and clusters (paper Eq. 11-13, Section 3.2.3 and 3.4)."""
+"""Spectral coordinates (paper Eq. 11-13, Sections 3.2.3 and 3.4).
+
+Small graphs: exact dense solver (numpy).
+Large graphs: sparse solver (scipy, optional), as the paper suggests for scale (Section 7).
+"""
 
 import numpy as np
 
+from spectrag.utils.graph import build_matrix, degrees
+
+DENSE_LIMIT = 2000  # above this many chunks, use scipy's sparse solver if it is installed
+
+
+def inverse_sqrt(degree):
+    """1 / sqrt(degree), with 0 for nodes that have no edges (instead of 1 / sqrt(0))."""
+    result = np.zeros_like(degree, dtype=float)
+    result[degree > 0] = 1.0 / np.sqrt(degree[degree > 0])
+    return result
+
 
 def normalized_laplacian(matrix):
-    """L_sym = I - D^-1/2 W D^-1/2. Nodes without edges get 0 instead of 1/sqrt(0)."""
-    degree = matrix.sum(axis=1)
-    inv_sqrt = np.zeros_like(degree)
-    inv_sqrt[degree > 0] = 1.0 / np.sqrt(degree[degree > 0])
-    scaled = inv_sqrt[:, None] * matrix * inv_sqrt[None, :]
-    return np.eye(len(matrix)) - scaled
+    """L_sym = I - D^-1/2 W D^-1/2 (paper Eq. 11)."""
+    scale = inverse_sqrt(matrix.sum(axis=1))
+    return np.eye(len(matrix)) - scale[:, None] * matrix * scale[None, :]
 
 
 def spectral_coords(laplacian, dims):
@@ -24,48 +36,37 @@ def spectral_coords(laplacian, dims):
     return vectors[:, 1:used + 1], values[1:used + 1]
 
 
-def auto_cluster_count(node_count):
-    """Assumed rule: about sqrt(n / 2) clusters, at least 2, at most n."""
-    return max(1, min(node_count, max(2, round((node_count / 2) ** 0.5))))
+def sparse_spectral_coords(edges, node_count, dims):
+    """Same result as spectral_coords, without building an n x n matrix.
 
-
-def farthest_point_start(points, count):
-    """Pick starting centres that are far apart (deterministic, no randomness)."""
-    centres = [points[0]]
-    while len(centres) < count:
-        distances = np.min([np.sum((points - c) ** 2, axis=1) for c in centres], axis=0)
-        centres.append(points[int(np.argmax(distances))])
-    return np.array(centres)
-
-
-def kmeans(points, count, steps=50):
-    """Plain k-means: assign each point to its nearest centre, move centres, repeat."""
-    centres = farthest_point_start(points, count)
-    labels = np.zeros(len(points), dtype=int)
-    for step in range(steps):
-        distances = ((points[:, None, :] - centres[None, :, :]) ** 2).sum(axis=2)
-        new_labels = distances.argmin(axis=1)
-        if step > 0 and np.array_equal(new_labels, labels):
-            break
-        labels = new_labels
-        for c in range(count):
-            if np.any(labels == c):
-                centres[c] = points[labels == c].mean(axis=0)
-    return labels
-
-
-def cluster_coords(coords, count=None):
-    """Spectral clusters for ClusterGain (paper Eq. 21).
-
-    Standard spectral clustering uses the k smoothest eigenvectors for k clusters. The trivial
-    one is already left out of 'coords', so we take the first k - 1 columns
-    (for 2 clusters that is just u2, the classic Fiedler split). Rows are scaled to length 1.
+    The smallest eigenvalues of L_sym are 1 minus the largest of S = D^-1/2 W D^-1/2,
+    and scipy's eigsh finds the largest ones of a sparse matrix quickly.
     """
-    node_count = len(coords)
-    count = min(count or auto_cluster_count(node_count), node_count)
-    if node_count == 0 or coords.shape[1] == 0 or count < 2:
-        return np.zeros(node_count, dtype=int)
-    coords = coords[:, :count - 1]  # high-frequency eigenvectors would hide the communities
-    norms = np.linalg.norm(coords, axis=1, keepdims=True)
-    points = coords / np.where(norms == 0, 1, norms)
-    return kmeans(points, count)
+    from scipy.sparse import coo_matrix, diags
+    from scipy.sparse.linalg import eigsh
+    rows = [i for i, j, w in edges] + [j for i, j, w in edges]
+    cols = [j for i, j, w in edges] + [i for i, j, w in edges]
+    weights = [w for i, j, w in edges] * 2
+    matrix = coo_matrix((weights, (rows, cols)), shape=(node_count, node_count)).tocsr()
+    scale = diags(inverse_sqrt(degrees(edges, node_count)))
+    values, vectors = eigsh(scale @ matrix @ scale, k=dims + 1, which="LA",
+                            v0=np.ones(node_count))  # fixed start vector: same result every run
+    order = np.argsort(-values)
+    return vectors[:, order][:, 1:], 1.0 - values[order][1:]
+
+
+def has_scipy():
+    """True if the optional scipy package is installed."""
+    try:
+        import scipy.sparse.linalg  # noqa: F401
+        return True
+    except ImportError:
+        return False
+
+
+def compute_spectral(edges, node_count, dims, dense_limit=DENSE_LIMIT):
+    """Pick the dense or the sparse solver. Returns (coords, eigenvalues)."""
+    dims = min(dims, node_count - 1)
+    if node_count > dense_limit and dims + 1 < node_count and has_scipy():
+        return sparse_spectral_coords(edges, node_count, dims)
+    return spectral_coords(normalized_laplacian(build_matrix(edges, node_count)), dims)

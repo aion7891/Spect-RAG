@@ -40,6 +40,49 @@ def add_table(units, table_lines, max_tokens):
         units.append(table)
 
 
+def halve_until_fits(text, max_tokens):
+    """Cut text in half between words until every piece fits (exact token counts)."""
+    words = text.split()
+    if len(words) < 2 or count_tokens(text) <= max_tokens:
+        return [text]
+    middle = len(words) // 2
+    return (halve_until_fits(" ".join(words[:middle]), max_tokens)
+            + halve_until_fits(" ".join(words[middle:]), max_tokens))
+
+
+def split_long_unit(unit, max_tokens):
+    """Last resort for one 'sentence' longer than a whole chunk (common in PDF text that has
+    no full stops): cut it between words.
+
+    Words are added while their token counts fit; the exact count of each piece is then
+    checked, because tokens of joined words can differ slightly from the sum of the parts.
+    """
+    pieces = []
+    words = []
+    size = 0
+    for word in unit.split():
+        word_size = count_tokens(" " + word)
+        if words and size + word_size > max_tokens:
+            pieces.append(" ".join(words))
+            words, size = [], 0
+        words.append(word)
+        size += word_size
+    if words:
+        pieces.append(" ".join(words))
+    return [part for piece in pieces for part in halve_until_fits(piece, max_tokens)]
+
+
+def fit_units(units, max_tokens):
+    """Make sure no single unit is longer than max_tokens."""
+    fitted = []
+    for unit in units:
+        if count_tokens(unit) > max_tokens:
+            fitted.extend(split_long_unit(unit, max_tokens))
+        else:
+            fitted.append(unit)
+    return fitted
+
+
 def split_units(text, max_tokens):
     """Return the text as a list of sentences and tables, in their original order."""
     units = []

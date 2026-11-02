@@ -308,7 +308,8 @@ Spect-RAG/
 │           ├── edges_content.py    # semantic, entity, utility signals
 │           ├── edges.py            # build all six signals
 │           ├── graph.py            # fuse weights, adjacency, neighbours
-│           ├── spectral.py         # Laplacian, eigenvectors, clusters
+│           ├── spectral.py         # Laplacian, eigenvectors (dense or sparse)
+│           ├── clusters.py         # spectral clusters (k-means)
 │           ├── store.py            # save/load the index
 │           ├── bm25.py             # BM25 keyword scoring
 │           ├── seeding.py          # dense/BM25/utility scores + RRF
@@ -349,7 +350,8 @@ Every function is meant to be about 5–20 lines and do one job.
 | `utils/edges_content.py` | `semantic_edges()`, `entity_edges()`, `utility_edges()`, `knn_edges()` | Content signals |
 | `utils/edges.py` | `build_edge_signals()` | Six lists of `[i, j, weight]` |
 | `utils/graph.py` | `active_weights()`, `fuse_edges()`, `build_matrix()`, `neighbors()`, `degrees()` | Weighted sum, threshold `τ`, adjacency matrix |
-| `utils/spectral.py` | `normalized_laplacian()`, `spectral_coords()`, `cluster_coords()`, `kmeans()` | Eq. 11–13 plus spectral clusters |
+| `utils/spectral.py` | `normalized_laplacian()`, `spectral_coords()`, `sparse_spectral_coords()`, `compute_spectral()` | Eq. 11–13 |
+| `utils/clusters.py` | `cluster_coords()`, `kmeans()` | Spectral clusters for ClusterGain |
 | `utils/store.py` | `save_index()`, `load_index()` | Any dict → `.npy` (arrays) and `.json` (everything else) |
 | `utils/bm25.py` | `build_bm25()`, `bm25_scores()` | Classic BM25 in pure Python |
 | `utils/seeding.py` | `dense_scores()`, `utility_scores()`, `rrf_fuse()`, `hybrid_relevance()` | Online stage 1 |
@@ -381,6 +383,7 @@ Every function is meant to be about 5–20 lines and do one job.
 | `token_budget` | 12000 | ✅ |
 | `semantic_k` (k_g) | 10 | ⚠️ |
 | `edge_threshold` (τ) | 0.05 | ⚠️ |
+| `graph_k` | 10: each chunk keeps at most its 10 strongest graph edges (D35) | ⚠️ |
 | `rrf_k` | 60 (the usual RRF constant) | ⚠️ |
 | `alpha` (re-score blend) | 0.3 | ⚠️ |
 | `ppr_beta` / `ppr_steps` | 0.15 / 30 | ⚠️ |
@@ -407,7 +410,7 @@ Every function is meant to be about 5–20 lines and do one job.
 | D9 | Auto-calibrated edge weights | Fixed priors only (config 1 or 2) | The paper does not describe the calibration method |
 | D10 | Heat-kernel diffusion `exp(−tL)` | PPR iteration (Eq. 18) by default | The paper names PPR in Table 2 and Algorithm 1 |
 | D11 | "Spectral eigenspace closeness" (not defined) | Cosine between a candidate's `z` and the relevance-weighted centre of the seeds' `z`, mapped to [0, 1] | Simplest reading of the term |
-| D12 | ClusterGain needs spectral clusters (method not given) | Normalised spectral clustering (Ng–Jordan–Weiss, as in von Luxburg [5]): for k clusters, k-means on the first k − 1 non-trivial coordinates (with the trivial one this makes the k smoothest eigenvectors), rows scaled to length 1. Start centres chosen far apart, so no randomness | Using all 32 coordinates mixes in high-frequency eigenvectors and hides communities (we saw this on the sample docs) |
+| D12 | ClusterGain needs spectral clusters (method not given) | Normalised spectral clustering (Ng–Jordan–Weiss, as in von Luxburg [5]): for k clusters, take the trivial eigenvector (`√degree`, rebuilt from the degrees) plus the first k − 1 non-trivial coordinates, i.e. the k smoothest eigenvectors; scale rows to length 1; k-means. Start centres chosen far apart, so no randomness | Using all 32 coordinates mixes in high-frequency eigenvectors and hides communities (seen on the sample docs). Leaving out the trivial vector makes chunks near `u2 = 0` fall to a random side |
 | D13 | Isolated nodes (degree 0) make `D^-1/2` undefined | Use 0 for those entries (their row of `L_sym` is the identity row) | Keeps the Laplacian well defined |
 | D14 | Alternative selectors (`mmr`, `protected_mmr`, `anchor_expand_ce`) | Not implemented; only the default selector | Not described in enough detail |
 | D15 | Benchmarks (MultiHopRAG, UltraDomain), LLM judge | Not reproduced; we include Recall@k, MRR, EM, F1 helpers and a toy evaluation | Needs datasets and paid APIs |
@@ -415,7 +418,7 @@ Every function is meant to be about 5–20 lines and do one job.
 | D17 | Semantic breaks use `nomic-embed-text` sentence vectors | `split_by_meaning()` accepts any `embed_fn`; without one it uses word-count cosine. Ties at the percentile count as breaks unless all distances are equal | Phase 3 comes before the embedder; word overlap often gives many distances of exactly 1.0 |
 | D18 | Chunks < 32 tokens are concatenated with the previous chunk | Merged only if the result stays within `chunk_tokens`, so a small chunk can survive when chunks are tiny (e.g. 60) | The maximum chunk size is treated as the harder limit |
 | D19 | Overlap always present | Dropped for the next chunk when overlap + the next unit would go over the limit | Keeps every chunk within `chunk_tokens` |
-| D20 | Section headings | The heading line is kept as the first line of its section's first chunk; a heading with no body text (e.g. `## 2. Products`) gives no chunk but stays in its children's section path | Keeps heading words searchable without empty chunks |
+| D20 | Section headings | The heading line is kept as the first line of its section's first chunk. A heading with no body text of its own (e.g. `## 2. Products`) is carried forward and put in front of the next section's heading; headings at the very end are added to the last section. In Markdown files only `#` headings count, so numbered lists (`1. Install`) stay normal text | No line is ever lost, there are no empty chunks, and heading words stay searchable |
 | D21 | Numbered headings | A line like `2.1 Datasets` counts as a heading only if it starts with a capital letter after the number, has ≤ 10 words, and does not end in `.`, `:`, `,` or `;` | Avoids treating numbered list items as headings |
 | D22 | FAISS `IndexFlatIP` file | Vectors saved as `embeddings.npy` (float32, L2-normalised); search is `embeddings @ query` | Same exact scores, one fewer dependency |
 | D23 | `chunks.pkl` (pickle) | `chunks.json` (readable), loaded with `np.load(allow_pickle=False)` for arrays | Readable files, and loading an index never runs pickled code |
@@ -429,6 +432,10 @@ Every function is meant to be about 5–20 lines and do one job.
 | D31 | Neo4j write with per-signal attributes | `signals.json` keeps every signal's own edge list; `edges.json` holds the fused graph | Same information, readable without a database |
 | D32 | Eigen-solver | `numpy.linalg.eigh` on the dense `n × n` Laplacian | Exact and simple; fine for thousands of chunks |
 | D33 | Small corpora | `spectral_dims` is capped at `n − 1` (the number of non-trivial eigenvectors) | A graph with `n` nodes has only `n − 1` of them |
+| D34 | "Never cuts mid-sentence" | A single "sentence" longer than a whole chunk (common in PDF text without full stops) is cut between words, as a last resort, with exact token checks | Later phases fill a token budget, so every chunk must really be ≤ `chunk_tokens` |
+| D35 | Sparse graph, `\|E\| = O(k_g n)` (Section 3.2.2), Table 4 shows 0.8–5.7 edges per node | After `τ`, each chunk keeps at most its `graph_k = 10` strongest edges (an edge survives if it is in the top 10 of either end). Adjacency edges are always kept, so each document stays one connected chain | Without this, long sections (all pairs weight 1.0) and common entities gave 144 edges per chunk on a 3,465-chunk test; with it, about 7 |
+| D36 | Entity edges | An entity in more than 5% of the chunks (and more than 20 chunks) adds no entity edges | It does not tell chunks apart (like a stopword), and counting its pairs is `O(df²)`. Small corpora are never affected |
+| D37 | Large graphs | Above 2,000 chunks, if `scipy` is installed, eigenvectors come from `scipy.sparse.linalg.eigsh` on `D^-1/2 W D^-1/2` (its largest eigenvalues are `1 −` the smallest of `L_sym`) with a fixed start vector | The paper suggests approximate eigensolvers for scale (Section 7); results match the dense solver (tested) |
 
 ---
 
@@ -478,7 +485,8 @@ git clone <your-repo-url> && cd Spect-RAG
 python3 -m venv .venv && source .venv/bin/activate
 pip install -e .              # installs numpy
 pip install -e ".[dev]"       # adds pytest
-pip install -e ".[extras]"    # optional: tiktoken (exact token counts), pypdf (PDF files)
+pip install -e ".[extras]"    # optional: tiktoken (exact token counts), pypdf (PDF files),
+                              #           scipy (fast eigenvectors for > 2,000 chunks)
 
 # Option B: uv (installs everything, including the optional extras)
 uv sync --all-extras
@@ -525,12 +533,12 @@ Expected output with the default settings and `tiktoken` (shortened):
 chunk_tokens = 1200  overlap_tokens = 100
 8 chunks
 
-[0] aurora_labs.md #0  structural  109 tokens
+[0] aurora_labs.md #0  structural  113 tokens
     section: Aurora Labs > 1. History
-    starts : ## 1. History
-[1] aurora_labs.md #1  structural  47 tokens
+    starts : # Aurora Labs
+[1] aurora_labs.md #1  structural  53 tokens
     section: Aurora Labs > 2. Products > 2.1 Sensors
-    starts : ### 2.1 Sensors
+    starts : ## 2. Products
 ...
 [4] helios_energy.txt #0  semantic  45 tokens
     section: (no headings)
@@ -545,7 +553,8 @@ chunk_tokens = 1200  overlap_tokens = 100
 What this shows:
 
 - The Markdown files use **structural** mode and keep their section path. `# Aurora Labs` and
-  `## 2. Products` have no body text, so they give no chunk of their own but appear in the path.
+  `## 2. Products` have no body text of their own, so they are carried to the start of the next
+  section's chunk (`# Aurora Labs` / `## 1. History` ...). No line of a document is ever lost.
 - `helios_energy.txt` has no headings, so it uses **semantic** mode and breaks where the topic
   changes.
 - The 3-row product table stays inside chunk 2.
@@ -622,17 +631,17 @@ Actual output (offline, shortened). `n_clusters` is set to 3 in the demo:
 
 Files: chunks.json, edges.json, eigenvalues.npy, embeddings.npy, info.json, question_owners.json,
        question_vectors.npy, settings.json, signals.json, spectral.npy
-Smallest non-trivial eigenvalues: [0.515, 0.699, 1.059, 1.293]
+Smallest non-trivial eigenvalues: [0.512, 0.684, 1.059, 1.291]
 
 Chunk  cluster  spectral u2   section / start
-[0]    0       +0.203      aurora_labs.md: 1. History
+[0]    0       +0.198      aurora_labs.md: 1. History
 [1]    2       -0.324      aurora_labs.md: 2.1 Sensors
-[2]    2       -0.379      aurora_labs.md: 2.2 Software
-[3]    1       -0.032      aurora_labs.md: 3. Partnerships
-[4]    0       +0.571      helios_energy.txt: Helios Energy is a solar power
-[5]    0       +0.597      helios_energy.txt: It predicts how much energy a
-[6]    1       -0.022      river_valley_farming.md: Members
-[7]    1       -0.164      river_valley_farming.md: Irrigation
+[2]    2       -0.378      aurora_labs.md: 2.2 Software
+[3]    1       -0.029      aurora_labs.md: 3. Partnerships
+[4]    0       +0.573      helios_energy.txt: Helios Energy is a solar power
+[5]    0       +0.598      helios_energy.txt: It predicts how much energy a
+[6]    1       -0.025      river_valley_farming.md: Members
+[7]    1       -0.159      river_valley_farming.md: Irrigation
 ```
 
 What this shows:
@@ -767,8 +776,14 @@ chunking receives it as `embed_fn`.
 - Eigenvectors have an arbitrary sign (`u` and `−u` are both valid). Phase 8 only compares
   coordinates *between* chunks, so this does not matter, but the sign printed in the demo can flip
   if the graph changes.
-- Dense eigen-decomposition (`numpy.linalg.eigh`) is `O(n³)`. It is fine up to a few thousand
-  chunks; larger corpora would need `scipy.sparse.linalg.eigsh` (a possible later option).
+- Without `scipy`, the dense eigen-decomposition (`numpy.linalg.eigh`) is `O(n³)` in time and
+  `n²` in memory. That is fine up to a few thousand chunks. Install the extras (`scipy`) for
+  larger corpora; the sparse solver is used automatically above 2,000 chunks (D37).
+- `semantic_edges()` still compares every chunk with every other (`O(n²)` time, done in blocks
+  of 1,024 rows, so memory stays small). Approximate nearest-neighbour search would be needed for
+  millions of chunks.
+- A single "word" longer than `chunk_tokens` (e.g. a huge URL) cannot be cut and stays over the
+  limit.
 - Values marked ⚠️ in Section 9 are our guesses, not tuned values from the paper.
 
 ---
@@ -997,10 +1012,12 @@ flowchart TD
     P["ingest(path)"] --> MC["make_chunks()<br/>load_docs, chunk_documents(embed_fn),<br/>add_entities, add_references, add_utility_questions"]
     MC --> EM["embed(texts, kind='document')"]
     EM --> BS["build_edge_signals()<br/>6 lists"]
-    BS --> MG["make_graph()<br/>active_weights + fuse_edges (Eq. 10)"]
+    BS --> MG["make_graph()<br/>active_weights + fuse_edges (Eq. 10)<br/>+ keep_strongest (graph_k)"]
     MG --> MS["make_spectral()"]
-    MS --> BM["build_matrix() W"] --> NL["normalized_laplacian() L_sym (Eq. 11)"]
-    NL --> SC["spectral_coords() u2..u33 (Eq. 12-13)"] --> CC["cluster_coords() k-means"]
+    MS --> CS{"compute_spectral()<br/>n > 2000 and scipy?"}
+    CS -- no --> NL["normalized_laplacian() L_sym (Eq. 11)<br/>spectral_coords(): eigh"]
+    CS -- yes --> SP["sparse_spectral_coords(): eigsh"]
+    NL & SP --> CC["cluster_coords(degree)<br/>Ng-Jordan-Weiss k-means"]
     CC --> SV["save_index() + return info"]
 ```
 
@@ -1021,16 +1038,21 @@ The index folder now holds:
 | File | Function | What it does |
 |---|---|---|
 | `utils/graph.py` | `active_weights(edge_weights, signals)` | Sets the `α` of empty signals to 0 and rescales the rest to sum to 1. |
-| | `fuse_edges(signals, weights, threshold)` | `w_ij = Σ α_r · w_r,ij`, keeps `w_ij ≥ τ` (Eq. 10). |
-| | `build_matrix(edges, n)` | Symmetric `n × n` matrix `W`. |
+| | `fuse_edges(signals, weights, threshold)` | `w_ij = Σ α_r · w_r,ij`, keeps `w_ij ≥ τ` (and `> 0`) (Eq. 10). |
+| | `keep_strongest(edges, k, always)` | Each chunk keeps at most its `k` strongest edges; `always` pairs (adjacency) are never dropped (D35). |
+| | `build_matrix(edges, n)` | Symmetric `n × n` matrix `W` (only for the dense solver). |
 | | `neighbors(edges, n)` | `{node: {neighbour: weight}}` for graph walks in Phase 8. |
-| | `degrees(edges, n)` | Weighted degree, the sum of edge weights (paper Eq. 28). |
-| `utils/spectral.py` | `normalized_laplacian(W)` | `I − D^-1/2 W D^-1/2`, with 0 instead of `1/√0` for isolated nodes. |
-| | `spectral_coords(L, dims)` | `numpy.linalg.eigh` gives eigenvalues smallest first; skip the first (trivial) eigenvector and keep the next `dims`. |
-| | `auto_cluster_count(n)` | About `√(n/2)`, between 2 and `n`. |
+| | `degrees(edges, n)` | Weighted degree, the sum of edge weights (paper Eq. 28), straight from the edge list. |
+| `utils/spectral.py` | `inverse_sqrt(degree)` | `1/√degree`, with 0 for isolated nodes. |
+| | `normalized_laplacian(W)` | `I − D^-1/2 W D^-1/2` (Eq. 11). |
+| | `spectral_coords(L, dims)` | Dense: `numpy.linalg.eigh` gives eigenvalues smallest first; skip the first (trivial) eigenvector and keep the next `dims`. |
+| | `sparse_spectral_coords(edges, n, dims)` | Same result from a sparse matrix with `scipy`'s `eigsh` (D37). |
+| | `compute_spectral(edges, n, dims)` | Uses dense up to 2,000 chunks (or without `scipy`), sparse above. |
+| `utils/clusters.py` | `auto_cluster_count(n)` | About `√(n/2)`, between 2 and `n`. |
 | | `farthest_point_start(points, k)` | Deterministic k-means start: each new centre is the point farthest from the existing ones. |
 | | `kmeans(points, k)` | Assign each point to the nearest centre, move the centres, repeat until nothing changes. |
-| | `cluster_coords(coords, count)` | Normalised spectral clustering on the first `k − 1` coordinates. |
+| | `trivial_eigenvector(degree)` | `√degree / ‖√degree‖`, the first eigenvector of `L_sym`. |
+| | `cluster_coords(coords, count, degree)` | Ng–Jordan–Weiss: trivial vector + first `k − 1` coordinates, rows scaled to length 1, k-means (D12). |
 | `ingestion.py` | `SpectRAGIngestion(index_dir, settings, entity_fn, question_fn)` | Stores the settings, builds the embedder, and keeps the optional helper functions. |
 | | `make_chunks(path)` | Load → chunk (with the embedder for semantic breaks) → entities, references, questions. |
 | | `make_graph(signals)` | Weights used + fused edges. |
@@ -1038,8 +1060,9 @@ The index folder now holds:
 | | `ingest(path)` | Runs everything, writes the index folder, returns `info`. |
 | `__init__.py` | — | Now exports `SpectRAGIngestion`. |
 | `examples/ingest_example.py` | `main()` | Runs `ingest()` and prints the summary, clusters, `u2` and the strongest edges. |
-| `tests/test_graph.py` | 4 tests | Weight sharing (and the all-empty case), weighted sum + threshold, matrix / neighbours / degrees. |
-| `tests/test_spectral.py` | 6 tests | Laplacian is symmetric with eigenvalues in [0, 2]; isolated nodes; trivial eigenvector skipped; `u2` separates two triangles; clusters match communities; k-means and cluster-count rules. |
+| `tests/test_graph.py` | 6 tests | Weight sharing (and the all-empty case), weighted sum + threshold, matrix / neighbours / degrees, `keep_strongest` degree bound and `always` edges. |
+| `tests/test_spectral.py` | 6 tests | Laplacian is symmetric with eigenvalues in [0, 2]; isolated nodes; trivial eigenvector skipped; `u2` separates two triangles; tiny graphs; the sparse solver matches the dense one (eigenvalues, and `L u = λ u`). |
+| `tests/test_clusters.py` | 4 tests | Two and three communities found, with and without the trivial vector; the trivial vector really has eigenvalue 0; k-means and cluster-count rules. |
 | `tests/test_ingestion.py` | 7 tests | Integration: all 10 index files written with matching shapes, valid edges ≥ `τ`, utility weight shared, `question_fn` and `entity_fn` used, settings applied, the same index every run, an empty folder raises. |
 
 Run the Phase 6 tests:
@@ -1047,3 +1070,46 @@ Run the Phase 6 tests:
 ```bash
 pytest -v tests/test_graph.py tests/test_spectral.py tests/test_ingestion.py
 ```
+
+### Review after Phase 6: correctness and performance check
+
+Before starting the online half, every module from Phases 2–6 was re-read against the paper and
+tested on a larger corpus: the paper PDF, both as 25 separate pages and as 15 identical copies
+(3,465 chunks). These problems were found and fixed:
+
+| # | Problem | Where | Fix |
+|---|---|---|---|
+| 1 | **Lines of text were lost**: in a Markdown file, `1. Install Python` was taken as a heading; its "section" had no body, so the line disappeared | `sections.py` | Markdown files use only `#` headings; headings without text are carried forward, never dropped (D20) |
+| 2 | Chunks over `chunk_tokens`: the `\n` between units was not counted (257 > 256), and PDF "sentences" without full stops produced **635-token chunks at a 256 limit** | `chunker.py`, `units.py` | Count the newline; cut over-long units between words with exact checks (D34); merge small chunks only when the exact joined count fits |
+| 3 | `Porto. Évora ...` was not split into sentences (`[A-Z]` misses accented capitals) | `tokens.py` | Accept `À–Þ` capitals |
+| 4 | Clusters ignored the trivial eigenvector (not true Ng–Jordan–Weiss) | `clusters.py` | Rebuild `√degree` and include it (D12) |
+| 5 | **Graph far too dense**: 144 edges per chunk (paper: ≤ 5.7) from section cliques and common entities | `graph.py`, `edges_content.py` | Per-chunk top-`graph_k` (D35), always keep adjacency, skip very common entities (D36) |
+| 6 | Zero-weight edges kept when `τ = 0` | `graph.py` | Keep only `w > 0` |
+
+Performance changes, all giving the same results (checked by tests):
+
+| Where | Before | After |
+|---|---|---|
+| `knn_edges` | full `n × n` matrix in memory; full sort of every row | blocks of 1,024 rows; `argpartition` finds the top k |
+| `section_edges` | every pair of chunks in the corpus | only pairs inside the same document |
+| `citation_edges` | every reference scanned all chunks | two lookup tables built once |
+| `entity_edges` | a set intersection for every candidate pair | shared entities counted while pairs are found |
+| `degrees` | built an `n × n` matrix to sum it | one pass over the edges |
+| spectral | dense `O(n³)` only | sparse `eigsh` above 2,000 chunks if `scipy` is installed (D37) |
+| `pack_units` | each sentence tokenized about 3 times | once |
+| `hash_embed` | md5 for every word occurrence | md5 once per distinct word |
+
+Measured on the 3,465-chunk test (offline hash embedder):
+
+| | Before review | After review |
+|---|---|---|
+| Ingestion time | 10.6 s | **1.7 s** |
+| Graph edges | 458,704 (≈ 141 per chunk) | **23,848 (≈ 6.9 per chunk)** |
+| Chunks over `chunk_tokens` | yes (up to 635 at 256) | **none** |
+| Disconnected parts | — | none (adjacency always kept) |
+
+The 8-chunk sample corpus gives the same edges and the same three clusters as before. The only
+change there is that carried headings now appear at the start of chunks.
+
+Tests: **114 passed** with all extras, **110 passed** on a minimal install (`numpy` + `pytest`
+only; the `pypdf` and `scipy` tests are skipped), and the opt-in live LLM test passes.

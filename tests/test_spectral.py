@@ -1,12 +1,24 @@
 import numpy as np
+import pytest
 
 from spectrag.utils.graph import build_matrix
-from spectrag.utils.spectral import (auto_cluster_count, cluster_coords, kmeans,
-                                     normalized_laplacian, spectral_coords)
+from spectrag.utils.spectral import (compute_spectral, normalized_laplacian, spectral_coords,
+                                     sparse_spectral_coords)
 
 # Two triangles (0,1,2) and (3,4,5) joined by one weak bridge edge 2-3.
 TWO_COMMUNITIES = [[0, 1, 1.0], [0, 2, 1.0], [1, 2, 1.0],
                    [3, 4, 1.0], [3, 5, 1.0], [4, 5, 1.0], [2, 3, 0.1]]
+
+
+def random_graph(node_count, edge_count, seed):
+    rng = np.random.default_rng(seed)
+    edges = {}
+    for _ in range(edge_count):
+        i, j = sorted(rng.choice(node_count, 2, replace=False).tolist())
+        edges[(i, j)] = float(rng.uniform(0.05, 1))
+    for i in range(node_count - 1):                                  # keep it connected
+        edges.setdefault((i, i + 1), 0.5)
+    return [[i, j, w] for (i, j), w in sorted(edges.items())]
 
 
 def test_laplacian_properties():
@@ -38,21 +50,25 @@ def test_spectral_coords_skip_trivial_and_separate_communities():
 def test_spectral_coords_tiny_graphs():
     coords, values = spectral_coords(normalized_laplacian(np.zeros((1, 1))), 32)
     assert coords.shape == (1, 0) and len(values) == 0
+    coords, values = compute_spectral([], 1, 32)
+    assert coords.shape == (1, 0)
 
 
-def test_clusters_match_communities():
-    laplacian = normalized_laplacian(build_matrix(TWO_COMMUNITIES, 6))
-    coords, _ = spectral_coords(laplacian, 32)
-    labels = cluster_coords(coords, count=2)
-    assert len(set(labels[:3])) == 1 and len(set(labels[3:])) == 1
-    assert labels[0] != labels[3]
+def test_sparse_solver_matches_dense():
+    pytest.importorskip("scipy")
+    edges = random_graph(300, 900, seed=0)
+    dense_coords, dense_values = spectral_coords(normalized_laplacian(build_matrix(edges, 300)), 8)
+    sparse_coords, sparse_values = sparse_spectral_coords(edges, 300, 8)
+    assert np.allclose(dense_values, sparse_values, atol=1e-6)
+    laplacian = normalized_laplacian(build_matrix(edges, 300))
+    for column, value in zip(sparse_coords.T, sparse_values):   # L u = lambda u
+        assert np.allclose(laplacian @ column, value * column, atol=1e-5)
 
 
-def test_kmeans_and_cluster_count():
-    points = np.array([[0, 0], [0, 0.1], [5, 5], [5, 5.1]])
-    labels = kmeans(points, 2)
-    assert labels[0] == labels[1] != labels[2] == labels[3]
-    assert auto_cluster_count(8) == 2
-    assert auto_cluster_count(200) == 10
-    assert auto_cluster_count(1) == 1
-    assert list(cluster_coords(np.zeros((3, 0)))) == [0, 0, 0]
+def test_compute_spectral_uses_sparse_above_the_limit():
+    pytest.importorskip("scipy")
+    edges = random_graph(120, 300, seed=3)
+    dense = compute_spectral(edges, 120, 6, dense_limit=1000)
+    sparse = compute_spectral(edges, 120, 6, dense_limit=50)
+    assert np.allclose(dense[1], sparse[1], atol=1e-6)
+    assert np.allclose(np.abs(dense[0]), np.abs(sparse[0]), atol=1e-4)

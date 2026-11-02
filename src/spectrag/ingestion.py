@@ -9,11 +9,12 @@ from spectrag.utils.chunker import chunk_documents
 from spectrag.utils.edges import build_edge_signals, count_edges
 from spectrag.utils.embedder import make_embedder
 from spectrag.utils.entities import add_entities
-from spectrag.utils.graph import active_weights, build_matrix, fuse_edges
+from spectrag.utils.clusters import cluster_coords
+from spectrag.utils.graph import active_weights, degrees, fuse_edges, keep_strongest
 from spectrag.utils.loader import load_docs
 from spectrag.utils.questions import add_utility_questions
 from spectrag.utils.references import add_references
-from spectrag.utils.spectral import cluster_coords, normalized_laplacian, spectral_coords
+from spectrag.utils.spectral import compute_spectral
 from spectrag.utils.store import save_index
 
 
@@ -39,16 +40,16 @@ class SpectRAGIngestion:
         return chunks
 
     def make_graph(self, signals):
-        """Fuse the signals (Eq. 10) and drop weak edges. Returns (edges, weights used)."""
+        """Fuse the signals (Eq. 10), drop weak edges, keep each chunk's strongest graph_k."""
         weights = active_weights(self.settings["edge_weights"], signals)
         edges = fuse_edges(signals, weights, self.settings["edge_threshold"])
-        return edges, weights
+        chain = [(i, j) for i, j, _ in signals["adjacency"]]  # keep documents connected
+        return keep_strongest(edges, self.settings["graph_k"], always=chain), weights
 
     def make_spectral(self, edges, node_count):
         """Laplacian (Eq. 11) -> spectral coordinates (Eq. 12-13) -> clusters."""
-        laplacian = normalized_laplacian(build_matrix(edges, node_count))
-        coords, eigenvalues = spectral_coords(laplacian, self.settings["spectral_dims"])
-        clusters = cluster_coords(coords, self.settings["n_clusters"])
+        coords, eigenvalues = compute_spectral(edges, node_count, self.settings["spectral_dims"])
+        clusters = cluster_coords(coords, self.settings["n_clusters"], degrees(edges, node_count))
         return coords, eigenvalues, clusters
 
     def ingest(self, path):

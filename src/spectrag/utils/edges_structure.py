@@ -39,30 +39,48 @@ def section_weight(path_a, path_b):
     return shared / longest
 
 
+def group_by_doc(chunks):
+    """{doc_id: [chunks of that document]}."""
+    groups = {}
+    for chunk in chunks:
+        groups.setdefault(chunk["doc_id"], []).append(chunk)
+    return groups
+
+
 def section_edges(chunks):
     """Link chunks of the same document whose section paths are closely related."""
     edges = {}
-    for a_index, a in enumerate(chunks):
-        for b in chunks[a_index + 1:]:
-            if a["doc_id"] == b["doc_id"]:
+    for group in group_by_doc(chunks).values():  # only compare inside one document
+        for a_index, a in enumerate(group):
+            for b in group[a_index + 1:]:
                 add_edge(edges, a["id"], b["id"], section_weight(a["section"], b["section"]))
     return as_list(edges)
 
 
-def reference_targets(chunk, ref, chunks):
-    """The chunks a single reference points to."""
+def reference_lookups(chunks):
+    """Two lookup tables, built once: (doc_id, section number) -> ids, file name -> chunks."""
+    by_section = {}
+    by_file = {}
+    for chunk in chunks:
+        for number in section_numbers(chunk["section"]):
+            by_section.setdefault((chunk["doc_id"], number), []).append(chunk["id"])
+        by_file.setdefault(chunk["doc_id"].split("/")[-1], []).append(chunk)
+    return by_section, by_file
+
+
+def reference_targets(chunk, ref, by_section, by_file):
+    """The chunk ids a single reference points to."""
     if ref["type"] == "section":
-        return [c for c in chunks if c["doc_id"] == chunk["doc_id"]
-                and ref["target"] in section_numbers(c["section"])]
-    return [c for c in chunks if c["doc_id"].split("/")[-1] == ref["target"]
-            and c["doc_id"] != chunk["doc_id"]]
+        return by_section.get((chunk["doc_id"], ref["target"]), [])
+    return [c["id"] for c in by_file.get(ref["target"], []) if c["doc_id"] != chunk["doc_id"]]
 
 
 def citation_edges(chunks):
     """Weight 1.0 from a chunk to every chunk its references point to."""
+    by_section, by_file = reference_lookups(chunks)
     edges = {}
     for chunk in chunks:
         for ref in chunk.get("references", []):
-            for target in reference_targets(chunk, ref, chunks):
-                add_edge(edges, chunk["id"], target["id"], 1.0)
+            for target in reference_targets(chunk, ref, by_section, by_file):
+                add_edge(edges, chunk["id"], target, 1.0)
     return as_list(edges)

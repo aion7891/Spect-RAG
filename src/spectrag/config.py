@@ -41,6 +41,7 @@ DEFAULTS = {
     "edge_weights": EDGE_WEIGHTS_CONFIG_1,
     "semantic_k": 10,            # assumed
     "edge_threshold": 0.05,      # assumed
+    "graph_k": 10,               # assumed: each chunk keeps at most its 10 strongest edges
     # --- Spectral (paper) ---
     "spectral_dims": 32,
     "n_clusters": None,          # assumed: None means about sqrt(n / 2) clusters

@@ -22,8 +22,30 @@ def fuse_edges(signals, weights, threshold):
         alpha = weights.get(name, 0.0)
         for i, j, weight in edges:
             total[(i, j)] = total.get((i, j), 0.0) + alpha * weight
-    kept = [[i, j, round(w, 4)] for (i, j), w in sorted(total.items()) if w >= threshold]
+    kept = [[i, j, round(w, 4)] for (i, j), w in sorted(total.items())
+            if w > 0 and w >= threshold]
     return kept
+
+
+def keep_strongest(edges, k, always=()):
+    """Keep an edge only if it is among the k strongest edges of at least one of its chunks.
+
+    This keeps |E| <= k * n, as the paper requires (|E| = O(k_g n), Section 3.2.2), even when
+    a long section or a common entity would otherwise link every chunk to every other chunk.
+    Pairs in 'always' (the adjacency edges) are never dropped, so each document stays connected.
+    """
+    always = {(i, j) for i, j in always}
+    by_node = {}  # node -> [(weight, edge number), ...]
+    keep = set()
+    for number, (i, j, weight) in enumerate(edges):
+        by_node.setdefault(i, []).append((weight, number))
+        by_node.setdefault(j, []).append((weight, number))
+        if (i, j) in always:
+            keep.add(number)
+    for items in by_node.values():
+        items.sort(key=lambda item: (-item[0], item[1]))  # strongest first, ties by order
+        keep.update(number for _, number in items[:k])
+    return [edges[number] for number in sorted(keep)]
 
 
 def build_matrix(edges, node_count):
@@ -46,4 +68,8 @@ def neighbors(edges, node_count):
 
 def degrees(edges, node_count):
     """Weighted degree of every node: the sum of its edge weights (paper Eq. 28)."""
-    return build_matrix(edges, node_count).sum(axis=1)
+    degree = np.zeros(node_count)
+    for i, j, weight in edges:
+        degree[i] += weight
+        degree[j] += weight
+    return degree

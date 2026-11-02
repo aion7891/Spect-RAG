@@ -1,8 +1,10 @@
 from pathlib import Path
 
+import pytest
+
 from spectrag.config import make_settings
 from spectrag.utils.chunker import chunk_documents, merge_small_chunks, pack_units, take_overlap
-from spectrag.utils.loader import load_docs
+from spectrag.utils.loader import load_docs, read_file
 from spectrag.utils.tokens import count_tokens
 
 EXAMPLES = Path(__file__).parent.parent / "examples" / "docs"
@@ -35,8 +37,9 @@ def test_no_overlap_when_zero():
 
 
 def test_overlap_never_copies_whole_chunk_or_tables():
-    assert take_overlap(["only one"], 100) == []
-    assert take_overlap(["a.", "| t | 1 |", "b."], 100) == ["b."]
+    assert take_overlap([0], ["only one"], [3], 100) == []
+    units = ["a.", "| t | 1 |", "b."]
+    assert take_overlap([0, 1, 2], units, [2, 6, 2], 100) == [2]    # stops at the table
 
 
 def test_merge_small_chunks_joins_previous():
@@ -47,9 +50,29 @@ def test_merge_small_chunks_joins_previous():
 
 
 def test_merge_never_exceeds_max():
-    chunks = [{"text": "a", "tokens": 50}, {"text": "b", "tokens": 20}, {"text": "c", "tokens": 10}]
+    # Sizes chosen so the test holds with tiktoken and with the word estimate.
+    texts = [" ".join(["alpha"] * 45), " ".join(["beta"] * 20), " ".join(["gamma"] * 8)]
+    chunks = [{"text": t, "tokens": count_tokens(t)} for t in texts]
     merged = merge_small_chunks(chunks, 32, 60)
-    assert [c["text"] for c in merged] == ["a", "b\nc"]   # 'b' cannot join 'a' (70 > 60)
+    assert [c["text"] for c in merged] == [texts[0], texts[1] + "\n" + texts[2]]
+    assert all(c["tokens"] == count_tokens(c["text"]) <= 60 for c in merged)
+
+
+def test_long_unit_is_cut_between_words():
+    long_sentence = " ".join("word%d" % i for i in range(300))     # no full stop at all
+    chunks = pack_units([long_sentence], 50, 10)
+    assert len(chunks) > 1
+    assert all(count_tokens(chunk) <= 50 for chunk in chunks)
+    assert " ".join(chunks).split() == long_sentence.split()        # no word lost or cut
+
+
+def test_paper_pdf_chunks_respect_limit():
+    pytest.importorskip("pypdf")
+    text = read_file(Path(__file__).parent.parent / "docs" / "2610.36991v2.pdf")
+    for size, overlap in [(256, 64), (60, 20)]:
+        settings = make_settings({"chunk_tokens": size, "overlap_tokens": overlap})
+        chunks = chunk_documents([{"doc_id": "paper", "text": text}], settings)
+        assert max(chunk["tokens"] for chunk in chunks) <= size
 
 
 def test_chunks_never_exceed_limit_on_sample_docs():

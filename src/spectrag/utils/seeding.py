@@ -8,6 +8,7 @@ is also returned for every chunk, because later stages need it.
 import numpy as np
 
 from spectrag.utils.bm25 import bm25_scores
+from spectrag.utils.vector_index import search_vectors
 
 
 def dense_scores(embeddings, query_vector):
@@ -69,14 +70,31 @@ def hybrid_relevance(dense, lexical, bm25_weight):
     return (1 - bm25_weight) * min_max(dense) + bm25_weight * min_max(lexical)
 
 
-def find_seeds(query, query_vector, index, bm25, settings):
-    """Run stage 1. Returns the seed ids plus every score, so each step can be inspected."""
+def approximate_dense(vector_index, query_vector, chunk_count, top_n):
+    """Dense scores from a FAISS/HNSW index: exact values for the top_n chunks; every other
+    chunk gets the lowest of those values. Returns (scores, ranking of the top_n)."""
+    scores, ids = search_vectors(vector_index, query_vector, top_n)
+    keep = ids[0] >= 0
+    ids, scores = ids[0][keep], scores[0][keep]
+    dense = np.full(chunk_count, float(scores.min()) if len(scores) else 0.0)
+    dense[ids] = scores
+    return dense, ids.tolist()
+
+
+def find_seeds(query, query_vector, index, bm25, settings, vector_index=None):
+    """Run stage 1. Returns the seed ids plus every score, so each step can be inspected.
+    With an approximate vector index, dense search only looks at the top dense_top_n chunks."""
     chunk_count = len(index["chunks"])
     owners = [int(owner) for owner in index["question_owners"]]  # list or saved array
-    dense = dense_scores(index["embeddings"], query_vector)
+    if vector_index is not None and vector_index["backend"] != "exact":
+        dense, dense_ranking = approximate_dense(vector_index, query_vector, chunk_count,
+                                                 settings["dense_top_n"])
+    else:
+        dense = dense_scores(index["embeddings"], query_vector)
+        dense_ranking = ranking(dense)
     lexical = bm25_scores(bm25, query, settings["bm25_k1"], settings["bm25_b"])
     utility = utility_scores(index["question_vectors"], owners, query_vector, chunk_count)
-    rankings = [ranking(dense), ranking(lexical, keep=lexical > 0)]
+    rankings = [dense_ranking, ranking(lexical, keep=lexical > 0)]
     if owners:  # utility questions exist only when an LLM made them at ingestion
         has_questions = np.zeros(chunk_count, dtype=bool)
         has_questions[owners] = True

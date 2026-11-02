@@ -9,6 +9,7 @@ import numpy as np
 
 from spectrag.utils.edge_list import add_edge, as_list
 from spectrag.utils.embedder import normalize
+from spectrag.utils.vector_index import search_vectors
 
 # An entity found in more than 1% of the chunks (and more than 20 chunks) is too common to
 # say two chunks are related, like a stopword. Skipping it also avoids n x n pair counting.
@@ -37,8 +38,25 @@ def knn_edges(vectors, k, block_size=1024):
     return as_list(edges)
 
 
-def semantic_edges(embeddings, k):
-    """Semantic signal: k-nearest-neighbour cosine graph over chunk embeddings."""
+def ann_knn_edges(vector_index, k):
+    """Same as knn_edges, but the neighbours come from an approximate index (FAISS/HNSW)."""
+    edges = {}
+    scores, ids = search_vectors(vector_index, vector_index["vectors"], k + 1)  # +1: self
+    for i in range(len(ids)):
+        found = 0
+        for score, j in zip(scores[i], ids[i]):
+            if j < 0 or j == i or found == k:
+                continue
+            add_edge(edges, i, int(j), max(0.0, float(score)))
+            found += 1
+    return as_list(edges)
+
+
+def semantic_edges(embeddings, k, vector_index=None):
+    """Semantic signal: k-nearest-neighbour cosine graph over chunk embeddings.
+    With an approximate vector index the neighbours are found in about O(n log n)."""
+    if vector_index is not None and vector_index["backend"] != "exact":
+        return ann_knn_edges(vector_index, k)
     return knn_edges(normalize(embeddings), k)
 
 

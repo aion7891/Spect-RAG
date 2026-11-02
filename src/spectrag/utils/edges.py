@@ -14,7 +14,7 @@ from spectrag.utils.graph import keep_strongest
 SIGNALS = ["semantic", "adjacency", "section", "entity", "utility", "citation"]
 
 
-def build_edge_signals(chunks, embeddings, embed, settings):
+def build_edge_signals(chunks, embeddings, embed, settings, vector_index=None):
     """Return ({signal name: [[i, j, weight], ...]}, question_vectors, question_owners).
 
     Section and entity signals can link many chunks to each other (a long section, a name
@@ -23,7 +23,7 @@ def build_edge_signals(chunks, embeddings, embed, settings):
     k = settings["semantic_k"]
     question_vectors, owners = embed_questions(chunks, embed)
     signals = {
-        "semantic": semantic_edges(embeddings, k),
+        "semantic": semantic_edges(embeddings, k, vector_index),
         "adjacency": adjacency_edges(chunks),
         "section": keep_strongest(section_edges(chunks), settings["graph_k"]),
         "entity": keep_strongest(entity_edges(chunks), settings["graph_k"]),

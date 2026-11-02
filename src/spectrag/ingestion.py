@@ -11,13 +11,12 @@ from spectrag.utils.chunker import chunk_documents
 from spectrag.utils.edges import build_edge_signals, count_edges
 from spectrag.utils.embedder import make_embedder
 from spectrag.utils.entities import add_entities
-from spectrag.utils.clusters import cluster_coords
-from spectrag.utils.graph import active_weights, degrees, fuse_edges, keep_strongest
+from spectrag.utils.graph_build import build_graph, build_spectral
 from spectrag.utils.loader import load_docs
 from spectrag.utils.questions import add_utility_questions
 from spectrag.utils.references import add_references
-from spectrag.utils.spectral import compute_spectral
 from spectrag.utils.store import edges_to_array, save_index
+from spectrag.utils.vector_index import build_vector_index, save_vector_index
 
 
 class SpectRAGIngestion:
@@ -42,16 +41,11 @@ class SpectRAGIngestion:
 
     def make_graph(self, signals):
         """Fuse the signals (Eq. 10), drop weak edges, keep each chunk's strongest graph_k."""
-        weights = active_weights(self.settings["edge_weights"], signals)
-        edges = fuse_edges(signals, weights, self.settings["edge_threshold"])
-        chain = [(i, j) for i, j, _ in signals["adjacency"]]  # keep documents connected
-        return keep_strongest(edges, self.settings["graph_k"], always=chain), weights
+        return build_graph(signals, self.settings)
 
     def make_spectral(self, edges, node_count):
         """Laplacian (Eq. 11) -> spectral coordinates (Eq. 12-13) -> clusters."""
-        coords, eigenvalues = compute_spectral(edges, node_count, self.settings["spectral_dims"])
-        clusters = cluster_coords(coords, self.settings["n_clusters"], degrees(edges, node_count))
-        return coords, eigenvalues, clusters
+        return build_spectral(edges, node_count, self.settings)
 
     def ingest(self, path):
         """Ingest a file or a folder (.txt, .md, .pdf), save the index, return a summary."""
@@ -64,8 +58,9 @@ class SpectRAGIngestion:
         """Ingest documents already in memory: [{"doc_id": ..., "text": ...}, ...]."""
         chunks = self.make_chunks(docs)
         embeddings = self.embed([chunk["text"] for chunk in chunks], kind="document")
+        vector_index = build_vector_index(embeddings, self.settings)  # exact, FAISS or HNSW
         signals, question_vectors, owners = build_edge_signals(
-            chunks, embeddings, self.embed, self.settings)
+            chunks, embeddings, self.embed, self.settings, vector_index)
         edges, weights = self.make_graph(signals)
         coords, eigenvalues, clusters = self.make_spectral(edges, len(chunks))
         for chunk, cluster in zip(chunks, clusters):
@@ -73,7 +68,7 @@ class SpectRAGIngestion:
         info = {"documents": len({c["doc_id"] for c in chunks}), "chunks": len(chunks),
                 "signal_edges": count_edges(signals), "graph_edges": len(edges),
                 "weights_used": {name: round(w, 4) for name, w in weights.items()},
-                "spectral_dims": coords.shape[1],
+                "spectral_dims": coords.shape[1], "ann_backend": vector_index["backend"],
                 "clusters": len(set(clusters.tolist()))}
         save_index(self.index_dir, {
             "chunks": chunks, "embeddings": embeddings, "edges": edges_to_array(edges),
@@ -83,4 +78,5 @@ class SpectRAGIngestion:
             "question_owners": np.asarray(owners, dtype=np.int64),
             "settings": self.settings, "info": info,
         })
+        save_vector_index(vector_index, self.index_dir)
         return info

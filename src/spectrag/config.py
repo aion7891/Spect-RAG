@@ -33,8 +33,10 @@ DEFAULTS = {
     "min_chunk_tokens": 32,
     "semantic_percentile": 90,
     # --- Embedding ---
-    "embedder": "hash",          # "hash" (offline) or "ollama" (nomic-embed-text)
-    "embed_dims": 768,           # paper: nomic-embed-text is 768-d
+    "embedder": "hash",          # "hash" (offline), "ollama" (nomic-embed-text), or your own function
+    "embed_dims": 768,           # paper: nomic-embed-text is 768-d (used by the hash embedder)
+    "ollama_model": "nomic-embed-text",
+    "ollama_url": "http://localhost:11434",
     # --- Graph (weights: paper, the rest: assumed) ---
     "edge_weights": EDGE_WEIGHTS_CONFIG_1,
     "semantic_k": 10,            # assumed

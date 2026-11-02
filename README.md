@@ -8,8 +8,9 @@ Retrieval-Augmented Generation"** (Sahinoglu et al., arXiv:2610.36991v2), includ
 This repository rebuilds the method as a **lightweight, beginner-friendly Python package**:
 short files, small functions, `numpy` as the only required dependency, and tests for every phase.
 
-> **Project status:** Phases 1–3 of 10 are done: paper analysis, architecture, package skeleton,
-> settings, document loader, token counter, and chunking. Embeddings (Phase 4) are next. See
+> **Project status:** Phases 1–4 of 10 are done: paper analysis, architecture, package skeleton,
+> settings, document loader, token counter, chunking, embeddings, and index saving. The six edge
+> signals (Phase 5) are next. See
 > [Section 11](#11-implementation-phases-and-progress) for progress and
 > [Section 15](#15-what-is-implemented-so-far) for the code that exists today.
 
@@ -151,12 +152,12 @@ flowchart LR
     subgraph OFFLINE["SpectRAGIngestion (run once)"]
         S["Settings<br/>config.py"]:::done
         A["Documents<br/>.txt / .md / .pdf<br/>loader.py + tokens.py"]:::done --> B["Chunker<br/>chunker.py"]:::done
-        B --> C["Embedder"]:::doing
-        C --> D["Edge signals x6"]:::todo
+        B --> C["Embedder<br/>embedder.py"]:::done
+        C --> D["Edge signals x6"]:::doing
         D --> E["Weighted graph"]:::todo
         E --> F["Spectral coordinates"]:::todo
     end
-    F --> G[("Index folder<br/>chunks.json<br/>embeddings.npy<br/>edges.json<br/>spectral.npy")]:::todo
+    F --> G[("Index folder, store.py<br/>chunks.json, embeddings.npy: done<br/>edges.json, spectral.npy: pending")]:::doing
     subgraph ONLINE["SpectRAGRetrieval (per question)"]
         H["Question"] --> I["Hybrid seeds<br/>dense + BM25 + utility"]:::todo
         I --> J["2-hop graph expansion"]:::todo
@@ -195,13 +196,14 @@ flowchart TD
     D --> U
     U --> E["pack_units()<br/>1200 tokens, 100 overlap"]:::done
     E --> F["merge_small_chunks()<br/>&lt; 32 tokens"]:::done
-    F --> G["embed_texts()<br/>'search_document:' prefix"]:::doing
-    G --> H1["semantic_edges()"]:::todo
-    G --> H6["utility_edges()"]:::todo
-    F --> H2["adjacency_edges()"]:::todo
-    F --> H3["section_edges()"]:::todo
-    F --> H4["entity_edges()"]:::todo
-    F --> H5["citation_edges()"]:::todo
+    F --> G["make_embedder()<br/>'search_document:' prefix"]:::done
+    G -. "embed_fn for semantic breaks" .-> D
+    G --> H1["semantic_edges()"]:::doing
+    G --> H6["utility_edges()"]:::doing
+    F --> H2["adjacency_edges()"]:::doing
+    F --> H3["section_edges()"]:::doing
+    F --> H4["entity_edges()"]:::doing
+    F --> H5["citation_edges()"]:::doing
     H1 & H2 & H3 & H4 & H5 & H6 --> I["fuse_edges()<br/>w = Σ α·w_r, drop w &lt; τ"]:::todo
     I --> J["normalized_laplacian()"]:::todo
     J --> K["spectral_coords()<br/>32 smallest non-trivial"]:::todo
@@ -330,12 +332,12 @@ Every function is meant to be about 5–20 lines and do one job.
 | `utils/units.py` | `split_units()`, `split_table()` | Sentences and whole tables |
 | `utils/semantic_split.py` | `split_by_meaning()`, `find_breakpoints()` | Break where sentence distance reaches the 90th percentile |
 | `utils/chunker.py` | `pack_units()`, `take_overlap()`, `merge_small_chunks()`, `chunk_documents()` | Chunks with size limit and overlap |
-| `utils/embedder.py` | `hash_embed(texts)`, `ollama_embed(texts)`, `normalize(vectors)` | Offline default embedder; optional real `nomic-embed-text` |
+| `utils/embedder.py` | `make_embedder()`, `hash_embed()`, `ollama_embed()`, `normalize()` | Offline default embedder; optional real `nomic-embed-text`; or your own function |
 | `utils/entities.py` | `extract_entities(text)` | Capitalised phrases, acronyms, numbers, dates (regex) |
 | `utils/edges.py` | `semantic_edges()`, `adjacency_edges()`, `section_edges()`, `entity_edges()`, `citation_edges()`, `utility_edges()` | Six lists of `(i, j, weight)` |
 | `utils/graph.py` | `fuse_edges()`, `build_matrix()`, `neighbors()` | Weighted sum, threshold `τ`, adjacency matrix |
 | `utils/spectral.py` | `normalized_laplacian()`, `spectral_coords()`, `cluster_coords()` | Eq. 11–13 plus k-means labels |
-| `utils/store.py` | `save_index()`, `load_index()` | JSON + `.npy` on disk |
+| `utils/store.py` | `save_index()`, `load_index()` | Any dict → `.npy` (arrays) and `.json` (everything else) |
 | `utils/bm25.py` | `build_bm25()`, `bm25_scores()` | Classic BM25 in pure Python |
 | `utils/seeding.py` | `dense_scores()`, `utility_scores()`, `rrf_fuse()`, `hybrid_relevance()` | Online stage 1 |
 | `utils/expansion.py` | `expand_graph()` | Online stage 2 |
@@ -356,6 +358,9 @@ Every function is meant to be about 5–20 lines and do one job.
 | `chunk_tokens` / `overlap_tokens` | 1200 / 100 (alt. 256 / 64) | ✅ |
 | `min_chunk_tokens` | 32 | ✅ |
 | `semantic_percentile` | 90 | ✅ |
+| `embedder` | `"hash"` (offline). `"ollama"` = the paper's model, or pass your own function | D3 |
+| `embed_dims` | 768 (size of the hash vectors; matches `nomic-embed-text`) | ✅ |
+| `ollama_model` / `ollama_url` | `nomic-embed-text` / `http://localhost:11434` | ✅ / ⚠️ |
 | `edge_weights` | config 1: sem .300, sec .250, ent .200, adj .084, utl .083, cit .083 | ✅ |
 | `spectral_dims` (m) | 32 (capped at n − 2 for small corpora) | ✅ |
 | `seed_count` | 20 | ✅ |
@@ -380,7 +385,10 @@ Every function is meant to be about 5–20 lines and do one job.
 |---|---|---|---|
 | D1 | Neo4j graph database | In-memory Python dict, saved as JSON | No server needed; BFS over a dict is easy to follow |
 | D2 | FAISS `IndexFlatIP` | `numpy` dot product on normalised vectors | Same exact result with no extra dependency |
-| D3 | `nomic-embed-text` | Default: offline hashing embedder. Optional: real `nomic-embed-text` through Ollama (`urllib`, no new package) | Tests run offline and fast; the real model stays available |
+| D3 | `nomic-embed-text` | Default: offline hashing embedder (words + word pairs, md5-hashed into 768 slots with ±1 signs). Optional: real `nomic-embed-text` through Ollama (`urllib`, no new package), with the `search_document:` / `search_query:` prefixes. Or any function `texts -> vectors` | Tests run offline and fast; the real model stays available |
+| D22 | FAISS `IndexFlatIP` file | Vectors saved as `embeddings.npy` (float32, L2-normalised); search is `embeddings @ query` | Same exact scores, one fewer dependency |
+| D23 | `chunks.pkl` (pickle) | `chunks.json` (readable), loaded with `np.load(allow_pickle=False)` for arrays | Readable files, and loading an index never runs pickled code |
+| D24 | Prefixes for the hash embedder | Not added: prefix words would only add noise to word-hash vectors | Prefixes are an instruction for `nomic-embed-text` only |
 | D4 | `gpt-4o-mini` entity extraction | Default: regex extractor. Optional: pass your own `entity_fn` | No API key needed |
 | D5 | `gpt-4o-mini` utility questions | Default: **off** (its weight is shared among the other signals). Optional: pass `question_fn` | Avoids any LLM requirement |
 | D6 | Generation with `gpt-4o-mini` | `search()` returns the context; `answer()` takes any `llm_fn(prompt)` | Works with any LLM provider |
@@ -408,8 +416,8 @@ Every function is meant to be about 5–20 lines and do one job.
 flowchart LR
     P1["1. Paper analysis<br/>& architecture"]:::done --> P2["2. Package skeleton,<br/>config, loader, tokens"]:::done
     P2 --> P3["3. Chunking"]:::done
-    P3 --> P4["4. Embeddings<br/>& index store"]:::doing
-    P4 --> P5["5. Six edge signals"]:::todo
+    P3 --> P4["4. Embeddings<br/>& index store"]:::done
+    P4 --> P5["5. Six edge signals"]:::doing
     P5 --> P6["6. Graph + spectral<br/>= SpectRAGIngestion"]:::todo
     P6 --> P7["7. BM25 + hybrid<br/>seeding (RRF)"]:::todo
     P7 --> P8["8. Expansion +<br/>diffusion re-score"]:::todo
@@ -427,8 +435,8 @@ Legend: 🟩 done · 🟨 in progress · ⬜ pending
 | 1 | Paper analysis, architecture, plan, diagrams | This README | 🟩 Done |
 | 2 | `pyproject.toml`, `config.py`, `loader.py`, `tokens.py`, sample docs | Load sample docs, count tokens, split sentences | 🟩 Done (18 tests) |
 | 3 | `sections.py`, `units.py`, `semantic_split.py`, `chunker.py` | Chunks respect size, overlap, sentences, tables | 🟩 Done (44 tests in total) |
-| 4 | `embedder.py`, `store.py` | Vectors are normalised; save/load gives the same data back | 🟨 Next |
-| 5 | `entities.py`, `edges.py` | Each signal finds the expected links on a toy corpus | ⬜ Pending |
+| 4 | `embedder.py`, `store.py` | Vectors are normalised; save/load gives the same data back | 🟩 Done (57 tests in total) |
+| 5 | `entities.py`, `edges.py` | Each signal finds the expected links on a toy corpus | 🟨 Next |
 | 6 | `graph.py`, `spectral.py`, `ingestion.py` | `SpectRAGIngestion().ingest()` writes a full index | ⬜ Pending |
 | 7 | `bm25.py`, `seeding.py` | Seeds contain the obvious matching chunks | ⬜ Pending |
 | 8 | `expansion.py`, `diffusion.py` | Bridge chunks gain score through the graph | ⬜ Pending |
@@ -546,7 +554,40 @@ answer = search.answer("...", llm_fn=my_llm)
 ```
 
 To use the real `nomic-embed-text` model (optional), install [Ollama](https://ollama.com), run
-`ollama pull nomic-embed-text`, and pass `settings={"embedder": "ollama"}`.
+`ollama pull nomic-embed-text`, and use `make_settings({"embedder": "ollama"})`.
+
+Runnable now (Phase 4 demo):
+
+```bash
+python examples/embed_example.py           # offline hash embedder
+python examples/embed_example.py ollama    # real nomic-embed-text (needs Ollama running)
+```
+
+The demo chunks the sample docs, embeds them, saves `examples/demo_index/` (`chunks.json`,
+`embeddings.npy`, `settings.json`; git ignores it), loads it back, and runs a plain dense search.
+Actual output:
+
+```text
+--- hash ---
+Saved 8 chunks, embeddings (8, 768) to demo_index
+
+Question: Who is the chief technology officer of Helios Energy?
+  1. score 0.255  [4] helios_energy.txt  Helios Energy is a solar power company based in Po
+  2. score 0.198  [0] aurora_labs.md  ## 1. History
+  3. score 0.134  [7] river_valley_farming.md  ## Irrigation
+--- ollama ---
+Saved 8 chunks, embeddings (8, 768) to demo_index
+
+Question: Who is the chief technology officer of Helios Energy?
+  1. score 0.781  [5] helios_energy.txt  In 2019 Helios Energy hired Maya Chen as chief tec
+  2. score 0.746  [4] helios_energy.txt  Helios Energy is a solar power company based in Po
+  3. score 0.672  [0] aurora_labs.md  ## 1. History
+```
+
+The hash embedder matches shared *words*, so it ranks Helios's intro chunk first. `nomic-embed-text`
+matches *meaning*, so it finds the exact answer chunk. The real embedder also moves the semantic
+break in `helios_energy.txt` (chunk 5 now starts at "In 2019 Helios Energy hired..."), because
+chunking receives it as `embed_fn`.
 
 ---
 
@@ -556,8 +597,11 @@ To use the real `nomic-embed-text` model (optional), install [Ollama](https://ol
   known answers.
 - **Integration tests**: from Phase 6, ingest `examples/docs` into a temporary folder; from
   Phase 9, run `search()` on it.
-- **Offline by default**: no test needs the internet, an API key, or Ollama.
-- Run all tests: `pytest -q`. Run one file: `pytest tests/test_chunker.py -q`.
+- **Offline by default**: no test needs the internet, an API key, or Ollama. Ollama calls are
+  tested with a fake server. One live test, `test_real_nomic_embed_text`, runs only when Ollama
+  is reachable on `localhost:11434`; otherwise it is skipped.
+- Run all tests: `pytest -q`. Run one file: `pytest tests/test_embedder.py -q`. See skipped tests
+  with `pytest -q -rs`.
 
 ---
 
@@ -566,8 +610,13 @@ To use the real `nomic-embed-text` model (optional), install [Ollama](https://ol
 - `split_sentences()` is rule-based. It handles common abbreviations (`Dr.`, `e.g.`, `Fig.`) and
   decimals (`2.1`), but an unusual abbreviation followed by a capital letter can still cause a
   wrong split.
-- Semantic chunking currently measures sentence distance by **word overlap**, so its topic breaks
-  are rough. From Phase 4 the real embedder can be passed as `embed_fn`.
+- Without an `embed_fn`, semantic chunking measures sentence distance by word overlap, so its
+  topic breaks are rough. Pass `embed_fn=make_embedder(settings)` (done automatically from
+  Phase 6) to use the chosen embedder.
+- `nomic-embed-text` has a 2048-token context in Ollama. Chunks are at most 1200 tokens, so they
+  fit, but very long single sentences may be cut off by the model.
+- The Ollama embedder makes one HTTP request per 32 texts and has no retry. A large corpus on a
+  slow machine can take a while.
 - With very small `chunk_tokens` (e.g. 60), a chunk can stay under the 32-token minimum when
   merging it would break the maximum (see D18).
 - A single sentence longer than `chunk_tokens` becomes its own over-size chunk, because chunks
@@ -580,8 +629,9 @@ To use the real `nomic-embed-text` model (optional), install [Ollama](https://ol
   file. If that fails (for example, offline), the counter silently falls back to the word estimate.
 - PDF text comes from `pypdf`'s `extract_text()`, so layout such as columns and tables can come
   out jumbled.
-- The hashing embedder captures word overlap, not meaning. Use Ollama `nomic-embed-text` for real
-  semantic quality.
+- The hashing embedder captures word overlap, not meaning (see the Phase 4 demo). Use Ollama
+  `nomic-embed-text` for real semantic quality. Hash collisions between different words are rare
+  at 768 dimensions but possible.
 - Dense eigen-decomposition (`numpy.linalg.eigh`) is `O(n³)`. It is fine up to a few thousand
   chunks; larger corpora would need `scipy.sparse.linalg.eigsh` (a possible later option).
 - Values marked ⚠️ in Section 9 are our guesses, not tuned values from the paper.
@@ -693,4 +743,47 @@ Run the Phase 3 tests:
 
 ```bash
 pytest -v tests/test_sections.py tests/test_units.py tests/test_semantic_split.py tests/test_chunker.py
+```
+
+### Phase 4: embeddings and index store
+
+```mermaid
+flowchart LR
+    S["settings['embedder']"] --> ME{"make_embedder()"}
+    ME -- '"hash"' --> HE["hash_embed()<br/>words + pairs, md5 to 768 slots"]
+    ME -- '"ollama"' --> OE["ollama_embed()<br/>adds search_document: / search_query:"]
+    OE --> OR["ollama_request()<br/>POST /api/embed, 32 per batch"]
+    ME -- "your function" --> CF["custom texts to vectors"]
+    HE & OR & CF --> N["normalize()<br/>length 1, dot = cosine"]
+    N --> SI["save_index()<br/>arrays .npy, rest .json"]
+    SI --> F[("index folder")]
+    F --> LI["load_index()"]
+```
+
+`make_embedder(settings)` returns one function, `embed(texts, kind="document")`. Every embedder
+returns a float32 `numpy` array with one length-1 row per text. Later phases call `embed(...)`
+without caring which model is behind it. Use `kind="query"` for questions, so `nomic-embed-text`
+gets the `search_query:` prefix.
+
+| File | Function | What it does |
+|---|---|---|
+| `config.py` | (new keys) | `ollama_model`, `ollama_url`. `embedder` can now also be a function. |
+| `utils/embedder.py` | `normalize(vectors)` | Divides each row by its length; all-zero rows stay zero. |
+| | `text_features(text)` | Lowercase words plus neighbouring word pairs (`"solar farm"`). |
+| | `hash_feature(feature, dims)` | md5 → a fixed slot and a ±1 sign. Python's `hash()` changes on every run, so md5 is used to get the same vectors every time. |
+| | `hash_embed(texts, dims)` | Adds ±1 into the slot of every feature, then normalises. |
+| | `ollama_request(texts, model, url)` | One `POST /api/embed` call with `urllib`. Raises a clear `ConnectionError` if Ollama is not reachable. |
+| | `ollama_embed(texts, kind, ...)` | Adds the task prefix, sends batches of 32, normalises. |
+| | `make_embedder(settings)` | Picks hash, Ollama, or your own function. |
+| `utils/store.py` | `save_json(path, data)` / `load_json(path)` | Readable UTF-8 JSON. Values JSON cannot store (e.g. a function) are saved as text. |
+| | `save_index(folder, index)` | Writes each dict key as `<key>.npy` (arrays) or `<key>.json` (anything else). |
+| | `load_index(folder)` | Reads every `.npy` and `.json` back into a dict. |
+| `examples/embed_example.py` | `main()` | Chunk → embed → save → load → dense search. Argument: `hash` or `ollama`. |
+| `tests/test_embedder.py` | 10 tests | Normalising, shape/dtype, deterministic hashing, similar texts score higher, custom function, unknown name, Ollama prefixes + batching (fake server), friendly connection error, and the live `nomic-embed-text` check (768-d; similar sentences closer). |
+| `tests/test_store.py` | 3 tests | Exact round trip of chunks (with Unicode) and float32 vectors, settings holding a function, missing folder. |
+
+Run the Phase 4 tests:
+
+```bash
+pytest -v -rs tests/test_embedder.py tests/test_store.py
 ```

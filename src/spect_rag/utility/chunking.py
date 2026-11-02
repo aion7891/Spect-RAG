@@ -1,13 +1,15 @@
 """Sentence-aware structural chunking (paper Section 3.3).
 
-Unstructured text uses sentence windows in Phase 2. Embedding-based semantic
-breakpoints belong to Phase 3; sentence windows are not called semantic chunks.
+Unstructured text optionally uses Phase 3 embedding-based semantic breakpoints.
+Without an embedding callback, the Phase 2 sentence-window behavior is preserved.
 """
 
 from functools import lru_cache
 import re
 
 import tiktoken
+
+from .semantic_chunking import semantic_segments
 
 
 @lru_cache(maxsize=1)
@@ -98,14 +100,14 @@ def _overlap(window: list[dict], next_unit: dict, target: int, limit: int) -> li
 
 def chunk_document(
     document: dict, *, chunk_size: int = 1_200, chunk_overlap: int = 100,
-    min_chunk_tokens: int = 32,
+    min_chunk_tokens: int = 32, sentence_embed_fn=None, embedding_dimension: int = 768,
 ) -> list[dict]:
     """Pack complete sentences/rows, keeping section boundaries and source IDs.
 
     A sentence or row larger than chunk_size raises ValueError. Overlap is a
     best-effort suffix of complete units, and never crosses a section boundary.
     Small sections/tails remain small when merging would exceed the hard limit
-    or lose the section path. Table headers are not repeated across chunks.
+    or lose a section/semantic boundary. Table headers are not repeated.
     """
     for name, value in (("chunk_size", chunk_size), ("chunk_overlap", chunk_overlap),
                         ("min_chunk_tokens", min_chunk_tokens)):
@@ -116,9 +118,9 @@ def chunk_document(
     if not 0 <= min_chunk_tokens <= chunk_size:
         raise ValueError("Require 0 <= min_chunk_tokens <= chunk_size.")
 
-    windows: list[list[dict]] = []
-    window: list[dict] = []
-    for unit in _units(document):
+    units = _units(document)
+    # Reject oversized inputs before making any optional sentence-model calls.
+    for unit in units:
         size = count_tokens(unit["text"])
         if size > chunk_size:
             raise ValueError(
@@ -126,7 +128,18 @@ def chunk_document(
                 f"a sentence/table row has {size} tokens, exceeding chunk_size={chunk_size}. "
                 "Increase chunk_size or preprocess this block; text was not truncated."
             )
-        if window and unit["section_path"] != window[-1]["section_path"]:
+    semantic = sentence_embed_fn is not None and not any(unit["section_path"] for unit in units)
+    segments = semantic_segments(units, sentence_embed_fn, embedding_dimension) if semantic else [None] * len(units)
+    for unit, segment in zip(units, segments):
+        unit["semantic_segment"] = segment
+
+    windows: list[list[dict]] = []
+    window: list[dict] = []
+    for unit in units:
+        if window and (
+            unit["section_path"] != window[-1]["section_path"]
+            or unit["semantic_segment"] != window[-1]["semantic_segment"]
+        ):
             windows.append(window)
             window = []
         if window and count_tokens(_join([*window, unit])) > chunk_size:
@@ -139,7 +152,10 @@ def chunk_document(
     # Try to merge a small final window without duplicating its overlap.
     if len(windows) > 1 and count_tokens(_join(windows[-1])) < min_chunk_tokens:
         previous, tail = windows[-2:]
-        if previous[-1]["section_path"] == tail[0]["section_path"]:
+        if (
+            previous[-1]["section_path"] == tail[0]["section_path"]
+            and previous[-1]["semantic_segment"] == tail[0]["semantic_segment"]
+        ):
             overlap = 0
             for length in range(1, min(len(previous), len(tail)) + 1):
                 if previous[-length:] == tail[:length]:
@@ -168,6 +184,9 @@ def chunk_document(
                 index for unit in units for index in unit["block_indices"]
             )),
             "contains_table": any(unit["kind"] == "table" for unit in units),
-            "chunking_mode": "structural" if units[0]["section_path"] else "sentence",
+            "chunking_mode": "semantic" if semantic else (
+                "structural" if units[0]["section_path"] else "sentence"
+            ),
+            "semantic_segment": units[0]["semantic_segment"],
         })
     return chunks

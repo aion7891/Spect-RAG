@@ -1,0 +1,5 @@
+Solar panels produce electricity. A battery stores excess electricity. A controller regulates charging.
+
+Inspect the equipment regularly. Keep terminals clean and dry. Follow the equipment manual.
+
+See [charging instructions](getting_started.md#charging). Background reference [1] is not included.

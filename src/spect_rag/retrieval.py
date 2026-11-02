@@ -1,6 +1,6 @@
 """Online pipeline from the paper's Table 2 and Algorithm 1.
 
-Phase 1 defines the interface only. Retrieval will expose context independently
+Retrieval is planned for Phase 5. It will expose context independently
 of optional answer generation so it can be inspected and tested on its own.
 """
 
@@ -27,6 +27,6 @@ class SpectRAGRetrieval:
         token_count, source path, page, and section path.
         """
         raise NotImplementedError(
-            "Phase 1 provides the package interface only. "
-            "Hybrid and graph-spectral retrieval will be implemented in Phase 5."
+            "Hybrid and graph-spectral retrieval will be implemented in Phase 5. "
+            "Use SpectRAGIngestion.prepare() to inspect document chunks now."
         )

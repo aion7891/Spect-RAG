@@ -8,8 +8,10 @@ dependencies = [
     "faiss-cpu>=1.15.1",
     "networkx>=3.7",
     "numpy>=2.5.4",
+    "pdfplumber>=0.11",
     "rank-bm25>=0.2.2",
     "scipy>=1.18.1",
+    "tiktoken>=0.12",
 ]
 
 [build-system]

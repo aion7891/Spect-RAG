@@ -1,5 +1,5 @@
 """Utility functions for loading, chunking, indexing, scoring, and selection.
 
-Modules are added in the phase that implements them. Pipeline orchestration
-stays in the ingestion and retrieval classes.
+Phase 2 supplies loading.py and chunking.py. Pipeline orchestration stays in the
+ingestion and retrieval classes; later phases add the indexing/scoring modules.
 """

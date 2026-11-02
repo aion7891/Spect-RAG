@@ -6,8 +6,8 @@ retrieval. Both use the same index directory. All helper functions belong under
 `src/spect_rag/utility/`; use plain dictionaries and arrays for internal records
 instead of adding a framework of classes.
 
-Only Phase 1 has been completed. **Stop after every phase for user review.**
-The later phases below describe planned work, not implemented capabilities.
+Phases 1 and 2 are complete. **Stop after every phase for user review.**
+Phases 3-6 below describe planned work, not implemented capabilities.
 
 | Phase | Scope | Reviewable result and validation |
 | --- | --- | --- |
@@ -29,8 +29,10 @@ and return evidence with text, source metadata, and scores. Optional generation
 can later be another method on this same class. Provider-specific embedding and
 LLM code will be callbacks; the package will not hard-code API keys or a provider.
 
-Both methods currently raise `NotImplementedError`; the constructors only store
-the index path and do not create files or load models.
+The full `ingest` and `retrieve` methods still raise `NotImplementedError`.
+Phase 2 adds `SpectRAGIngestion.prepare(document_paths)`, which loads documents
+and returns inspectable chunk records without writing an index. The constructors
+only store the index path and do not create files or load models.
 
 ## Proposed persisted artifacts
 

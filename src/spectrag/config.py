@@ -51,7 +51,10 @@ DEFAULTS = {
     "max_candidates": 200,
     "token_budget": 12000,
     # --- Retrieval (assumed) ---
-    "rrf_k": 60,
+    "rrf_k": 60,                 # the usual RRF constant
+    "bm25_k1": 1.5,              # standard BM25 values (Robertson and Zaragoza)
+    "bm25_b": 0.75,
+    "bm25_weight": 0.5,          # hybrid relevance = 0.5 * dense + 0.5 * BM25
     "alpha": 0.3,
     "ppr_beta": 0.15,
     "ppr_steps": 30,

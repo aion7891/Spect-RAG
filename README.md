@@ -8,10 +8,11 @@ Retrieval-Augmented Generation"** (Sahinoglu et al., arXiv:2610.36991v2), includ
 This repository rebuilds the method as a **lightweight, beginner-friendly Python package**:
 short files, small functions, `numpy` as the only required dependency, and tests for every phase.
 
-> **Project status:** Phases 1–6 of 10 are done. **The offline half of SpectRAG works:**
+> **Project status:** Phases 1–7 of 10 are done. **The offline half of SpectRAG works:**
 > `SpectRAGIngestion` builds a complete index (chunks, embeddings, six edge signals, the fused
-> weighted graph, spectral coordinates, and clusters). The online half (`SpectRAGRetrieval`)
-> comes in Phases 7–9, starting with hybrid seeding (Phase 7). See
+> weighted graph, spectral coordinates, and clusters). The first online stage, hybrid seed
+> retrieval (dense + BM25 + utility questions, fused with RRF), works too. Graph expansion and
+> re-scoring (Phase 8) are next; `SpectRAGRetrieval` is completed in Phase 9. See
 > [Section 11](#11-implementation-phases-and-progress) for progress and
 > [Section 15](#15-what-is-implemented-so-far) for the code that exists today.
 
@@ -160,8 +161,8 @@ flowchart LR
     end
     F --> G[("Index folder, store.py<br/>chunks, embeddings, signals,<br/>edges, spectral, eigenvalues,<br/>question vectors, settings, info")]:::done
     subgraph ONLINE["SpectRAGRetrieval (per question)"]
-        H["Question"] --> I["Hybrid seeds<br/>dense + BM25 + utility"]:::todo
-        I --> J["2-hop graph expansion"]:::todo
+        H["Question"] --> I["Hybrid seeds<br/>dense + BM25 + utility<br/>bm25.py, seeding.py"]:::done
+        I --> J["2-hop graph expansion"]:::doing
         J --> K["Proximity re-scoring<br/>spectral + PageRank"]:::todo
         K --> L["Token-budget selection"]:::todo
         L --> M["Context + sources"]:::todo
@@ -226,21 +227,24 @@ Note: in semantic mode, `split_units()` runs before `split_by_meaning()`, so tab
 
 ```mermaid
 flowchart TD
-    Q["question"] --> E1["embed query<br/>'search_query:' prefix"]
-    E1 --> D1["dense_scores()"]
-    Q --> B1["bm25_scores()"]
-    E1 --> U1["utility_scores()"]
-    D1 & B1 & U1 --> R["rrf_fuse()<br/>top 20 = seeds S0"]
-    D1 & B1 --> REL["hybrid_relevance()<br/>for every chunk"]
-    R --> X["expand_graph()<br/>BFS 2 hops, max 200 = S1"]
-    X --> P1["spectral_closeness()"]
-    X --> P2["personalized_pagerank()"]
-    P1 & P2 --> P["proximity = mean of both"]
-    REL & P --> S2["rescore()<br/>(1-α)·rel + α·prox"]
-    S2 --> C1["protected core"]
-    C1 --> C2["greedy tail: Eq. 21-22<br/>precision floor"]
-    C2 --> C3["backfill until budget full"]
-    C3 --> OUT["format_context()<br/>grouped by document"]
+    Q["question"]:::done --> E1["embed query<br/>'search_query:' prefix"]:::done
+    E1 --> D1["dense_scores()"]:::done
+    Q --> B1["bm25_scores()"]:::done
+    E1 --> U1["utility_scores()"]:::done
+    D1 & B1 & U1 --> R["rrf_fuse() + top_seeds()<br/>top 20 = seeds S0"]:::done
+    D1 & B1 --> REL["hybrid_relevance()<br/>for every chunk"]:::done
+    R --> X["expand_graph()<br/>BFS 2 hops, max 200 = S1"]:::doing
+    X --> P1["spectral_closeness()"]:::doing
+    X --> P2["personalized_pagerank()"]:::doing
+    P1 & P2 --> P["proximity = mean of both"]:::doing
+    REL & P --> S2["rescore()<br/>(1-α)·rel + α·prox"]:::doing
+    S2 --> C1["protected core"]:::todo
+    C1 --> C2["greedy tail: Eq. 21-22<br/>precision floor"]:::todo
+    C2 --> C3["backfill until budget full"]:::todo
+    C3 --> OUT["format_context()<br/>grouped by document"]:::todo
+    classDef done fill:#2e7d32,color:#fff,stroke:#1b5e20
+    classDef doing fill:#f9a825,color:#000,stroke:#f57f17
+    classDef todo fill:#9e9e9e,color:#fff,stroke:#616161
 ```
 
 ---
@@ -354,7 +358,7 @@ Every function is meant to be about 5–20 lines and do one job.
 | `utils/clusters.py` | `cluster_coords()`, `kmeans()` | Spectral clusters for ClusterGain |
 | `utils/store.py` | `save_index()`, `load_index()` | Any dict → `.npy` (arrays) and `.json` (everything else) |
 | `utils/bm25.py` | `build_bm25()`, `bm25_scores()` | Classic BM25 in pure Python |
-| `utils/seeding.py` | `dense_scores()`, `utility_scores()`, `rrf_fuse()`, `hybrid_relevance()` | Online stage 1 |
+| `utils/seeding.py` | `find_seeds()`, `dense_scores()`, `utility_scores()`, `rrf_fuse()`, `hybrid_relevance()` | Online stage 1 |
 | `utils/expansion.py` | `expand_graph()` | Online stage 2 |
 | `utils/diffusion.py` | `personalized_pagerank()`, `spectral_closeness()`, `rescore()` | Online stage 3 (Eq. 18) |
 | `utils/selection.py` | `select_context()`, `pick_core()`, `utility_gain()`, `backfill()` | Online stage 4 (Eq. 19–22) |
@@ -385,6 +389,8 @@ Every function is meant to be about 5–20 lines and do one job.
 | `edge_threshold` (τ) | 0.05 | ⚠️ |
 | `graph_k` | 10: each chunk keeps at most its 10 strongest graph edges (D35) | ⚠️ |
 | `rrf_k` | 60 (the usual RRF constant) | ⚠️ |
+| `bm25_k1` / `bm25_b` | 1.5 / 0.75 (the usual BM25 values) | ⚠️ |
+| `bm25_weight` | 0.5: hybrid relevance = 0.5 · dense + 0.5 · BM25 (each rescaled to 0..1) | ⚠️ |
 | `alpha` (re-score blend) | 0.3 | ⚠️ |
 | `ppr_beta` / `ppr_steps` | 0.15 / 30 | ⚠️ |
 | `core_size` (protected core) | 3 | ⚠️ |
@@ -436,6 +442,11 @@ Every function is meant to be about 5–20 lines and do one job.
 | D35 | Sparse graph, `\|E\| = O(k_g n)` (Section 3.2.2), Table 4 shows 0.8–5.7 edges per node | After `τ`, each chunk keeps at most its `graph_k = 10` strongest edges (an edge survives if it is in the top 10 of either end). Adjacency edges are always kept, so each document stays one connected chain | Without this, long sections (all pairs weight 1.0) and common entities gave 144 edges per chunk on a 3,465-chunk test; with it, about 7 |
 | D36 | Entity edges | An entity in more than 5% of the chunks (and more than 20 chunks) adds no entity edges | It does not tell chunks apart (like a stopword), and counting its pairs is `O(df²)`. Small corpora are never affected |
 | D37 | Large graphs | Above 2,000 chunks, if `scipy` is installed, eigenvectors come from `scipy.sparse.linalg.eigsh` on `D^-1/2 W D^-1/2` (its largest eigenvalues are `1 −` the smallest of `L_sym`) with a fixed start vector | The paper suggests approximate eigensolvers for scale (Section 7); results match the dense solver (tested) |
+| D38 | BM25 settings and tokenizer (not given) | Lowercase `\w+` words, no stemming and no stopword list; `k1 = 1.5`, `b = 0.75`; Lucene-style `idf = ln(1 + (N − df + 0.5) / (df + 0.5))` | Standard choices; this IDF is never negative, so common words cannot push scores down |
+| D39 | RRF lists | Dense ranks **all** chunks; BM25 ranks only chunks that contain a query word; utility ranks only chunks that have questions, and is left out when there are none. RRF constant `k = 60`, ranks start at 1 | A chunk with zero keyword overlap was not "retrieved" by BM25, so it should not earn BM25 RRF credit |
+| D40 | Utility matching "query to stored questions" | A chunk's utility score is the **best** cosine between the query and any of its questions | One matching question is enough to show the chunk answers the query |
+| D41 | "The full relevance vector … is hybrid (dense & BM25)" (Table 2), no formula | `relevance = (1 − w)·minmax(dense) + w·minmax(BM25)` with `w = bm25_weight = 0.5`, over all chunks | Puts both on the same 0..1 scale before mixing; the weight can be changed |
+| D42 | FAISS exact search for dense seeds and utility questions (Section 6.2) | `embeddings @ query` and `question_vectors @ query` in `numpy` | Exactly the same result as `IndexFlatIP` |
 
 ---
 
@@ -448,8 +459,8 @@ flowchart LR
     P3 --> P4["4. Embeddings<br/>& index store"]:::done
     P4 --> P5["5. Six edge signals"]:::done
     P5 --> P6["6. Graph + spectral<br/>= SpectRAGIngestion"]:::done
-    P6 --> P7["7. BM25 + hybrid<br/>seeding (RRF)"]:::doing
-    P7 --> P8["8. Expansion +<br/>diffusion re-score"]:::todo
+    P6 --> P7["7. BM25 + hybrid<br/>seeding (RRF)"]:::done
+    P7 --> P8["8. Expansion +<br/>diffusion re-score"]:::doing
     P8 --> P9["9. Token-budget selection<br/>= SpectRAGRetrieval"]:::todo
     P9 --> P10["10. Answer, metrics,<br/>examples, polish"]:::todo
     classDef done fill:#2e7d32,color:#fff,stroke:#1b5e20
@@ -467,8 +478,8 @@ Legend: 🟩 done · 🟨 in progress · ⬜ pending
 | 4 | `embedder.py`, `store.py` | Vectors are normalised; save/load gives the same data back | 🟩 Done (57 tests in total) |
 | 5 | `entities.py`, `references.py`, `questions.py`, `edge_list.py`, `edges_structure.py`, `edges_content.py`, `edges.py` | Each signal finds the expected links on a toy corpus | 🟩 Done (81 tests + 1 opt-in) |
 | 6 | `graph.py`, `spectral.py`, `ingestion.py` | `SpectRAGIngestion().ingest()` writes a full index | 🟩 Done (98 tests + 1 opt-in) |
-| 7 | `bm25.py`, `seeding.py` | Seeds contain the obvious matching chunks | 🟨 Next |
-| 8 | `expansion.py`, `diffusion.py` | Bridge chunks gain score through the graph | ⬜ Pending |
+| 7 | `bm25.py`, `seeding.py` | Seeds contain the obvious matching chunks | 🟩 Done (128 tests + 1 opt-in) |
+| 8 | `expansion.py`, `diffusion.py` | Bridge chunks gain score through the graph | 🟨 Next |
 | 9 | `selection.py`, `prompt.py`, `retrieval.py` | `search()` respects the budget and diversifies documents | ⬜ Pending |
 | 10 | `answer()`, metrics, examples, final README | End-to-end demo plus SpectRAG vs top-k on a toy multi-hop set | ⬜ Pending |
 
@@ -658,7 +669,61 @@ What this shows:
   product sections at the other (−0.35). That is position in the graph, not text similarity
   (paper Fig. 4).
 
-Planned API for the online half (Phases 7–9):
+Runnable now (Phase 7: hybrid seed retrieval, the first online stage):
+
+```python
+from spectrag import make_settings
+from spectrag.utils.bm25 import build_bm25
+from spectrag.utils.embedder import make_embedder
+from spectrag.utils.seeding import find_seeds
+from spectrag.utils.store import load_index
+
+index = load_index("my_index")
+settings = make_settings(index["settings"])          # same embedder as at ingestion
+embed = make_embedder(settings)
+bm25 = build_bm25([c["text"] for c in index["chunks"]])   # built once, fast
+
+question = "Which company did the co-founder of Aurora Labs join after leaving?"
+result = find_seeds(question, embed([question], kind="query")[0], index, bm25, settings)
+print(result["seeds"])        # S0: up to seed_count (20) chunk ids
+print(result["relevance"])    # hybrid relevance for every chunk (0..1), used in Phases 8-9
+```
+
+```bash
+python examples/seed_example.py                    # offline
+python examples/seed_example.py ollama             # nomic-embed-text
+python examples/seed_example.py ollama gemma3:4b   # + LLM utility questions
+```
+
+Actual output (the demo uses `seed_count = 4` so the lists are short; the paper uses 20):
+
+```text
+===== hash
+Q: Which company did the co-founder of Aurora Labs join after leaving?
+  dense    0:aurora_labs#0, 7:river_valley_farming#1, 2:aurora_labs#2, 3:aurora_labs#3
+  bm25     0:aurora_labs#0, 3:aurora_labs#3, 6:river_valley_farming#0, 2:aurora_labs#2
+  SEEDS    0:aurora_labs#0, 3:aurora_labs#3, 2:aurora_labs#2, 7:river_valley_farming#1
+  relevance top 3: 0:aurora_labs#0=1.00, 3:aurora_labs#3=0.60, 2:aurora_labs#2=0.56
+===== ollama + gemma3:4b questions
+Q: Which company did the co-founder of Aurora Labs join after leaving?
+  dense    0:aurora_labs#0, 3:aurora_labs#3, 1:aurora_labs#1, 7:river_valley_farming#1
+  bm25     0:aurora_labs#0, 3:aurora_labs#3, 6:river_valley_farming#0, 2:aurora_labs#2
+  utility  0:aurora_labs#0, 1:aurora_labs#1, 4:helios_energy#0, 5:helios_energy#1
+  SEEDS    0:aurora_labs#0, 3:aurora_labs#3, 1:aurora_labs#1, 6:river_valley_farming#0
+```
+
+What this shows:
+
+- Every ranking finds the direct match, chunk 0 (*"Maya Chen left Aurora Labs. She later joined
+  Helios Energy"*).
+- **The Helios chunks (4, 5) are missing** from the dense and BM25 top 4, even though they hold
+  the rest of the answer (her role there). This is the "missing bridge evidence" problem from
+  paper Section 1.2.
+- With LLM utility questions, the utility ranking already pulls Helios up to places 3–4: matching
+  on function, not wording. They still miss the 4 seeds. Phase 8 recovers such chunks by walking
+  the graph from the seeds (the entity edge 0 ↔ 4 "Maya Chen").
+
+Planned API for the rest of the online half (Phases 8–9):
 
 ```python
 from spectrag import SpectRAGRetrieval
@@ -723,7 +788,7 @@ chunking receives it as `embed_fn`.
   is reachable on `localhost:11434`; otherwise it is skipped.
 - **Opt-in LLM test**: `SPECTRAG_LIVE_LLM=1 pytest tests/test_questions.py` calls a real Ollama
   LLM (default `gemma3:4b`; change it with `SPECTRAG_LLM_MODEL=qwen3:4b`).
-- Run all tests: `pytest -q`. Run one file: `pytest tests/test_ingestion.py -q`. See skipped tests
+- Run all tests: `pytest -q`. Run one file: `pytest tests/test_seeding.py -q`. See skipped tests
   with `pytest -q -rs`.
 
 ---
@@ -784,6 +849,15 @@ chunking receives it as `embed_fn`.
   millions of chunks.
 - A single "word" longer than `chunk_tokens` (e.g. a huge URL) cannot be cut and stays over the
   limit.
+- BM25 has no stemming: "farms" does not match "farm". Dense search usually covers this.
+- On a tiny corpus, `seed_count = 20` makes **every** chunk a seed (the sample docs have 8), so
+  the graph stages have nothing left to "recover". Demos lower `seed_count` to show the effect.
+  On real corpora with hundreds of chunks, 20 seeds are a small part.
+- The BM25 index is rebuilt from `chunks.json` each time an index is loaded (it is fast: one pass
+  over the text). It is not saved to disk.
+- An index built with your own embed **function** stores only its name in `settings.json`, so
+  `make_embedder(index["settings"])` cannot rebuild it. Pass the same function again
+  (`SpectRAGRetrieval` in Phase 9 will accept it).
 - Values marked ⚠️ in Section 9 are our guesses, not tuned values from the paper.
 
 ---
@@ -1113,3 +1187,45 @@ change there is that carried headings now appear at the start of chunks.
 
 Tests: **114 passed** with all extras, **110 passed** on a minimal install (`numpy` + `pytest`
 only; the `pypdf` and `scipy` tests are skipped), and the opt-in live LLM test passes.
+
+### Phase 7: hybrid seed retrieval
+
+```mermaid
+flowchart TD
+    Q["question"] --> EQ["embed([question], kind='query')<br/>search_query: prefix"]
+    Q --> BS["bm25_scores()<br/>only chunks with a query word"]
+    EQ --> DS["dense_scores()<br/>embeddings @ query"]
+    EQ --> US["utility_scores()<br/>best question per chunk"]
+    DS --> R1["ranking(dense)<br/>all chunks"]
+    BS --> R2["ranking(bm25, keep = score > 0)"]
+    US --> R3["ranking(utility, keep = has questions)<br/>only if questions exist"]
+    R1 & R2 & R3 --> RRF["rrf_fuse(): Σ 1 / (60 + rank)"]
+    RRF --> TS["top_seeds(): S0, 20 chunks"]
+    DS & BS --> HR["hybrid_relevance()<br/>0.5·minmax(dense) + 0.5·minmax(BM25)"]
+    TS & HR --> OUT["find_seeds() result:<br/>seeds, relevance, dense, bm25, utility, rrf, rankings"]
+```
+
+| File | Function | What it does |
+|---|---|---|
+| `utils/bm25.py` | `tokenize(text)` | Lowercase `\w+` words. |
+| | `build_bm25(texts)` | One pass over all chunks: `postings` (word → `[(chunk, count)]`), chunk `lengths`, `average_length`. |
+| | `idf(df, n)` | `ln(1 + (n − df + 0.5) / (df + 0.5))`: rare words weigh more, never negative. |
+| | `bm25_scores(bm25, query, k1, b)` | Adds the BM25 term score for each query word, touching only chunks that contain it. |
+| `utils/seeding.py` | `dense_scores(embeddings, q)` | Exact cosine for every chunk (paper: FAISS `IndexFlatIP`). |
+| | `utility_scores(vectors, owners, q, n)` | Best question match per chunk; 0 for chunks without questions. |
+| | `ranking(scores, keep)` | Chunk ids best-first; equal scores keep chunk order; `keep` leaves chunks out. |
+| | `rrf_fuse(rankings, k)` | Reciprocal Rank Fusion: `Σ 1 / (k + rank)` over the lists. |
+| | `top_seeds(fused, count)` | The `seed_count` best fused chunks (ties: lower id first). |
+| | `min_max(scores)` | Rescale to 0..1 (all-equal → all 0). |
+| | `hybrid_relevance(dense, bm25, w)` | `(1 − w)·minmax(dense) + w·minmax(BM25)` for every chunk. |
+| | `find_seeds(query, query_vector, index, bm25, settings)` | Runs stage 1 and returns `seeds`, `relevance` and every intermediate score, so each step can be inspected and tested. |
+| `config.py` | (new keys) | `bm25_k1`, `bm25_b`, `bm25_weight`. |
+| `examples/seed_example.py` | `main()` | Builds the sample index, then prints each ranking, the seeds and the top relevance for two questions. |
+| `tests/test_bm25.py` | 6 tests | Tokenizer; postings and lengths; IDF order and formula; one score checked against the formula by hand; matching and rare-word ranking; unknown words and an empty index. |
+| `tests/test_seeding.py` | 8 tests | Dense cosine; best question per chunk; stable ranking with filter; RRF formula and tie order; min-max and hybrid; sample-docs seeds (chunk 0 first, 2 lists without questions, relevance in 0..1); seed count capped by corpus size; utility ranking used when questions exist. |
+
+Run the Phase 7 tests:
+
+```bash
+pytest -v tests/test_bm25.py tests/test_seeding.py
+```

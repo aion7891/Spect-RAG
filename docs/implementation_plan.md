@@ -6,8 +6,8 @@ retrieval. Both use the same index directory. All helper functions belong under
 `src/spect_rag/utility/`; use plain dictionaries and arrays for internal records
 instead of adding a framework of classes.
 
-Phases 1-4 are complete. **Stop after every phase for user review.**
-Phases 5-6 below describe planned work, not implemented capabilities.
+Phases 1-5 are complete. **Stop after every phase for user review.**
+Phase 6 below describes planned work, not implemented capabilities.
 
 | Phase | Scope | Reviewable result and validation |
 | --- | --- | --- |
@@ -24,12 +24,12 @@ Phases 5-6 below describe planned work, not implemented capabilities.
 body should read in pipeline order, calling small utility functions whose
 docstrings cite the corresponding paper section. It will not also answer queries.
 
-`SpectRAGRetrieval.retrieve(query, token_budget=12000)` will load/use that index
+`SpectRAGRetrieval.retrieve(query, token_budget=12000)` loads/uses that index
 and return evidence with text, source metadata, and scores. Optional generation
 can later be another method on this same class. Provider-specific embedding and
 LLM code will be callbacks; the package will not hard-code API keys or a provider.
 
-`ingest` is implemented; query-time `retrieve` still raises `NotImplementedError`.
+Both `ingest` and `retrieve` are implemented. Answer generation remains for Phase 6.
 Phase 2 adds `SpectRAGIngestion.prepare(document_paths)`, which loads documents
 and returns inspectable chunk records without writing an index. Phase 3 adds
 optional semantic chunking and `enrich(document_paths)`, which embeds chunks,
@@ -38,6 +38,11 @@ Explicitly configured caches can persist model outputs. Phase 4 adds six graph
 signals, fusion/sparsification, spectral coordinates, FAISS indexes, BM25 rebuild
 data, and checked index snapshots. `SpectRAGRetrieval.load()` verifies/reloads
 those artifacts. Constructors do not create files or load models.
+
+Phase 5 implements exact dense/question search, BM25/RRF seeds, bounded two-hop
+expansion, spectral/PPR re-scoring, and token-budgeted selection. Retrieval returns
+ranked evidence records and exposes a JSON-serializable `last_trace`. A retriever
+pins its loaded snapshot; call `load()` explicitly to refresh after a rebuild.
 
 ## Persisted artifacts
 

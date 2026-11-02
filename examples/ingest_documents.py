@@ -32,7 +32,7 @@ def main() -> None:
     print("Positive eigenvalues:", index["eigenvalues"].tolist())
     print("Dense / question FAISS rows:", index["dense_index"].ntotal, index["question_index"].ntotal)
     print("Callback calls:", CALLS)
-    print("Full ingestion and reload passed. Query retrieval arrives in Phase 5.")
+    print("Full ingestion and reload passed. Use examples/retrieve_documents.py to query this index.")
 
 
 if __name__ == "__main__":

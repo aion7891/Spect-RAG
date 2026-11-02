@@ -4,18 +4,21 @@ A readable Python implementation of the supplied SpectRAG paper, developed in
 reviewable phases. There are two public classes; helper functions live in
 `src/spect_rag/utility/`.
 
-**Current status: Phase 4 complete.** `SpectRAGIngestion.prepare()` loads and
+**Current status: Phase 5 complete.** `SpectRAGIngestion.prepare()` loads and
 chunks documents. `enrich()` adds normalized embeddings, optional semantic
 boundaries, concepts, utility questions, and citation targets using caller-supplied
 callbacks. `ingest()` builds and saves the graph, spectrum, FAISS indexes, and
-BM25 data. `SpectRAGRetrieval.load()` verifies and reloads an index. Query-time
-`retrieve()` is planned for Phase 5. No retrieval or real-model quality has been measured.
+BM25 data. `SpectRAGRetrieval.retrieve()` returns ranked, token-budgeted evidence
+through hybrid seeds, graph expansion, and spectral/PageRank scoring. Inspect
+`last_trace` to see the stages. Grounded answer generation remains for Phase 6.
+Real-model retrieval quality has not been measured.
 
 - [Paper analysis and implementation decisions](docs/paper_analysis.md)
 - [Phases and review checkpoints](docs/implementation_plan.md)
 - [Phase 2: loading, chunking, and validation](docs/phase2.md)
 - [Phase 3: callbacks, enrichment, and caching](docs/phase3.md)
 - [Phase 4: graph, spectrum, and index snapshots](docs/phase4.md)
+- [Phase 5: retrieval, scoring, and context selection](docs/phase5.md)
 - [Supplied research paper](docs/2610.36991v2.pdf)
 
 ## Install and inspect
@@ -47,6 +50,11 @@ src/spect_rag/
         spectral.py      # component-aware Laplacian eigenvectors
         validation.py    # shared enriched-record checks
         indexing.py      # versioned snapshots, FAISS, BM25, and reload checks
+        ranking.py       # query scores, RRF seeds, and hybrid relevance
+        expansion.py     # deterministic bounded two-hop BFS
+        proximity.py     # spectral proximity and Personalized PageRank
+        selection.py     # protected core, precision tail, coverage, backfill
+        retrieval_trace.py # serializable evidence and per-stage trace
 ```
 
 The existing retrieval prototype is preserved in
@@ -128,7 +136,40 @@ older snapshots. The manifest records models, settings, row order, and checksums
 loading rejects missing or inconsistent artifacts. See the [Phase 4 guide](docs/phase4.md)
 for signal formulas, neighbor limits, spectral conventions, and the file layout.
 
-Query retrieval and grounded generation are still pending in Phases 5-6.
+## Retrieve evidence now
+
+Configure retrieval with the same embedding model/callback used for ingestion.
+The callback receives the query task prefix; no generation LLM is required.
+The dimension is read from the saved index unless explicitly supplied:
+
+```python
+from spect_rag import SpectRAGRetrieval
+
+# my_embed is your batch embedding adapter, described in the Phase 3 guide.
+retrieval = SpectRAGRetrieval(
+    "indexes/my_docs", embed_fn=my_embed,
+    embedding_model="nomic-embed-text@your-revision",
+)
+evidence = retrieval.retrieve("How are these topics connected?", token_budget=12_000)
+for item in evidence:
+    print(item["rank"], item["chunk_id"], item["score"], item["text"])
+print(retrieval.last_trace)
+```
+
+After building the demo index above, run:
+
+```bash
+uv run python examples/retrieve_documents.py "What does a battery store?" --demo --index-dir indexes/demo --seed-k 2 --max-candidates 5 --token-budget 80 --trace-output tmp/phase5/trace.json
+```
+
+The budget covers the sum of selected chunk-text token counts, including any
+overlap already present in those chunks. It does not include future prompt
+headers, query, instructions, or answer space. The default backfill can admit
+positive-score chunks below the tail floor; use `backfill=False` to disable it.
+See the [Phase 5 guide](docs/phase5.md) for exact policies and defaults.
+
+Retrievers pin a verified snapshot for repeated queries. Use `load()` to refresh
+after rebuilding the index. Answer generation remains for Phase 6.
 
 Embedding and extraction callbacks are now configurable on ingestion.
 The proposed first implementation uses local files and NetworkX, avoiding a

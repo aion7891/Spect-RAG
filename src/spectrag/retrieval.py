@@ -67,3 +67,12 @@ class SpectRAGRetrieval:
                 "prompt": build_prompt(question, context),
                 "tokens": sum(chunk["tokens"] for chunk in chunks),
                 "seeds": seeds["seeds"], "candidates": scored["candidates"]}
+
+    def answer(self, question, llm_fn, token_budget=None):
+        """search() + generation (Algorithm 1 line 13). llm_fn is any function: prompt -> text.
+
+        Returns the search result with an extra "answer" key; result["chunks"] are the sources.
+        """
+        result = self.search(question, token_budget)
+        result["answer"] = llm_fn(result["prompt"]).strip()
+        return result

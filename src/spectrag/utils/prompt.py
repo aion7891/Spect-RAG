@@ -16,6 +16,17 @@ Mention the source names you used.
 Question: {question}
 Answer:"""
 
+# For scoring against short gold answers (Exact Match), e.g. "Porto" instead of a sentence.
+SHORT_ANSWER_PROMPT = """Answer the question using only the sources below.
+Combine facts from different sources when the question needs it.
+Reply with the answer only: a name, place, number or short phrase, with no full sentence.
+If the sources do not contain the answer, reply: unknown
+
+{context}
+
+Question: {question}
+Answer:"""
+
 
 def group_by_document(chunks):
     """Documents ordered by their best chunk score; chunks inside a document in reading order."""
@@ -45,6 +56,7 @@ def format_context(chunks):
     return "\n\n".join(blocks)
 
 
-def build_prompt(question, context):
-    """The grounded prompt for the generator LLM."""
-    return ANSWER_PROMPT.format(context=context, question=question)
+def build_prompt(question, context, short=False):
+    """The grounded prompt for the generator LLM (short=True asks for the bare answer)."""
+    template = SHORT_ANSWER_PROMPT if short else ANSWER_PROMPT
+    return template.format(context=context, question=question)

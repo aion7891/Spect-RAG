@@ -8,14 +8,41 @@ Retrieval-Augmented Generation"** (Sahinoglu et al., arXiv:2610.36991v2), includ
 This repository rebuilds the method as a **lightweight, beginner-friendly Python package**:
 short files, small functions, `numpy` as the only required dependency, and tests for every phase.
 
-> **Project status:** Phases 1–9 of 10 are done. **Both main classes work end to end:**
-> `SpectRAGIngestion` builds the index (chunks, embeddings, six edge signals, the weighted graph,
-> spectral coordinates, clusters), and `SpectRAGRetrieval.search()` runs all four online stages:
-> hybrid seeds, graph expansion, proximity re-scoring, and token-budget selection. It returns
-> the context, grouped by document, plus a grounded prompt. Phase 10 adds `answer()` with any
-> LLM, evaluation metrics, and a SpectRAG vs top-k comparison. See
-> [Section 11](#11-implementation-phases-and-progress) for progress and
-> [Section 15](#15-what-is-implemented-so-far) for the code that exists today.
+> **Project status: complete (all 10 phases).**
+>
+> - `SpectRAGIngestion` builds the index: chunks, embeddings, six edge signals, the weighted
+>   graph, spectral coordinates and clusters.
+> - `SpectRAGRetrieval` finds token-budgeted context and answers questions with any LLM.
+> - The paper's evaluation metrics and a 12-question multi-hop comparison with top-k retrieval
+>   are included.
+>
+> 32 small Python files (2,043 lines, none over 112), 175 tests. See
+> [Section 11](#11-implementation-phases-and-progress) for the phases and
+> [Section 15](#15-what-is-implemented-so-far) for every file and function.
+
+## Quick start
+
+```bash
+pip install -e ".[extras,dev]"          # or: uv sync --all-extras
+pytest -q                               # 174 passed, 1 skipped (opt-in LLM test)
+python examples/search_example.py       # offline: no internet, no API key
+```
+
+```python
+from spectrag import SpectRAGIngestion, SpectRAGRetrieval
+
+SpectRAGIngestion("my_index").ingest("path/to/docs")       # once per document set
+search = SpectRAGRetrieval("my_index")
+result = search.search("your question")                     # context within 12,000 tokens
+print(result["context"])
+
+from spectrag.utils.llm import ollama_llm                   # optional: a local LLM
+print(search.answer("your question", ollama_llm("gemma3:4b"))["answer"])
+```
+
+For real semantic embeddings use `SpectRAGIngestion("my_index", {"embedder": "ollama"})` (needs
+[Ollama](https://ollama.com) with `nomic-embed-text`). Any `llm_fn(prompt) -> text` works for
+answers: OpenAI, Anthropic, a local model, and so on.
 
 ---
 
@@ -28,11 +55,11 @@ short files, small functions, `numpy` as the only required dependency, and tests
 5. [Retrieval flow (online)](#5-retrieval-flow-online)
 6. [Execution flow](#6-execution-flow)
 7. [Package folder structure](#7-package-folder-structure)
-8. [Planned scripts and functions](#8-planned-scripts-and-functions)
+8. [Scripts and functions](#8-scripts-and-functions)
 9. [Settings: paper values and our defaults](#9-settings-paper-values-and-our-defaults)
 10. [Assumptions and deviations from the paper](#10-assumptions-and-deviations-from-the-paper)
 11. [Implementation phases and progress](#11-implementation-phases-and-progress)
-12. [Installation and usage (planned)](#12-installation-and-usage-planned)
+12. [Installation and usage](#12-installation-and-usage)
 13. [Testing strategy](#13-testing-strategy)
 14. [Known issues](#14-known-issues)
 15. [What is implemented so far](#15-what-is-implemented-so-far)
@@ -167,7 +194,7 @@ flowchart LR
         J --> K["Proximity re-scoring<br/>spectral + PageRank<br/>diffusion.py"]:::done
         K --> L["Token-budget selection<br/>selection.py"]:::done
         L --> M["Context + sources<br/>prompt.py, retrieval.py"]:::done
-        M -.optional.-> N["LLM answer"]:::doing
+        M -.optional.-> N["LLM answer<br/>answer(), llm.py"]:::done
     end
     G --> I
     classDef done fill:#2e7d32,color:#fff,stroke:#1b5e20
@@ -278,18 +305,30 @@ sequenceDiagram
 
 ## 7. Package folder structure
 
-Planned layout (files are created phase by phase):
+Final layout:
 
 ```
 Spect-RAG/
 ├── README.md
 ├── pyproject.toml
+├── uv.lock
 ├── docs/
 │   └── 2610.36991v2.pdf            # the paper
 ├── examples/
-│   ├── docs/                       # small sample documents
-│   ├── ingest_example.py
-│   └── search_example.py
+│   ├── docs/                       # 3 small sample documents
+│   ├── eval/
+│   │   ├── docs/                   # 14 documents: 11 linked + 3 distractors
+│   │   └── questions.json          # 12 questions (9 multi-hop) with answers and evidence
+│   ├── load_example.py             # Phase 2   loading and token counts
+│   ├── chunk_example.py            # Phase 3   chunking
+│   ├── embed_example.py            # Phase 4   embeddings + index store
+│   ├── edges_example.py            # Phase 5   the six edge signals
+│   ├── ingest_example.py           # Phase 6   SpectRAGIngestion
+│   ├── seed_example.py             # Phase 7   hybrid seeds
+│   ├── expand_example.py           # Phase 8   expansion + re-scoring
+│   ├── search_example.py           # Phase 9   SpectRAGRetrieval.search()
+│   ├── answer_example.py           # Phase 10  answer() with an LLM
+│   └── evaluate_example.py         # Phase 10  SpectRAG vs top-k
 ├── src/
 │   └── spectrag/
 │       ├── __init__.py             # exports SpectRAGIngestion, SpectRAGRetrieval
@@ -321,11 +360,11 @@ Spect-RAG/
 │           ├── expansion.py        # BFS graph expansion
 │           ├── diffusion.py        # PageRank + spectral proximity + re-score
 │           ├── selection.py        # token-budget context selection
-│           └── prompt.py           # format context, grounded prompt
-└── tests/
-    ├── test_tokens.py
-    ├── test_chunker.py
-    └── ...                         # one test file per utils module
+│           ├── prompt.py           # format context, grounded prompt
+│           ├── llm.py              # optional Ollama llm_fn
+│           ├── metrics.py          # precision/recall/F1, MRR, EM, token F1, contains
+│           └── evaluation.py       # SpectRAG vs dense / hybrid top-k
+└── tests/                          # 27 test files: unit tests per module + integration tests
 ```
 
 **Why `src/spectrag/utils/` rather than `src/utils/`:** a top-level package called `utils` would
@@ -334,7 +373,7 @@ inside `src/` and makes it importable as `spectrag.utils`.
 
 ---
 
-## 8. Planned scripts and functions
+## 8. Scripts and functions
 
 Every function is meant to be about 5–20 lines and do one job.
 
@@ -364,8 +403,11 @@ Every function is meant to be about 5–20 lines and do one job.
 | `utils/diffusion.py` | `personalized_pagerank()`, `spectral_closeness()`, `score_candidates()` | Online stage 3 (Eq. 17–18) |
 | `utils/selection.py` | `select_context()`, `utility()`, `pick_tail()`, `add_pick()` | Online stage 4 (Eq. 19–22) |
 | `utils/prompt.py` | `format_context()`, `build_prompt()` | Group by document; build the grounded prompt |
+| `utils/llm.py` | `ollama_llm()`, `clean_reply()` | Optional local LLM through Ollama |
+| `utils/metrics.py` | `precision_recall_f1()`, `reciprocal_rank()`, `exact_match()`, `token_f1()`, `contains()` | Paper Section 4.5 metrics |
+| `utils/evaluation.py` | `evaluate_retrieval()`, `evaluate_answers()` | SpectRAG vs dense / hybrid top-k on the same budget |
 | `ingestion.py` | `SpectRAGIngestion.ingest(path)` | Runs the whole offline pipeline |
-| `retrieval.py` | `SpectRAGRetrieval.search(q)` (and `.answer(q, llm_fn)` in Phase 10) | Runs the whole online pipeline |
+| `retrieval.py` | `SpectRAGRetrieval.search(q)`, `.answer(q, llm_fn)` | Runs the whole online pipeline |
 
 ---
 
@@ -458,6 +500,10 @@ Every function is meant to be about 5–20 lines and do one job.
 | D49 | Backfill "remaining high-quality candidates" | All remaining candidates in score order, each one if it still fits | Fills the budget without any further rules |
 | D50 | Budget accounting (Eq. 19) | Counts chunk tokens only; the `### Source:` headers and section labels added by `format_context()` are not counted (a few tokens per chunk) | Eq. 19 sums `ℓ(c)` over the chunks |
 | D51 | "Format C grouped by source document" | Documents ordered by their best chunk score; chunks inside a document in reading order; the section label is shown only when the chunk does not start with its heading | Keeps the most relevant source first and each document readable |
+| D52 | Generation with `gpt-4o-mini`, temperature 0 | `answer(question, llm_fn)` with any function; `ollama_llm()` uses temperature 0 and strips `<think>` blocks of reasoning models | Any provider works; no API key needed for the demos |
+| D53 | Exact Match on short gold answers (MultiHopRAG) | Answer evaluation uses a **short-answer** prompt ("reply with the answer only"); `answer()` keeps the full grounded prompt | With the full prompt, LLMs write sentences and EM was 0.00 for every method |
+| D54 | Benchmarks MultiHopRAG and UltraDomain, `gpt-4o` judge | A 14-document, 12-question toy set (9 multi-hop) with exact evidence snippets; the same budget for every method; scaled-down settings (`chunk_tokens = 128`, `seed_count = 5`, 400-token budget) for a corpus of 26–28 chunks | Runs offline in seconds; results show tendencies, not benchmark numbers |
+| D55 | Retrieval recall (Eq. 23) over gold chunks | Recall = share of evidence **snippets** found (a snippet counts if any selected chunk contains it); "complete" = all snippets found; precision and MRR over chunks that contain a snippet | Chunk overlap can put one snippet into two chunks; counting snippets avoids penalising that |
 
 ---
 
@@ -473,7 +519,7 @@ flowchart LR
     P6 --> P7["7. BM25 + hybrid<br/>seeding (RRF)"]:::done
     P7 --> P8["8. Expansion +<br/>diffusion re-score"]:::done
     P8 --> P9["9. Token-budget selection<br/>= SpectRAGRetrieval"]:::done
-    P9 --> P10["10. Answer, metrics,<br/>examples, polish"]:::doing
+    P9 --> P10["10. Answer, metrics,<br/>examples, polish"]:::done
     classDef done fill:#2e7d32,color:#fff,stroke:#1b5e20
     classDef doing fill:#f9a825,color:#000,stroke:#f57f17
     classDef todo fill:#9e9e9e,color:#fff,stroke:#616161
@@ -492,7 +538,7 @@ Legend: 🟩 done · 🟨 in progress · ⬜ pending
 | 7 | `bm25.py`, `seeding.py` | Seeds contain the obvious matching chunks | 🟩 Done (128 tests + 1 opt-in) |
 | 8 | `expansion.py`, `diffusion.py` | Bridge chunks are reached through the graph and scored by proximity | 🟩 Done (140 tests + 1 opt-in) |
 | 9 | `selection.py`, `prompt.py`, `retrieval.py` | `search()` respects the budget and diversifies documents | 🟩 Done (157 tests + 1 opt-in) |
-| 10 | `answer()`, metrics, examples, final README | End-to-end demo plus SpectRAG vs top-k on a toy multi-hop set | 🟨 Next |
+| 10 | `llm.py`, `metrics.py`, `evaluation.py`, `answer()`, eval set, final README | End-to-end demo plus SpectRAG vs top-k on a toy multi-hop set | 🟩 Done (174 tests + 1 opt-in) |
 
 ---
 
@@ -870,11 +916,88 @@ SpectRAG covers more clusters and documents with less repetition, and fills the 
 diversity rises further (about 10 clusters and 22 documents, redundancy about 0.15). Loading
 the index takes 6 ms and one `search()` about 3 ms.
 
-Planned API for Phase 10:
+Runnable now (Phase 10: answers with any LLM):
 
 ```python
-answer = search.answer("...", llm_fn=my_llm)    # any function: prompt -> text
+from spectrag.utils.llm import ollama_llm
+
+result = search.answer("Which company did the co-founder of Aurora Labs join, and what does it build?",
+                       ollama_llm("gemma3:4b"), token_budget=400)
+print(result["answer"])            # plus everything search() returns: chunks, context, prompt, ...
+
+# Any function prompt -> text works, e.g. an API client:
+# search.answer(question, lambda prompt: client.generate(prompt))
 ```
+
+```bash
+python examples/answer_example.py                    # nomic-embed-text + gemma3:4b
+python examples/answer_example.py ollama qwen3:4b    # a reasoning model; <think> is stripped
+```
+
+Actual output:
+
+```text
+A: The co-founder of Aurora Labs, Maya Chen, joined Helios Energy (aurora_labs.md). Helios Energy
+   is a solar power company based in Porto that builds solar farms for small towns in southern
+   Europe (helios_energy.txt).
+Sources (391 tokens of context):
+  1. aurora_labs.md#0  score=0.99
+  ...
+  5. helios_energy.txt#0  score=0.32
+```
+
+With the offline hash embedder (`python examples/answer_example.py hash gemma3:4b`), no Helios
+chunk made it into the 400-token context. The LLM then **guessed** "Helios Energy builds energy
+products". This is a real example of why retrieval quality decides answer quality.
+
+Runnable now (Phase 10: evaluation, SpectRAG vs top-k):
+
+```bash
+python examples/evaluate_example.py                   # offline hash embedder
+python examples/evaluate_example.py ollama            # nomic-embed-text
+python examples/evaluate_example.py ollama gemma3:4b  # + answers (36 LLM calls, about 40 s)
+```
+
+The evaluation set (`examples/eval/`) has 14 documents: the 3 samples, 8 new documents linked
+through people and companies, and 3 distractors that share words but contain no answers. There
+are 12 questions with gold answers and exact evidence snippets. Nine are multi-hop, for example
+*"Which company acquired the former employer of the person who leads the Madrid office of Aurora
+Labs?"* (Aurora/Tomas Ruiz → Lucia Ferreira → Nordwind Robotics → Baltic Logistics). All three
+methods get the same 400-token budget.
+
+Retrieval (12 questions, `chunk_tokens = 128`, `seed_count = 5`, 400 tokens):
+
+| Embedder | Method | Evidence recall | All evidence found | Precision | MRR |
+|---|---|---|---|---|---|
+| hash | dense top-k | 0.83 | 0.67 | 0.19 | 0.65 |
+| | hybrid top-k | 0.90 | 0.83 | 0.23 | 0.81 |
+| | **SpectRAG** | 0.90 | 0.83 | 0.21 | **0.85** |
+| nomic-embed-text | dense top-k | 0.94 | 0.83 | 0.24 | 0.88 |
+| | hybrid top-k | 0.93 | 0.83 | 0.23 | 0.96 |
+| | **SpectRAG** | **0.96** | **0.92** | 0.23 | 0.96 |
+
+Answers (nomic-embed-text, `gemma3:4b`, the same short-answer prompt for every method):
+
+| Method | Exact Match | Token F1 | Contains |
+|---|---|---|---|
+| dense top-k | 0.75 | 0.75 | 0.75 |
+| hybrid top-k | 0.67 | 0.73 | 0.75 |
+| **SpectRAG** | **0.75** | **0.82** | **0.83** |
+
+How to read this, honestly:
+
+- **SpectRAG beats dense top-k and ties or slightly beats hybrid top-k.** This is the same
+  pattern as the paper: strong hybrid retrieval is hard to beat on early precision, and
+  SpectRAG's gain is broader evidence recall (Table 6, Section 6).
+- **The 3-hop Baltic Logistics question** is the only one where just SpectRAG found *all*
+  evidence (nomic). With `gemma3:4b`, dense answered "Nordwind Robotics" (wrong) and SpectRAG
+  answered "Baltic Logistics" (right).
+- **SpectRAG is not always better.** For question 1 (Porto), SpectRAG and hybrid missed the
+  "based in Porto" chunk, and SpectRAG answered "Lisbon".
+- **12 questions is a small sample**: one answer changes EM by 0.08. The full grid I ran
+  (`seed_count` 3 / 5 / 20, budgets 200 / 400, both embedders) shows the same picture: SpectRAG
+  ≥ dense nearly everywhere, ≈ hybrid (a little ahead at 400 tokens, sometimes a little behind
+  at 200). These are not benchmark results.
 
 To use the real `nomic-embed-text` model (optional), install [Ollama](https://ollama.com), run
 `ollama pull nomic-embed-text`, and use `make_settings({"embedder": "ollama"})`.
@@ -916,16 +1039,20 @@ chunking receives it as `embed_fn`.
 
 ## 13. Testing strategy
 
+- **175 tests in 27 files**: 174 run by default, plus 1 opt-in live LLM test. On a minimal
+  install (`numpy` + `pytest`) 170 pass and the `pypdf` / `scipy` tests are skipped.
 - **Unit tests** (`pytest`): one test file per `utils` module, using tiny hand-written texts with
-  known answers.
-- **Integration tests**: from Phase 6, ingest `examples/docs` into a temporary folder; from
-  Phase 9, run `search()` on it.
+  known answers. Formulas are checked against hand-computed values (BM25, RRF, PageRank's closed
+  form, Jaccard, the metrics).
+- **Integration tests**: `test_ingestion.py` builds the sample index in a temporary folder;
+  `test_retrieval.py` runs `search()` and `answer()` on it; `test_evaluation.py` checks that
+  every evidence snippet exists and runs the full comparison (with a fake LLM).
 - **Offline by default**: no test needs the internet, an API key, or Ollama. Ollama calls are
   tested with a fake server. One live test, `test_real_nomic_embed_text`, runs only when Ollama
   is reachable on `localhost:11434`; otherwise it is skipped.
 - **Opt-in LLM test**: `SPECTRAG_LIVE_LLM=1 pytest tests/test_questions.py` calls a real Ollama
   LLM (default `gemma3:4b`; change it with `SPECTRAG_LLM_MODEL=qwen3:4b`).
-- Run all tests: `pytest -q`. Run one file: `pytest tests/test_retrieval.py -q`. See skipped tests
+- Run all tests: `pytest -q`. Run one file: `pytest tests/test_evaluation.py -q`. See skipped tests
   with `pytest -q -rs`.
 
 ---
@@ -1009,6 +1136,14 @@ chunking receives it as `embed_fn`.
 - An index built with your own embed **function** stores only its name in `settings.json`, so
   `make_embedder(index["settings"])` cannot rebuild it. Pass the same function again
   (`SpectRAGRetrieval` in Phase 9 will accept it).
+- The evaluation set is tiny (12 questions, 26–28 chunks) and written for this project. It
+  shows tendencies, not benchmark scores; MultiHopRAG and UltraDomain are not reproduced (D54).
+- Exact Match is strict: "Coimbra University" does not match "University of Coimbra" (token F1
+  gives 0.8). Contains and token F1 are more forgiving.
+- `answer()` sends the whole context in one LLM call with no retries. LLM errors (e.g. Ollama
+  not running) come through as Python exceptions.
+- Small local LLMs (`gemma3:4b`) sometimes answer the wrong hop even with all evidence present,
+  for example naming the intermediate company instead of the final one.
 - Values marked ⚠️ in Section 9 are our guesses, not tuned values from the paper.
 
 ---
@@ -1474,4 +1609,53 @@ Run the Phase 9 tests:
 
 ```bash
 pytest -v tests/test_selection.py tests/test_prompt.py tests/test_retrieval.py
+```
+
+### Phase 10: answers, metrics, evaluation
+
+```mermaid
+flowchart TD
+    Q["questions.json<br/>question, answers, evidence"] --> GM["gold_map()<br/>snippet → chunks that contain it"]
+    Q --> MR["method_rankings()<br/>same budget for all"]
+    MR --> D["dense top-k<br/>fill_budget(dense order)"]
+    MR --> H["hybrid top-k<br/>fill_budget(relevance order)"]
+    MR --> S["SpectRAG<br/>retrieve() picks"]
+    D & H & S --> SS["score_selection()<br/>recall, complete, precision, F1, MRR"]
+    GM --> SS
+    D & H & S --> PF["prompt_for(short=True)"]
+    PF --> LLM["llm_fn(prompt)"]
+    LLM --> AM["exact_match(), token_f1(), contains()"]
+    SS & AM --> SUM["summary per method"]
+```
+
+| File | Function | What it does |
+|---|---|---|
+| `utils/llm.py` | `ollama_llm(model, url)` | An `llm_fn` for a local Ollama model (temperature 0). Moved here from `questions.py`, which still re-exports it. |
+| | `clean_reply(text)` | Removes `<think> … </think>` from reasoning models such as `qwen3`. |
+| `utils/metrics.py` | `precision_recall_f1(found, retrieved, gold)` | Eq. 23–24; F1 = 0 when both are 0. |
+| | `reciprocal_rank(ranked, gold)` | `1 / rank` of the first gold item (for MRR). |
+| | `normalize_answer(text)` | Lower case, no punctuation, no `a / an / the`. |
+| | `exact_match()`, `token_f1()`, `contains()` | Eq. 25, Eq. 26–27 and Table 7's "contains", each taking the best over several reference answers. |
+| `utils/evaluation.py` | `load_questions(path)` | Reads the JSON question list. |
+| | `gold_map(chunks, evidence)` | Which chunks contain each snippet (whitespace-insensitive); **raises** if a snippet is in no chunk, so a typo cannot silently lower the scores. |
+| | `score_selection(ids, gold)` | Recall (snippets found), complete, precision, F1 and MRR for one ranking. |
+| | `fill_budget(order, chunks, budget)` | Top-k under a token budget, used for the baselines. |
+| | `method_rankings(search, question, budget)` | The dense, hybrid and SpectRAG rankings for one question. |
+| | `evaluate_retrieval(search, questions, budget)` | Per-question rows plus averages for each method. |
+| | `prompt_for(search, question, ids, short)` | The grounded prompt for any ranking (short-answer form by default). |
+| | `evaluate_answers(search, questions, budget, llm_fn)` | Answers with each method's context; EM, token F1, contains. |
+| `utils/prompt.py` | `build_prompt(question, context, short=False)` | New `short=True` form: "reply with the answer only" (D53). |
+| `retrieval.py` | `answer(question, llm_fn, token_budget)` | `search()` + `llm_fn(prompt)`; returns the search result with `"answer"`. |
+| `examples/eval/` | — | 14 documents and 12 questions (9 multi-hop) with exact evidence snippets. |
+| `examples/answer_example.py` | `main()` | Question → answer with ranked sources. Arguments: `[embedder] [llm-model]`. |
+| `examples/evaluate_example.py` | `main()` | Retrieval table, per-question "all evidence found", and (with an LLM model) answer metrics and every answer. |
+| `tests/test_metrics.py` | 6 tests | Every metric, including best-of-references, F1 = 0 rule, whole-word contains. |
+| `tests/test_evaluation.py` | 6 tests | `fill_budget`; `score_selection` by hand; `gold_map` across line breaks and its error; **every evidence snippet exists**; the full comparison respects the budget for all methods and SpectRAG recall ≥ dense; answer evaluation with a fake LLM (short prompt, EM). |
+| `tests/test_llm.py` | 3 tests | `<think>` removal, old import still works, Ollama reply cleaned (fake server). |
+| `tests/test_retrieval.py`, `tests/test_prompt.py` | +1, +1 test | `answer()` sends exactly the grounded prompt and strips the reply; the short prompt. |
+
+Run the Phase 10 tests:
+
+```bash
+pytest -v tests/test_metrics.py tests/test_evaluation.py tests/test_llm.py tests/test_retrieval.py
 ```

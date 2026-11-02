@@ -4,9 +4,9 @@ The paper asks gpt-4o-mini for them. Here you bring any LLM as a function
 llm_fn(prompt) -> text, and make_question_fn() turns it into a question generator.
 """
 
-import json
 import re
-import urllib.request
+
+from spectrag.utils.llm import ollama_llm  # noqa: F401  (kept here so old imports still work)
 
 QUESTION_PROMPT = """Read the passage and write {count} short questions that the passage answers.
 Write one question per line. Do not number them. Do not add anything else.
@@ -38,15 +38,3 @@ def add_utility_questions(chunks, question_fn):
     for chunk in chunks:
         chunk["utility_questions"] = question_fn(chunk["text"]) if question_fn else []
     return chunks
-
-
-def ollama_llm(model="gemma3:4b", url="http://localhost:11434"):
-    """Optional helper: an llm_fn that calls a local Ollama model (temperature 0, like the paper)."""
-    def llm_fn(prompt):
-        body = json.dumps({"model": model, "prompt": prompt, "stream": False,
-                           "options": {"temperature": 0}}).encode("utf-8")
-        request = urllib.request.Request(url.rstrip("/") + "/api/generate", data=body,
-                                         headers={"Content-Type": "application/json"})
-        with urllib.request.urlopen(request, timeout=300) as response:
-            return json.loads(response.read())["response"]
-    return llm_fn

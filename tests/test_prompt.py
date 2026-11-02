@@ -31,3 +31,8 @@ def test_build_prompt_is_grounded():
     assert "only the sources below" in prompt
     assert prompt.endswith("Question: Who?\nAnswer:")
     assert "### Source: a.txt" in prompt
+
+
+def test_short_prompt_asks_for_bare_answer():
+    assert "Reply with the answer only" in build_prompt("Who?", "ctx", short=True)
+    assert "Reply with the answer only" not in build_prompt("Who?", "ctx")

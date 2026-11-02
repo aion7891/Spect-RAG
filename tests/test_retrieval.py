@@ -64,3 +64,16 @@ def test_custom_embed_function_must_be_passed_again(tmp_path):
         SpectRAGRetrieval(tmp_path)
     result = SpectRAGRetrieval(tmp_path, embed_fn=embed_fn).search(QUESTION)
     assert result["chunks"][0]["id"] == 0
+
+
+def test_answer_uses_the_grounded_prompt(search):
+    prompts = []
+
+    def fake_llm(prompt):
+        prompts.append(prompt)
+        return "  Helios Energy  "
+
+    result = search.answer(QUESTION, fake_llm, token_budget=300)
+    assert result["answer"] == "Helios Energy"
+    assert prompts == [result["prompt"]]
+    assert result["chunks"] and result["tokens"] <= 300

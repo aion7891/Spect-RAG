@@ -8,12 +8,12 @@ Retrieval-Augmented Generation"** (Sahinoglu et al., arXiv:2610.36991v2), includ
 This repository rebuilds the method as a **lightweight, beginner-friendly Python package**:
 short files, small functions, `numpy` as the only required dependency, and tests for every phase.
 
-> **Project status:** Phases 1–7 of 10 are done. **The offline half of SpectRAG works:**
-> `SpectRAGIngestion` builds a complete index (chunks, embeddings, six edge signals, the fused
-> weighted graph, spectral coordinates, and clusters). The first online stage, hybrid seed
-> retrieval (dense + BM25 + utility questions, fused with RRF), works too, and so do stages 2–3:
-> graph expansion (2 hops, ≤ 200 candidates) and proximity re-scoring (Personalized PageRank +
-> spectral closeness). Token-budget selection and `SpectRAGRetrieval` (Phase 9) are next. See
+> **Project status:** Phases 1–9 of 10 are done. **Both main classes work end to end:**
+> `SpectRAGIngestion` builds the index (chunks, embeddings, six edge signals, the weighted graph,
+> spectral coordinates, clusters), and `SpectRAGRetrieval.search()` runs all four online stages:
+> hybrid seeds, graph expansion, proximity re-scoring, and token-budget selection. It returns
+> the context, grouped by document, plus a grounded prompt. Phase 10 adds `answer()` with any
+> LLM, evaluation metrics, and a SpectRAG vs top-k comparison. See
 > [Section 11](#11-implementation-phases-and-progress) for progress and
 > [Section 15](#15-what-is-implemented-so-far) for the code that exists today.
 
@@ -165,9 +165,9 @@ flowchart LR
         H["Question"] --> I["Hybrid seeds<br/>dense + BM25 + utility<br/>bm25.py, seeding.py"]:::done
         I --> J["2-hop graph expansion<br/>expansion.py"]:::done
         J --> K["Proximity re-scoring<br/>spectral + PageRank<br/>diffusion.py"]:::done
-        K --> L["Token-budget selection"]:::doing
-        L --> M["Context + sources"]:::todo
-        M -.optional.-> N["LLM answer"]:::todo
+        K --> L["Token-budget selection<br/>selection.py"]:::done
+        L --> M["Context + sources<br/>prompt.py, retrieval.py"]:::done
+        M -.optional.-> N["LLM answer"]:::doing
     end
     G --> I
     classDef done fill:#2e7d32,color:#fff,stroke:#1b5e20
@@ -239,10 +239,10 @@ flowchart TD
     X --> P2["personalized_pagerank()"]:::done
     P1 & P2 --> P["proximity = mean of both"]:::done
     REL & P --> S2["score_candidates()<br/>(1-α)·rel + α·prox"]:::done
-    S2 --> C1["protected core"]:::doing
-    C1 --> C2["greedy tail: Eq. 21-22<br/>precision floor"]:::todo
-    C2 --> C3["backfill until budget full"]:::todo
-    C3 --> OUT["format_context()<br/>grouped by document"]:::todo
+    S2 --> C1["protected core"]:::done
+    C1 --> C2["greedy tail: Eq. 21-22<br/>precision floor"]:::done
+    C2 --> C3["backfill until budget full"]:::done
+    C3 --> OUT["format_context()<br/>grouped by document"]:::done
     classDef done fill:#2e7d32,color:#fff,stroke:#1b5e20
     classDef doing fill:#f9a825,color:#000,stroke:#f57f17
     classDef todo fill:#9e9e9e,color:#fff,stroke:#616161
@@ -321,7 +321,7 @@ Spect-RAG/
 │           ├── expansion.py        # BFS graph expansion
 │           ├── diffusion.py        # PageRank + spectral proximity + re-score
 │           ├── selection.py        # token-budget context selection
-│           └── prompt.py           # format context, optional answer
+│           └── prompt.py           # format context, grounded prompt
 └── tests/
     ├── test_tokens.py
     ├── test_chunker.py
@@ -362,10 +362,10 @@ Every function is meant to be about 5–20 lines and do one job.
 | `utils/seeding.py` | `find_seeds()`, `dense_scores()`, `utility_scores()`, `rrf_fuse()`, `hybrid_relevance()` | Online stage 1 |
 | `utils/expansion.py` | `expand_graph()`, `subgraph_matrix()` | Online stage 2 |
 | `utils/diffusion.py` | `personalized_pagerank()`, `spectral_closeness()`, `score_candidates()` | Online stage 3 (Eq. 17–18) |
-| `utils/selection.py` | `select_context()`, `pick_core()`, `utility_gain()`, `backfill()` | Online stage 4 (Eq. 19–22) |
+| `utils/selection.py` | `select_context()`, `utility()`, `pick_tail()`, `add_pick()` | Online stage 4 (Eq. 19–22) |
 | `utils/prompt.py` | `format_context()`, `build_prompt()` | Group by document; build the grounded prompt |
 | `ingestion.py` | `SpectRAGIngestion.ingest(path)` | Runs the whole offline pipeline |
-| `retrieval.py` | `SpectRAGRetrieval.search(q)`, `.answer(q, llm_fn)` | Runs the whole online pipeline |
+| `retrieval.py` | `SpectRAGRetrieval.search(q)` (and `.answer(q, llm_fn)` in Phase 10) | Runs the whole online pipeline |
 
 ---
 
@@ -396,9 +396,9 @@ Every function is meant to be about 5–20 lines and do one job.
 | `ppr_beta` / `ppr_steps` | 0.15 / 30 (β is the restart share in Eq. 18) | ⚠️ |
 | `diffusion_t` | 1.0: heat-kernel scale `t` for spectral closeness (Eq. 17) | ⚠️ |
 | `core_size` (protected core) | 3 | ⚠️ |
-| `precision_floor` | 0.4 × best score | ⚠️ |
-| Eq. 21 weights `a, b, c, d, λ` | 1.0, 0.3, 0.2, 0.1, 0.5 | ⚠️ |
-| `length_power` (ρ) | 0.5 | ⚠️ |
+| `precision_floor` | 0.4 × best score: tail candidates below it are left for backfill | ⚠️ |
+| `select_weights` (Eq. 21 `a, b, c, d, λ`) | 1.0, 0.3, 0.2, 0.1, 0.5 | ⚠️ |
+| `length_power` (ρ in Eq. 22) | 0.5 | ⚠️ |
 | `n_clusters` | `None` = `round(sqrt(n / 2))`, at least 2 (at most n) | ⚠️ |
 
 ---
@@ -452,6 +452,12 @@ Every function is meant to be about 5–20 lines and do one job.
 | D43 | Two-hop BFS "with a cap of 200 nodes" (order inside a hop not given) | Seeds first; then each hop's new chunks, strongest link to the previous hop first, until the cap is reached | When the cap cuts a hop, the most strongly connected chunks are kept |
 | D44 | PPR "from the seeds over the real weighted subgraph" | Eq. 18 on the subgraph of the candidates only; the restart vector is the seeds' hybrid relevance, summing to 1 (equal shares if all are 0); 30 steps | Seeds that match the question better spread more relevance |
 | D45 | Proximity is "the mean of spectral eigenspace closeness and Personalized PageRank" | PPR is min-max rescaled over the candidates (spectral closeness is already 0..1), then `proximity = (ppr + spectral) / 2` | The two must be on the same scale before averaging |
+| D46 | Eq. 21 terms are named but not defined | `s_c` = the re-scored score; `Prox` = Phase 8 proximity; `ClusterGain = 1 / (1 + chunks already picked from c's cluster)`; `DocGain` = the same per document; `Red` = the largest cosine between c and any picked chunk | Each term is in [0, 1], rewards what is not yet covered, and is cheap to update after each pick |
+| D47 | Protected core | The `core_size` best-scored candidates that fit, picked in score order (the floor does not apply to them) | "Strongly relevant evidence is not removed by later diversity or budget constraints" (Section 3.8) |
+| D48 | Greedy tail | Repeatedly pick the candidate with the best `U / tokens^ρ` among candidates with `score ≥ precision_floor × best score` that fit the budget; a candidate is only picked if `U > 0` | With `U ≤ 0`, dividing by length would favour long redundant chunks |
+| D49 | Backfill "remaining high-quality candidates" | All remaining candidates in score order, each one if it still fits | Fills the budget without any further rules |
+| D50 | Budget accounting (Eq. 19) | Counts chunk tokens only; the `### Source:` headers and section labels added by `format_context()` are not counted (a few tokens per chunk) | Eq. 19 sums `ℓ(c)` over the chunks |
+| D51 | "Format C grouped by source document" | Documents ordered by their best chunk score; chunks inside a document in reading order; the section label is shown only when the chunk does not start with its heading | Keeps the most relevant source first and each document readable |
 
 ---
 
@@ -466,8 +472,8 @@ flowchart LR
     P5 --> P6["6. Graph + spectral<br/>= SpectRAGIngestion"]:::done
     P6 --> P7["7. BM25 + hybrid<br/>seeding (RRF)"]:::done
     P7 --> P8["8. Expansion +<br/>diffusion re-score"]:::done
-    P8 --> P9["9. Token-budget selection<br/>= SpectRAGRetrieval"]:::doing
-    P9 --> P10["10. Answer, metrics,<br/>examples, polish"]:::todo
+    P8 --> P9["9. Token-budget selection<br/>= SpectRAGRetrieval"]:::done
+    P9 --> P10["10. Answer, metrics,<br/>examples, polish"]:::doing
     classDef done fill:#2e7d32,color:#fff,stroke:#1b5e20
     classDef doing fill:#f9a825,color:#000,stroke:#f57f17
     classDef todo fill:#9e9e9e,color:#fff,stroke:#616161
@@ -485,8 +491,8 @@ Legend: 🟩 done · 🟨 in progress · ⬜ pending
 | 6 | `graph.py`, `spectral.py`, `ingestion.py` | `SpectRAGIngestion().ingest()` writes a full index | 🟩 Done (98 tests + 1 opt-in) |
 | 7 | `bm25.py`, `seeding.py` | Seeds contain the obvious matching chunks | 🟩 Done (128 tests + 1 opt-in) |
 | 8 | `expansion.py`, `diffusion.py` | Bridge chunks are reached through the graph and scored by proximity | 🟩 Done (140 tests + 1 opt-in) |
-| 9 | `selection.py`, `prompt.py`, `retrieval.py` | `search()` respects the budget and diversifies documents | 🟨 Next |
-| 10 | `answer()`, metrics, examples, final README | End-to-end demo plus SpectRAG vs top-k on a toy multi-hop set | ⬜ Pending |
+| 9 | `selection.py`, `prompt.py`, `retrieval.py` | `search()` respects the budget and diversifies documents | 🟩 Done (157 tests + 1 opt-in) |
+| 10 | `answer()`, metrics, examples, final README | End-to-end demo plus SpectRAG vs top-k on a toy multi-hop set | 🟨 Next |
 
 ---
 
@@ -780,20 +786,94 @@ What this shows:
   `alpha` (0.3, a guess). This matches the paper's finding that the graph mainly helps overall
   recall and Recall@10 rather than the very first ranks (Table 6, Section 6).
 
-Planned API for the rest of the online half (Phase 9):
+Runnable now (Phase 9: the complete pipeline with the two main classes):
 
 ```python
-from spectrag import SpectRAGRetrieval
+from spectrag import SpectRAGIngestion, SpectRAGRetrieval
+
+# Offline: run once per document collection
+SpectRAGIngestion("my_index").ingest("examples/docs")
 
 # Online: run per question
-search = SpectRAGRetrieval(index_dir="my_index")
-result = search.search("Which company did the founder of X later join?")
+search = SpectRAGRetrieval("my_index")                  # optional: settings={...}, embed_fn=...
+result = search.search("Which company did the co-founder of Aurora Labs join after leaving?")
 print(result["context"])          # text for your LLM, grouped by document
-for chunk in result["chunks"]:    # selected chunks with scores
-    print(chunk["doc_id"], chunk["score"])
+print(result["prompt"])           # the same context inside a grounded prompt
+print(result["tokens"])           # tokens used, always <= token_budget (default 12000)
+for chunk in result["chunks"]:    # ranked source metadata
+    print(chunk["rank"], chunk["doc_id"], chunk["reason"], chunk["score"])
 
-# Optional: generate an answer with any LLM function
-answer = search.answer("...", llm_fn=my_llm)
+result = search.search("...", token_budget=4000)   # a smaller budget for a smaller LLM
+```
+
+`result["chunks"]` lists each selected chunk with `rank`, `id`, `doc_id`, `position`, `section`,
+`tokens`, `text`, `reason` (`core`, `tail` or `backfill`), `hop` (0 = seed), `score`,
+`relevance`, and `proximity`. `result["seeds"]` and `result["candidates"]` show `S0` and `S1`.
+
+```bash
+python examples/search_example.py               # offline, 250-token budget
+python examples/search_example.py ollama 400    # nomic-embed-text, 400-token budget
+```
+
+Actual output (offline, shortened):
+
+```text
+Q: Which company did the co-founder of Aurora Labs join after leaving?
+Used 236 of 250 tokens, 3 chunks:
+  1. [0] aurora_labs.md           core     hop=0 score=0.98 tokens=113
+  2. [3] aurora_labs.md           core     hop=0 score=0.66 tokens=38
+  3. [7] river_valley_farming.md  core     hop=0 score=0.57 tokens=85
+
+--- context for the LLM ---
+### Source: aurora_labs.md
+# Aurora Labs
+## 1. History
+Aurora Labs was founded in 2014 in Lisbon by Dr. Maya Chen and Tomas Ruiz.
+...
+In 2019 Maya Chen left Aurora Labs.
+She later joined Helios Energy as its chief technology officer.
+...
+### Source: river_valley_farming.md
+## Irrigation
+...
+Q: How much water does the cooperative save?
+Used 236 of 250 tokens, 4 chunks:
+  1. [7] river_valley_farming.md  core     hop=0 score=0.97 tokens=85
+  2. [3] aurora_labs.md           core     hop=0 score=0.69 tokens=38
+  3. [6] river_valley_farming.md  core     hop=0 score=0.60 tokens=54
+  4. [5] helios_energy.txt        tail     hop=0 score=0.42 tokens=59
+```
+
+What this shows:
+
+- The budget is never exceeded. The context is grouped by document with the best source first,
+  and each document reads in its original order.
+- The top chunk for each question contains the answer ("joined Helios Energy";
+  "30 percent less water").
+- **Diversity has a price.** For the water question, the greedy tail chose a Helios chunk: a new
+  document and a new cluster, but not about water. The paper reports the same trade-off: broader
+  evidence, weaker early precision (Section 6).
+
+How selection compares with plain top-k, on the 244-chunk paper corpus with the **same** 3,000-token budget:
+
+| Question | | Chunks | Clusters | Documents | Mean pair similarity (redundancy) |
+|---|---|---|---|---|---|
+| "How does SpectRAG select context under a token budget?" | top-k | 32 | 9 | 14 | 0.208 |
+| | SpectRAG | 34 | 9 | **17** | **0.195** |
+| "What is the normalized Laplacian used for?" | top-k | 30 | 6 | 14 | 0.233 |
+| | SpectRAG | 34 | **7** | **15** | **0.196** |
+| "Which datasets and baselines are used in the experiments?" | top-k | 30 | 6 | 21 | 0.226 |
+| | SpectRAG | 37 | **8** | **22** | **0.178** |
+
+SpectRAG covers more clusters and documents with less repetition, and fills the budget
+(2,997–3,000 tokens). The greedy tail picks most chunks (27–32). With `precision_floor = 0.2`
+diversity rises further (about 10 clusters and 22 documents, redundancy about 0.15). Loading
+the index takes 6 ms and one `search()` about 3 ms.
+
+Planned API for Phase 10:
+
+```python
+answer = search.answer("...", llm_fn=my_llm)    # any function: prompt -> text
 ```
 
 To use the real `nomic-embed-text` model (optional), install [Ollama](https://ollama.com), run
@@ -845,7 +925,7 @@ chunking receives it as `embed_fn`.
   is reachable on `localhost:11434`; otherwise it is skipped.
 - **Opt-in LLM test**: `SPECTRAG_LIVE_LLM=1 pytest tests/test_questions.py` calls a real Ollama
   LLM (default `gemma3:4b`; change it with `SPECTRAG_LLM_MODEL=qwen3:4b`).
-- Run all tests: `pytest -q`. Run one file: `pytest tests/test_diffusion.py -q`. See skipped tests
+- Run all tests: `pytest -q`. Run one file: `pytest tests/test_retrieval.py -q`. See skipped tests
   with `pytest -q -rs`.
 
 ---
@@ -912,6 +992,15 @@ chunking receives it as `embed_fn`.
   `alpha`; the paper does not give its value.
 - The subgraph for PageRank is a dense `m × m` matrix with `m ≤ max_candidates = 200`, so it is
   tiny. Raising `max_candidates` to many thousands would need a sparse matrix.
+- `precision_floor` decides how much of the selection is diversity-driven. With
+  `nomic-embed-text` on the 8 sample chunks, one strong match pushes every other candidate below
+  `0.4 × best`, so the greedy tail picks nothing and backfill (score order) fills the budget.
+  Lower `precision_floor` for more diversity, raise it for more precision.
+- The greedy tail scores every remaining candidate at each step: `O(picks × candidates)`. That
+  is at most about 200 × 200 here (≈ 3 ms per search).
+- Backfill ignores redundancy, so it can add near-duplicates when nothing else fits.
+- The alternative selectors from the paper (`mmr`, `protected_mmr`, `anchor_expand_ce`) are not
+  implemented (D14).
 - On a tiny corpus, `seed_count = 20` makes **every** chunk a seed (the sample docs have 8), so
   the graph stages have nothing left to "recover". Demos lower `seed_count` to show the effect.
   On real corpora with hundreds of chunks, 20 seeds are a small part.
@@ -1328,4 +1417,61 @@ Run the Phase 8 tests:
 
 ```bash
 pytest -v tests/test_expansion.py tests/test_diffusion.py
+```
+
+### Phase 9: token-budget selection and SpectRAGRetrieval
+
+```mermaid
+flowchart TD
+    Q["search(question, token_budget)"] --> EM["embed(question, kind='query')"]
+    EM --> FS["find_seeds()<br/>stage 1"]
+    FS --> SC["score_candidates()<br/>stages 2-3"]
+    SC --> SEL["select_context()<br/>stage 4"]
+    SEL --> CORE["1. protected core<br/>core_size best scores that fit"]
+    CORE --> TAIL["2. pick_tail(): repeat<br/>best U / tokens^ρ, score ≥ floor, U &gt; 0"]
+    TAIL --> BF["3. backfill<br/>remaining candidates in score order"]
+    BF --> DESC["describe()<br/>ranked source metadata"]
+    DESC --> FC["format_context()<br/>grouped by document"]
+    FC --> BP["build_prompt()<br/>grounded prompt"]
+    BP --> OUT["result: context, chunks, prompt,<br/>tokens, seeds, candidates"]
+```
+
+The utility of adding candidate `c` to the current selection `C` (paper Eq. 21), with defaults
+`a = 1.0, b = 0.3, c = 0.2, d = 0.1, λ = 0.5`:
+
+```
+U(c | C) = a · score(c)                          re-scored relevance (Phase 8)
+         + b · proximity(c)                      PageRank + spectral closeness (Phase 8)
+         + c · 1 / (1 + picked in c's cluster)   ClusterGain: new communities first
+         + d · 1 / (1 + picked in c's document)  DocGain: new documents first
+         − λ · max cosine(c, picked chunks)      Redundancy: repeated evidence costs
+pick the candidate with the largest  U(c | C) / tokens(c)^ρ     (Eq. 22, ρ = 0.5)
+```
+
+| File | Function | What it does |
+|---|---|---|
+| `utils/selection.py` | `start_state(n)` | What selection remembers: picks, reasons, tokens used, cluster and document counts, each candidate's highest similarity to the picks. |
+| | `add_pick(state, k, reason, ...)` | Adds one candidate and updates all counts. Redundancy is updated with one vector product. |
+| | `fits(state, k, ...)` | Not yet picked, and fits in the remaining budget. |
+| | `utility(state, k, ...)` | Eq. 21 for one candidate. |
+| | `pick_tail(state, order, ...)` | Eq. 22 greedy loop above the precision floor, until nothing useful fits. |
+| | `select_context(scored, index, settings)` | Core → tail → backfill; returns `[(candidate number, reason), ...]` in pick order. |
+| `utils/prompt.py` | `group_by_document(chunks)` | Documents by best chunk score; chunks in reading order. |
+| | `format_chunk(chunk)` | Chunk text, with `[section path]` only when the text does not start with its heading. |
+| | `format_context(chunks)` | One `### Source: <doc>` block per document. |
+| | `build_prompt(question, context)` | Grounded prompt: use only the sources, combine facts across sources, say "I do not know" otherwise, name the sources. |
+| `retrieval.py` | `SpectRAGRetrieval(index_dir, settings, embed_fn)` | Loads the index once, rebuilds the embedder from the saved settings (or uses `embed_fn`), builds BM25 and the neighbour table. Gives a clear error if a custom embedder is not passed again. |
+| | `retrieve(question, settings)` | Stages 1–4: seeds, scored candidates, picks. |
+| | `describe(k, reason, rank, scored)` | One selected chunk with all its scores. |
+| | `search(question, token_budget)` | Everything above; returns `context`, `chunks`, `prompt`, `tokens`, `seeds`, `candidates`. |
+| `__init__.py` | — | Now exports `SpectRAGRetrieval` too. |
+| `examples/search_example.py` | `main()` | Ingests the samples, then prints the ranked chunks and the context for two questions. Arguments: `[embedder] [budget]`. |
+| `tests/test_selection.py` | 7 tests | Budget never exceeded; core = best scores; precision floor → backfill; redundancy prefers new information; cluster gain prefers new clusters; `ρ` prefers short chunks; too-large chunks skipped, empty input. |
+| `tests/test_prompt.py` | 4 tests | Document and reading order, exact context text, section label only when the heading is missing, grounded prompt. |
+| `tests/test_retrieval.py` | 6 tests | Integration: result fields and ranks; budget respected at 50 / 150 / 300 / 12,000 (and nothing when nothing fits); a big budget takes every candidate exactly once; with 2 seeds the Helios bridge document is reached; the same result every run; a custom embed function must be passed again. |
+
+Run the Phase 9 tests:
+
+```bash
+pytest -v tests/test_selection.py tests/test_prompt.py tests/test_retrieval.py
 ```

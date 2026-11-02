@@ -45,14 +45,15 @@ def save_index(folder, index):
     return folder
 
 
-def load_index(folder, skip=()):
-    """Load every .npy, .npz and .json file in the folder (except the keys in 'skip')."""
+def load_index(folder, skip=(), only=None):
+    """Load every .npy, .npz and .json file in the folder.
+    skip: keys to leave out; only: if given, load just these keys."""
     folder = Path(folder)
     if not folder.is_dir():
         raise FileNotFoundError("No index folder: " + str(folder))
     index = {}
     for path in sorted(folder.iterdir()):
-        if path.stem in skip:
+        if path.stem in skip or (only is not None and path.stem not in only):
             continue
         if path.suffix == ".npy":
             index[path.stem] = np.load(path, allow_pickle=False)

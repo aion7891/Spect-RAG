@@ -37,6 +37,12 @@ DEFAULTS = {
     "embed_dims": 768,           # paper: nomic-embed-text is 768-d (used by the hash embedder)
     "ollama_model": "nomic-embed-text",
     "ollama_url": "http://localhost:11434",
+    # --- Vector search (Section 6.2) ---
+    "ann_backend": "auto",       # "exact", "faiss", "hnsw", or "auto" (exact up to 20k chunks)
+    "hnsw_m": 32,                # HNSW links per node
+    "hnsw_ef_construction": 200,
+    "hnsw_ef_search": 128,
+    "dense_top_n": 1000,         # with an approximate backend: dense scores for the top n only
     # --- Graph (weights: paper, the rest: assumed) ---
     "edge_weights": EDGE_WEIGHTS_CONFIG_1,
     "semantic_k": 10,            # assumed
@@ -59,6 +65,9 @@ DEFAULTS = {
     "ppr_beta": 0.15,
     "ppr_steps": 30,
     "diffusion_t": 1.0,          # heat-kernel scale t for spectral closeness (Eq. 17)
+    "proximity_mode": "hybrid",  # "hybrid" (paper), "ppr", "spectral", "heat", "none"
+    "selector": "spectrag",      # "spectrag", "mmr", "protected_mmr", "anchor_expand_ce", "topk"
+    "mmr_lambda": 0.7,           # MMR: weight of relevance vs. novelty
     "core_size": 3,
     "precision_floor": 0.4,
     "select_weights": {"a": 1.0, "b": 0.3, "c": 0.2, "d": 0.1, "lambda": 0.5},

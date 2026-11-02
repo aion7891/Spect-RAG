@@ -11,7 +11,7 @@ requires-python = ">=3.9"
 dependencies = ["numpy"]
 
 [project.optional-dependencies]
-extras = ["tiktoken", "pypdf", "scipy"]
+extras = ["tiktoken", "pypdf", "scipy", "faiss-cpu", "hnswlib"]
 dev = ["pytest"]
 
 [tool.setuptools.packages.find]

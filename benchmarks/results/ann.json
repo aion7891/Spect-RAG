@@ -1,0 +1,77 @@
+{
+ "machine": "macOS-26.6.2-arm64-arm-64bit-Mach-O, arm, Python 3.14.5",
+ "rows": [
+  {
+   "chunks": 10000,
+   "backend": "exact",
+   "knn_graph_seconds": 0.77,
+   "edge_recall": 1.0,
+   "query_ms": 0.117,
+   "top1000_recall": 1.0
+  },
+  {
+   "chunks": 10000,
+   "backend": "faiss",
+   "knn_graph_seconds": 1.09,
+   "edge_recall": 1.0,
+   "query_ms": 0.224,
+   "top1000_recall": 0.9924
+  },
+  {
+   "chunks": 10000,
+   "backend": "hnsw",
+   "knn_graph_seconds": 2.43,
+   "edge_recall": 1.0,
+   "query_ms": 0.346,
+   "top1000_recall": 0.9926
+  },
+  {
+   "chunks": 50000,
+   "backend": "exact",
+   "knn_graph_seconds": 17.81,
+   "edge_recall": 1.0,
+   "query_ms": 0.439,
+   "top1000_recall": 1.0
+  },
+  {
+   "chunks": 50000,
+   "backend": "faiss",
+   "knn_graph_seconds": 6.04,
+   "edge_recall": 1.0,
+   "query_ms": 0.383,
+   "top1000_recall": 0.8838
+  },
+  {
+   "chunks": 50000,
+   "backend": "hnsw",
+   "knn_graph_seconds": 10.8,
+   "edge_recall": 1.0,
+   "query_ms": 0.539,
+   "top1000_recall": 0.8845
+  },
+  {
+   "chunks": 100000,
+   "backend": "exact",
+   "knn_graph_seconds": 70.92,
+   "edge_recall": 1.0,
+   "query_ms": 0.884,
+   "top1000_recall": 1.0
+  },
+  {
+   "chunks": 100000,
+   "backend": "faiss",
+   "knn_graph_seconds": 10.43,
+   "edge_recall": 0.9999,
+   "query_ms": 0.322,
+   "top1000_recall": 0.8313
+  },
+  {
+   "chunks": 100000,
+   "backend": "hnsw",
+   "knn_graph_seconds": 18.27,
+   "edge_recall": 1.0,
+   "query_ms": 0.394,
+   "top1000_recall": 0.8298
+  }
+ ]
+}

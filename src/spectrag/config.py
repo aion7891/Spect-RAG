@@ -58,6 +58,7 @@ DEFAULTS = {
     "alpha": 0.3,
     "ppr_beta": 0.15,
     "ppr_steps": 30,
+    "diffusion_t": 1.0,          # heat-kernel scale t for spectral closeness (Eq. 17)
     "core_size": 3,
     "precision_floor": 0.4,
     "select_weights": {"a": 1.0, "b": 0.3, "c": 0.2, "d": 0.1, "lambda": 0.5},

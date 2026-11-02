@@ -11,8 +11,9 @@ short files, small functions, `numpy` as the only required dependency, and tests
 > **Project status:** Phases 1–7 of 10 are done. **The offline half of SpectRAG works:**
 > `SpectRAGIngestion` builds a complete index (chunks, embeddings, six edge signals, the fused
 > weighted graph, spectral coordinates, and clusters). The first online stage, hybrid seed
-> retrieval (dense + BM25 + utility questions, fused with RRF), works too. Graph expansion and
-> re-scoring (Phase 8) are next; `SpectRAGRetrieval` is completed in Phase 9. See
+> retrieval (dense + BM25 + utility questions, fused with RRF), works too, and so do stages 2–3:
+> graph expansion (2 hops, ≤ 200 candidates) and proximity re-scoring (Personalized PageRank +
+> spectral closeness). Token-budget selection and `SpectRAGRetrieval` (Phase 9) are next. See
 > [Section 11](#11-implementation-phases-and-progress) for progress and
 > [Section 15](#15-what-is-implemented-so-far) for the code that exists today.
 
@@ -162,9 +163,9 @@ flowchart LR
     F --> G[("Index folder, store.py<br/>chunks, embeddings, signals,<br/>edges, spectral, eigenvalues,<br/>question vectors, settings, info")]:::done
     subgraph ONLINE["SpectRAGRetrieval (per question)"]
         H["Question"] --> I["Hybrid seeds<br/>dense + BM25 + utility<br/>bm25.py, seeding.py"]:::done
-        I --> J["2-hop graph expansion"]:::doing
-        J --> K["Proximity re-scoring<br/>spectral + PageRank"]:::todo
-        K --> L["Token-budget selection"]:::todo
+        I --> J["2-hop graph expansion<br/>expansion.py"]:::done
+        J --> K["Proximity re-scoring<br/>spectral + PageRank<br/>diffusion.py"]:::done
+        K --> L["Token-budget selection"]:::doing
         L --> M["Context + sources"]:::todo
         M -.optional.-> N["LLM answer"]:::todo
     end
@@ -233,12 +234,12 @@ flowchart TD
     E1 --> U1["utility_scores()"]:::done
     D1 & B1 & U1 --> R["rrf_fuse() + top_seeds()<br/>top 20 = seeds S0"]:::done
     D1 & B1 --> REL["hybrid_relevance()<br/>for every chunk"]:::done
-    R --> X["expand_graph()<br/>BFS 2 hops, max 200 = S1"]:::doing
-    X --> P1["spectral_closeness()"]:::doing
-    X --> P2["personalized_pagerank()"]:::doing
-    P1 & P2 --> P["proximity = mean of both"]:::doing
-    REL & P --> S2["rescore()<br/>(1-α)·rel + α·prox"]:::doing
-    S2 --> C1["protected core"]:::todo
+    R --> X["expand_graph()<br/>BFS 2 hops, max 200 = S1"]:::done
+    X --> P1["spectral_closeness()"]:::done
+    X --> P2["personalized_pagerank()"]:::done
+    P1 & P2 --> P["proximity = mean of both"]:::done
+    REL & P --> S2["score_candidates()<br/>(1-α)·rel + α·prox"]:::done
+    S2 --> C1["protected core"]:::doing
     C1 --> C2["greedy tail: Eq. 21-22<br/>precision floor"]:::todo
     C2 --> C3["backfill until budget full"]:::todo
     C3 --> OUT["format_context()<br/>grouped by document"]:::todo
@@ -359,8 +360,8 @@ Every function is meant to be about 5–20 lines and do one job.
 | `utils/store.py` | `save_index()`, `load_index()` | Any dict → `.npy` (arrays) and `.json` (everything else) |
 | `utils/bm25.py` | `build_bm25()`, `bm25_scores()` | Classic BM25 in pure Python |
 | `utils/seeding.py` | `find_seeds()`, `dense_scores()`, `utility_scores()`, `rrf_fuse()`, `hybrid_relevance()` | Online stage 1 |
-| `utils/expansion.py` | `expand_graph()` | Online stage 2 |
-| `utils/diffusion.py` | `personalized_pagerank()`, `spectral_closeness()`, `rescore()` | Online stage 3 (Eq. 18) |
+| `utils/expansion.py` | `expand_graph()`, `subgraph_matrix()` | Online stage 2 |
+| `utils/diffusion.py` | `personalized_pagerank()`, `spectral_closeness()`, `score_candidates()` | Online stage 3 (Eq. 17–18) |
 | `utils/selection.py` | `select_context()`, `pick_core()`, `utility_gain()`, `backfill()` | Online stage 4 (Eq. 19–22) |
 | `utils/prompt.py` | `format_context()`, `build_prompt()` | Group by document; build the grounded prompt |
 | `ingestion.py` | `SpectRAGIngestion.ingest(path)` | Runs the whole offline pipeline |
@@ -392,7 +393,8 @@ Every function is meant to be about 5–20 lines and do one job.
 | `bm25_k1` / `bm25_b` | 1.5 / 0.75 (the usual BM25 values) | ⚠️ |
 | `bm25_weight` | 0.5: hybrid relevance = 0.5 · dense + 0.5 · BM25 (each rescaled to 0..1) | ⚠️ |
 | `alpha` (re-score blend) | 0.3 | ⚠️ |
-| `ppr_beta` / `ppr_steps` | 0.15 / 30 | ⚠️ |
+| `ppr_beta` / `ppr_steps` | 0.15 / 30 (β is the restart share in Eq. 18) | ⚠️ |
+| `diffusion_t` | 1.0: heat-kernel scale `t` for spectral closeness (Eq. 17) | ⚠️ |
 | `core_size` (protected core) | 3 | ⚠️ |
 | `precision_floor` | 0.4 × best score | ⚠️ |
 | Eq. 21 weights `a, b, c, d, λ` | 1.0, 0.3, 0.2, 0.1, 0.5 | ⚠️ |
@@ -415,7 +417,7 @@ Every function is meant to be about 5–20 lines and do one job.
 | D8 | PDF table extraction | Markdown tables are kept whole; PDF text read with optional `pypdf` | Reliable PDF table parsing is out of scope |
 | D9 | Auto-calibrated edge weights | Fixed priors only (config 1 or 2) | The paper does not describe the calibration method |
 | D10 | Heat-kernel diffusion `exp(−tL)` | PPR iteration (Eq. 18) by default | The paper names PPR in Table 2 and Algorithm 1 |
-| D11 | "Spectral eigenspace closeness" (not defined) | Cosine between a candidate's `z` and the relevance-weighted centre of the seeds' `z`, mapped to [0, 1] | Simplest reading of the term |
+| D11 | "Spectral eigenspace closeness" (not defined) | Each coordinate `z_k` is scaled by `exp(−t·λ_k)` (the heat kernel of Eq. 17, `t = diffusion_t = 1`); then cosine between the candidate and the relevance-weighted centre of the seeds, mapped to [0, 1] | The scaling makes smooth community directions count most; without it, small corpora (where the 32 coordinates span the whole spectrum) give near-random closeness |
 | D12 | ClusterGain needs spectral clusters (method not given) | Normalised spectral clustering (Ng–Jordan–Weiss, as in von Luxburg [5]): for k clusters, take the trivial eigenvector (`√degree`, rebuilt from the degrees) plus the first k − 1 non-trivial coordinates, i.e. the k smoothest eigenvectors; scale rows to length 1; k-means. Start centres chosen far apart, so no randomness | Using all 32 coordinates mixes in high-frequency eigenvectors and hides communities (seen on the sample docs). Leaving out the trivial vector makes chunks near `u2 = 0` fall to a random side |
 | D13 | Isolated nodes (degree 0) make `D^-1/2` undefined | Use 0 for those entries (their row of `L_sym` is the identity row) | Keeps the Laplacian well defined |
 | D14 | Alternative selectors (`mmr`, `protected_mmr`, `anchor_expand_ce`) | Not implemented; only the default selector | Not described in enough detail |
@@ -447,6 +449,9 @@ Every function is meant to be about 5–20 lines and do one job.
 | D40 | Utility matching "query to stored questions" | A chunk's utility score is the **best** cosine between the query and any of its questions | One matching question is enough to show the chunk answers the query |
 | D41 | "The full relevance vector … is hybrid (dense & BM25)" (Table 2), no formula | `relevance = (1 − w)·minmax(dense) + w·minmax(BM25)` with `w = bm25_weight = 0.5`, over all chunks | Puts both on the same 0..1 scale before mixing; the weight can be changed |
 | D42 | FAISS exact search for dense seeds and utility questions (Section 6.2) | `embeddings @ query` and `question_vectors @ query` in `numpy` | Exactly the same result as `IndexFlatIP` |
+| D43 | Two-hop BFS "with a cap of 200 nodes" (order inside a hop not given) | Seeds first; then each hop's new chunks, strongest link to the previous hop first, until the cap is reached | When the cap cuts a hop, the most strongly connected chunks are kept |
+| D44 | PPR "from the seeds over the real weighted subgraph" | Eq. 18 on the subgraph of the candidates only; the restart vector is the seeds' hybrid relevance, summing to 1 (equal shares if all are 0); 30 steps | Seeds that match the question better spread more relevance |
+| D45 | Proximity is "the mean of spectral eigenspace closeness and Personalized PageRank" | PPR is min-max rescaled over the candidates (spectral closeness is already 0..1), then `proximity = (ppr + spectral) / 2` | The two must be on the same scale before averaging |
 
 ---
 
@@ -460,8 +465,8 @@ flowchart LR
     P4 --> P5["5. Six edge signals"]:::done
     P5 --> P6["6. Graph + spectral<br/>= SpectRAGIngestion"]:::done
     P6 --> P7["7. BM25 + hybrid<br/>seeding (RRF)"]:::done
-    P7 --> P8["8. Expansion +<br/>diffusion re-score"]:::doing
-    P8 --> P9["9. Token-budget selection<br/>= SpectRAGRetrieval"]:::todo
+    P7 --> P8["8. Expansion +<br/>diffusion re-score"]:::done
+    P8 --> P9["9. Token-budget selection<br/>= SpectRAGRetrieval"]:::doing
     P9 --> P10["10. Answer, metrics,<br/>examples, polish"]:::todo
     classDef done fill:#2e7d32,color:#fff,stroke:#1b5e20
     classDef doing fill:#f9a825,color:#000,stroke:#f57f17
@@ -479,8 +484,8 @@ Legend: 🟩 done · 🟨 in progress · ⬜ pending
 | 5 | `entities.py`, `references.py`, `questions.py`, `edge_list.py`, `edges_structure.py`, `edges_content.py`, `edges.py` | Each signal finds the expected links on a toy corpus | 🟩 Done (81 tests + 1 opt-in) |
 | 6 | `graph.py`, `spectral.py`, `ingestion.py` | `SpectRAGIngestion().ingest()` writes a full index | 🟩 Done (98 tests + 1 opt-in) |
 | 7 | `bm25.py`, `seeding.py` | Seeds contain the obvious matching chunks | 🟩 Done (128 tests + 1 opt-in) |
-| 8 | `expansion.py`, `diffusion.py` | Bridge chunks gain score through the graph | 🟨 Next |
-| 9 | `selection.py`, `prompt.py`, `retrieval.py` | `search()` respects the budget and diversifies documents | ⬜ Pending |
+| 8 | `expansion.py`, `diffusion.py` | Bridge chunks are reached through the graph and scored by proximity | 🟩 Done (140 tests + 1 opt-in) |
+| 9 | `selection.py`, `prompt.py`, `retrieval.py` | `search()` respects the budget and diversifies documents | 🟨 Next |
 | 10 | `answer()`, metrics, examples, final README | End-to-end demo plus SpectRAG vs top-k on a toy multi-hop set | ⬜ Pending |
 
 ---
@@ -723,7 +728,59 @@ What this shows:
   on function, not wording. They still miss the 4 seeds. Phase 8 recovers such chunks by walking
   the graph from the seeds (the entity edge 0 ↔ 4 "Maya Chen").
 
-Planned API for the rest of the online half (Phases 8–9):
+Runnable now (Phase 8: graph expansion and proximity re-scoring):
+
+```python
+from spectrag.utils.diffusion import score_candidates
+from spectrag.utils.graph import neighbors
+
+table = neighbors(index["edges"], len(index["chunks"]))     # built once per loaded index
+seeds = find_seeds(question, embed([question], kind="query")[0], index, bm25, settings)
+result = score_candidates(seeds["seeds"], seeds["relevance"], index, table, settings)
+result["candidates"]   # S1: seeds first, then hop 1, then hop 2 (at most 200)
+result["scores"]       # s2 = (1 - alpha) * relevance + alpha * proximity, same order
+```
+
+```bash
+python examples/expand_example.py            # offline
+python examples/expand_example.py ollama     # nomic-embed-text
+```
+
+Actual output (offline; the demo uses `seed_count = 2` so that the graph has something to add):
+
+```text
+Q: Which company did the co-founder of Aurora Labs join after leaving?
+Seeds S0: [0, 3]   candidates S1: 8
+
+chunk  hop  relevance  pagerank  spectral  proximity  score   document
+[0]    0     1.00       0.205     0.93      0.96      0.99    aurora_labs.md#0
+[3]    0     0.60       0.180     0.75      0.79      0.66    aurora_labs.md#3
+[6]    1     0.48       0.116     0.46      0.41      0.46    river_valley_farming.md#0
+[7]    1     0.52       0.125     0.32      0.37      0.48    river_valley_farming.md#1
+[1]    1     0.41       0.124     0.29      0.36      0.39    aurora_labs.md#1
+[4]    1     0.43       0.105     0.52      0.40      0.42    helios_energy.txt#0
+[2]    1     0.56       0.112     0.30      0.32      0.49    aurora_labs.md#2
+[5]    1     0.00       0.065     0.51      0.26      0.08    helios_energy.txt#1
+```
+
+What this shows:
+
+- **The bridge evidence is now in the candidate pool.** The two seeds are both Aurora chunks.
+  One hop of the graph brings in both Helios chunks (4, 5), which seeding alone did not find.
+  This is the recall gain of paper Section 3.6.
+- **Spectral closeness follows communities, not documents.** Helios (0.51–0.52) is closer to
+  the seeds than Aurora's own product chunks 1 and 2 (0.29–0.30), because the spectral
+  clusters put "Aurora history + Helios" together (Phase 6).
+- **PageRank falls with graph distance** (seeds ≈ 0.2, hop 1 ≈ 0.1).
+- **The re-ranking effect is small here.** With 8 chunks every candidate is one hop away and the
+  graph is almost complete. On the 244-chunk paper corpus the same code gives 20 seeds, 137–143
+  chunks at hop 1 and 37–43 at hop 2 (capped at 200) in about 2 ms; median min-max PageRank is
+  0.64 / 0.15 / 0.08 and median spectral closeness 0.70 / 0.49 / 0.43 for hops 0 / 1 / 2. Both
+  signals measure closeness to the seed set, as intended. How much they reorder chunks is set by
+  `alpha` (0.3, a guess). This matches the paper's finding that the graph mainly helps overall
+  recall and Recall@10 rather than the very first ranks (Table 6, Section 6).
+
+Planned API for the rest of the online half (Phase 9):
 
 ```python
 from spectrag import SpectRAGRetrieval
@@ -788,7 +845,7 @@ chunking receives it as `embed_fn`.
   is reachable on `localhost:11434`; otherwise it is skipped.
 - **Opt-in LLM test**: `SPECTRAG_LIVE_LLM=1 pytest tests/test_questions.py` calls a real Ollama
   LLM (default `gemma3:4b`; change it with `SPECTRAG_LLM_MODEL=qwen3:4b`).
-- Run all tests: `pytest -q`. Run one file: `pytest tests/test_seeding.py -q`. See skipped tests
+- Run all tests: `pytest -q`. Run one file: `pytest tests/test_diffusion.py -q`. See skipped tests
   with `pytest -q -rs`.
 
 ---
@@ -850,6 +907,11 @@ chunking receives it as `embed_fn`.
 - A single "word" longer than `chunk_tokens` (e.g. a huge URL) cannot be cut and stays over the
   limit.
 - BM25 has no stemming: "farms" does not match "farm". Dense search usually covers this.
+- PageRank always ranks the seeds highest (they are where the walk restarts), so proximity mostly
+  re-orders the **non-seed** candidates. How strongly it changes the final order depends on
+  `alpha`; the paper does not give its value.
+- The subgraph for PageRank is a dense `m × m` matrix with `m ≤ max_candidates = 200`, so it is
+  tiny. Raising `max_candidates` to many thousands would need a sparse matrix.
 - On a tiny corpus, `seed_count = 20` makes **every** chunk a seed (the sample docs have 8), so
   the graph stages have nothing left to "recover". Demos lower `seed_count` to show the effect.
   On real corpora with hundreds of chunks, 20 seeds are a small part.
@@ -1228,4 +1290,42 @@ Run the Phase 7 tests:
 
 ```bash
 pytest -v tests/test_bm25.py tests/test_seeding.py
+```
+
+### Phase 8: graph expansion and proximity re-scoring
+
+```mermaid
+flowchart TD
+    S0["seeds S0 + relevance<br/>(from find_seeds)"] --> EX["expand_graph()<br/>BFS, hops = 2, max_candidates = 200"]
+    T["neighbors(edges)<br/>built once"] --> EX
+    EX --> NL["next_layer()<br/>new neighbours, strongest link first"]
+    NL --> EX
+    EX --> S1["candidates S1 + hop of each"]
+    S1 --> RV["restart_vector()<br/>seeds, by relevance"]
+    S1 --> SM["subgraph_matrix()"]
+    SM & RV --> PPR["personalized_pagerank()<br/>Eq. 18, 30 steps"]
+    RV --> SC["spectral_closeness()<br/>z · exp(−tλ), cosine to seed centre"]
+    PPR --> MM["min_max(ppr)"]
+    MM & SC --> PX["proximity = (ppr + spectral) / 2"]
+    PX --> SCORE["score = (1 − α)·relevance + α·proximity"]
+```
+
+| File | Function | What it does |
+|---|---|---|
+| `utils/expansion.py` | `next_layer(frontier, table, found)` | New neighbours of the current layer, sorted by their strongest link (ties: lower id). |
+| | `expand_graph(seeds, table, hops, max_candidates)` | Breadth-first search: seeds (hop 0), then hop 1, hop 2, …, stopping at the cap. Returns `(candidates, hop)`. |
+| | `subgraph_matrix(table, candidates)` | Weighted matrix of the edges *between* candidates only. |
+| `utils/diffusion.py` | `restart_vector(candidates, seeds, relevance)` | The seeds' relevance, scaled to sum to 1 (0 for non-seeds). |
+| | `personalized_pagerank(matrix, restart, beta, steps)` | Eq. 18: repeats `s = β·restart + (1 − β)·Ã·s` with `Ã = D^-1/2 A D^-1/2`. |
+| | `spectral_closeness(coords, eigenvalues, candidates, restart, t)` | Scales coordinates by `exp(−t·λ)`, builds the seeds' weighted centre, returns `(cosine + 1) / 2`. |
+| | `score_candidates(seeds, relevance, index, table, settings)` | Runs stages 2–3 and returns `candidates`, `hop`, `relevance`, `ppr`, `spectral`, `proximity`, `scores` (all in candidate order). |
+| `config.py` | (new key) | `diffusion_t`. |
+| `examples/expand_example.py` | `main()` | Prints every candidate's hop and scores for the multi-hop question. |
+| `tests/test_expansion.py` | 5 tests | Two hops on a path; seeds first with no duplicates; the cap keeps the strongest links; isolated seed and `hops = 0`; subgraph matrix. |
+| `tests/test_diffusion.py` | 7 tests | Restart vector (and the all-zero case); **PageRank equals its exact closed form** `β (I − (1−β)Ã)⁻¹ r`; PageRank order seed > community > bridge > far; spectral closeness prefers the seed's community; sample docs: the Helios bridge chunks are not seeds but are reached by expansion; the score formula (and `alpha = 0` gives pure relevance); the `max_candidates` cap. |
+
+Run the Phase 8 tests:
+
+```bash
+pytest -v tests/test_expansion.py tests/test_diffusion.py
 ```

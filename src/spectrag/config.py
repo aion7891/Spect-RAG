@@ -43,6 +43,7 @@ DEFAULTS = {
     "edge_threshold": 0.05,      # assumed
     # --- Spectral (paper) ---
     "spectral_dims": 32,
+    "n_clusters": None,          # assumed: None means about sqrt(n / 2) clusters
     # --- Retrieval (paper) ---
     "seed_count": 20,
     "hops": 2,

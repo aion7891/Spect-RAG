@@ -8,9 +8,10 @@ Retrieval-Augmented Generation"** (Sahinoglu et al., arXiv:2610.36991v2), includ
 This repository rebuilds the method as a **lightweight, beginner-friendly Python package**:
 short files, small functions, `numpy` as the only required dependency, and tests for every phase.
 
-> **Project status:** Phases 1–5 of 10 are done: paper analysis, architecture, package skeleton,
-> settings, document loader, token counter, chunking, embeddings, index saving, and the six edge
-> signals. Graph fusion, spectral coordinates and `SpectRAGIngestion` (Phase 6) are next. See
+> **Project status:** Phases 1–6 of 10 are done. **The offline half of SpectRAG works:**
+> `SpectRAGIngestion` builds a complete index (chunks, embeddings, six edge signals, the fused
+> weighted graph, spectral coordinates, and clusters). The online half (`SpectRAGRetrieval`)
+> comes in Phases 7–9, starting with hybrid seeding (Phase 7). See
 > [Section 11](#11-implementation-phases-and-progress) for progress and
 > [Section 15](#15-what-is-implemented-so-far) for the code that exists today.
 
@@ -154,10 +155,10 @@ flowchart LR
         A["Documents<br/>.txt / .md / .pdf<br/>loader.py + tokens.py"]:::done --> B["Chunker<br/>chunker.py"]:::done
         B --> C["Embedder<br/>embedder.py"]:::done
         C --> D["Edge signals x6<br/>edges.py"]:::done
-        D --> E["Weighted graph"]:::doing
-        E --> F["Spectral coordinates"]:::todo
+        D --> E["Weighted graph<br/>graph.py"]:::done
+        E --> F["Spectral coordinates<br/>+ clusters, spectral.py"]:::done
     end
-    F --> G[("Index folder, store.py<br/>chunks.json, embeddings.npy: done<br/>edges.json, spectral.npy: pending")]:::doing
+    F --> G[("Index folder, store.py<br/>chunks, embeddings, signals,<br/>edges, spectral, eigenvalues,<br/>question vectors, settings, info")]:::done
     subgraph ONLINE["SpectRAGRetrieval (per question)"]
         H["Question"] --> I["Hybrid seeds<br/>dense + BM25 + utility"]:::todo
         I --> J["2-hop graph expansion"]:::todo
@@ -206,11 +207,12 @@ flowchart TD
     X1 --> H4["entity_edges()"]:::done
     X1 --> H5["citation_edges()"]:::done
     X1 --> H6
-    H1 & H2 & H3 & H4 & H5 & H6 --> I["fuse_edges()<br/>w = Σ α·w_r, drop w &lt; τ"]:::doing
-    I --> J["normalized_laplacian()"]:::todo
-    J --> K["spectral_coords()<br/>32 smallest non-trivial"]:::todo
-    K --> L["cluster_coords()<br/>k-means for ClusterGain"]:::todo
-    L --> M["save_index()"]:::todo
+    H1 & H2 & H3 & H4 & H5 & H6 --> AW["active_weights()<br/>share empty signals' α"]:::done
+    AW --> I["fuse_edges()<br/>w = Σ α·w_r, drop w &lt; τ"]:::done
+    I --> J["normalized_laplacian()"]:::done
+    J --> K["spectral_coords()<br/>32 smallest non-trivial"]:::done
+    K --> L["cluster_coords()<br/>k-means for ClusterGain"]:::done
+    L --> M["save_index()"]:::done
     classDef done fill:#2e7d32,color:#fff,stroke:#1b5e20
     classDef doing fill:#f9a825,color:#000,stroke:#f57f17
     classDef todo fill:#9e9e9e,color:#fff,stroke:#616161
@@ -346,8 +348,8 @@ Every function is meant to be about 5–20 lines and do one job.
 | `utils/edges_structure.py` | `adjacency_edges()`, `section_edges()`, `citation_edges()` | Structure signals |
 | `utils/edges_content.py` | `semantic_edges()`, `entity_edges()`, `utility_edges()`, `knn_edges()` | Content signals |
 | `utils/edges.py` | `build_edge_signals()` | Six lists of `[i, j, weight]` |
-| `utils/graph.py` | `fuse_edges()`, `build_matrix()`, `neighbors()` | Weighted sum, threshold `τ`, adjacency matrix |
-| `utils/spectral.py` | `normalized_laplacian()`, `spectral_coords()`, `cluster_coords()` | Eq. 11–13 plus k-means labels |
+| `utils/graph.py` | `active_weights()`, `fuse_edges()`, `build_matrix()`, `neighbors()`, `degrees()` | Weighted sum, threshold `τ`, adjacency matrix |
+| `utils/spectral.py` | `normalized_laplacian()`, `spectral_coords()`, `cluster_coords()`, `kmeans()` | Eq. 11–13 plus spectral clusters |
 | `utils/store.py` | `save_index()`, `load_index()` | Any dict → `.npy` (arrays) and `.json` (everything else) |
 | `utils/bm25.py` | `build_bm25()`, `bm25_scores()` | Classic BM25 in pure Python |
 | `utils/seeding.py` | `dense_scores()`, `utility_scores()`, `rrf_fuse()`, `hybrid_relevance()` | Online stage 1 |
@@ -373,7 +375,7 @@ Every function is meant to be about 5–20 lines and do one job.
 | `embed_dims` | 768 (size of the hash vectors; matches `nomic-embed-text`) | ✅ |
 | `ollama_model` / `ollama_url` | `nomic-embed-text` / `http://localhost:11434` | ✅ / ⚠️ |
 | `edge_weights` | config 1: sem .300, sec .250, ent .200, adj .084, utl .083, cit .083 | ✅ |
-| `spectral_dims` (m) | 32 (capped at n − 2 for small corpora) | ✅ |
+| `spectral_dims` (m) | 32 (capped at n − 1 for small corpora) | ✅ |
 | `seed_count` | 20 | ✅ |
 | `hops` / `max_candidates` | 2 / 200 | ✅ |
 | `token_budget` | 12000 | ✅ |
@@ -386,7 +388,7 @@ Every function is meant to be about 5–20 lines and do one job.
 | `precision_floor` | 0.4 × best score | ⚠️ |
 | Eq. 21 weights `a, b, c, d, λ` | 1.0, 0.3, 0.2, 0.1, 0.5 | ⚠️ |
 | `length_power` (ρ) | 0.5 | ⚠️ |
-| `n_clusters` | `round(sqrt(n / 2))`, at least 2 | ⚠️ |
+| `n_clusters` | `None` = `round(sqrt(n / 2))`, at least 2 (at most n) | ⚠️ |
 
 ---
 
@@ -405,8 +407,8 @@ Every function is meant to be about 5–20 lines and do one job.
 | D9 | Auto-calibrated edge weights | Fixed priors only (config 1 or 2) | The paper does not describe the calibration method |
 | D10 | Heat-kernel diffusion `exp(−tL)` | PPR iteration (Eq. 18) by default | The paper names PPR in Table 2 and Algorithm 1 |
 | D11 | "Spectral eigenspace closeness" (not defined) | Cosine between a candidate's `z` and the relevance-weighted centre of the seeds' `z`, mapped to [0, 1] | Simplest reading of the term |
-| D12 | ClusterGain needs spectral clusters (method not given) | Small `numpy` k-means on spectral coordinates | Standard spectral clustering (von Luxburg [5]) |
-| D13 | Isolated nodes (degree 0) make `D^-1/2` undefined | Use 0 for those entries | Keeps the Laplacian well defined |
+| D12 | ClusterGain needs spectral clusters (method not given) | Normalised spectral clustering (Ng–Jordan–Weiss, as in von Luxburg [5]): for k clusters, k-means on the first k − 1 non-trivial coordinates (with the trivial one this makes the k smoothest eigenvectors), rows scaled to length 1. Start centres chosen far apart, so no randomness | Using all 32 coordinates mixes in high-frequency eigenvectors and hides communities (we saw this on the sample docs) |
+| D13 | Isolated nodes (degree 0) make `D^-1/2` undefined | Use 0 for those entries (their row of `L_sym` is the identity row) | Keeps the Laplacian well defined |
 | D14 | Alternative selectors (`mmr`, `protected_mmr`, `anchor_expand_ce`) | Not implemented; only the default selector | Not described in enough detail |
 | D15 | Benchmarks (MultiHopRAG, UltraDomain), LLM judge | Not reproduced; we include Recall@k, MRR, EM, F1 helpers and a toy evaluation | Needs datasets and paid APIs |
 | D16 | 100-token overlap "as a suffix of the previous chunk" | Overlap only between chunks of the **same** section or semantic segment; no overlap across a heading or topic break | Overlap across sections would put one section's text under another's section path |
@@ -423,6 +425,10 @@ Every function is meant to be about 5–20 lines and do one job.
 | D27 | Citation edges: "references, hyperlinks, footnotes" | Two kinds: `Section 2.1` / `Sec. 3` / `§4` → chunks of that section in the same document; file names (`notes.md`, Markdown links) → every chunk of that document; weight 1.0 | Footnote and bibliography links are too ambiguous without layout information |
 | D28 | Utility edges: "similarity between generated questions" | Each chunk's question vectors are averaged, then linked to its `semantic_k` nearest neighbours by cosine. Per-question vectors are kept for query-time matching (Phase 7) | A full question × question matrix grows too fast; averaging keeps it `O(n²)` in chunks |
 | D29 | Question vectors | Embedded as `kind="document"` (prefix `search_document:`) | At query time the user's question is the `search_query:` side |
+| D30 | Utility weight when no LLM is used | A signal with **no edges** gets weight 0, and the other weights are rescaled to sum to 1 (`active_weights()`) | Otherwise 8.3% of the weight would be lost and every fused edge would be weaker against `τ` |
+| D31 | Neo4j write with per-signal attributes | `signals.json` keeps every signal's own edge list; `edges.json` holds the fused graph | Same information, readable without a database |
+| D32 | Eigen-solver | `numpy.linalg.eigh` on the dense `n × n` Laplacian | Exact and simple; fine for thousands of chunks |
+| D33 | Small corpora | `spectral_dims` is capped at `n − 1` (the number of non-trivial eigenvectors) | A graph with `n` nodes has only `n − 1` of them |
 
 ---
 
@@ -434,8 +440,8 @@ flowchart LR
     P2 --> P3["3. Chunking"]:::done
     P3 --> P4["4. Embeddings<br/>& index store"]:::done
     P4 --> P5["5. Six edge signals"]:::done
-    P5 --> P6["6. Graph + spectral<br/>= SpectRAGIngestion"]:::doing
-    P6 --> P7["7. BM25 + hybrid<br/>seeding (RRF)"]:::todo
+    P5 --> P6["6. Graph + spectral<br/>= SpectRAGIngestion"]:::done
+    P6 --> P7["7. BM25 + hybrid<br/>seeding (RRF)"]:::doing
     P7 --> P8["8. Expansion +<br/>diffusion re-score"]:::todo
     P8 --> P9["9. Token-budget selection<br/>= SpectRAGRetrieval"]:::todo
     P9 --> P10["10. Answer, metrics,<br/>examples, polish"]:::todo
@@ -453,8 +459,8 @@ Legend: 🟩 done · 🟨 in progress · ⬜ pending
 | 3 | `sections.py`, `units.py`, `semantic_split.py`, `chunker.py` | Chunks respect size, overlap, sentences, tables | 🟩 Done (44 tests in total) |
 | 4 | `embedder.py`, `store.py` | Vectors are normalised; save/load gives the same data back | 🟩 Done (57 tests in total) |
 | 5 | `entities.py`, `references.py`, `questions.py`, `edge_list.py`, `edges_structure.py`, `edges_content.py`, `edges.py` | Each signal finds the expected links on a toy corpus | 🟩 Done (81 tests + 1 opt-in) |
-| 6 | `graph.py`, `spectral.py`, `ingestion.py` | `SpectRAGIngestion().ingest()` writes a full index | 🟨 Next |
-| 7 | `bm25.py`, `seeding.py` | Seeds contain the obvious matching chunks | ⬜ Pending |
+| 6 | `graph.py`, `spectral.py`, `ingestion.py` | `SpectRAGIngestion().ingest()` writes a full index | 🟩 Done (98 tests + 1 opt-in) |
+| 7 | `bm25.py`, `seeding.py` | Seeds contain the obvious matching chunks | 🟨 Next |
 | 8 | `expansion.py`, `diffusion.py` | Bridge chunks gain score through the graph | ⬜ Pending |
 | 9 | `selection.py`, `prompt.py`, `retrieval.py` | `search()` respects the budget and diversifies documents | ⬜ Pending |
 | 10 | `answer()`, metrics, examples, final README | End-to-end demo plus SpectRAG vs top-k on a toy multi-hop set | ⬜ Pending |
@@ -578,14 +584,75 @@ citation
 With `ollama gemma3:4b`, every chunk also gets 3 questions, for example *"Who was hired as chief
 technology officer in 2019?"* for the Helios chunk, and the utility signal adds 16 edges.
 
-Planned API (runnable from Phases 6 and 9):
+Runnable now (Phase 6: the offline pipeline):
 
 ```python
-from spectrag import SpectRAGIngestion, SpectRAGRetrieval
+from spectrag import SpectRAGIngestion
 
-# Offline: run once per document collection
-ingest = SpectRAGIngestion(index_dir="my_index")
-ingest.ingest("examples/docs")
+ingest = SpectRAGIngestion("my_index")              # offline hash embedder, no LLM
+info = ingest.ingest("examples/docs")               # a file or a folder
+print(info["chunks"], info["graph_edges"], info["clusters"])
+
+# Real embeddings, your own settings, and optional LLM-based helpers:
+from spectrag.utils.questions import make_question_fn, ollama_llm
+ingest = SpectRAGIngestion("my_index",
+                           settings={"embedder": "ollama", "chunk_tokens": 256,
+                                     "overlap_tokens": 64},
+                           question_fn=make_question_fn(ollama_llm("gemma3:4b")),
+                           entity_fn=None)          # None = regex entity extractor
+ingest.ingest("path/to/your/docs")
+```
+
+```bash
+python examples/ingest_example.py                    # offline
+python examples/ingest_example.py ollama             # nomic-embed-text
+python examples/ingest_example.py ollama gemma3:4b   # + LLM utility questions
+```
+
+Actual output (offline, shortened). `n_clusters` is set to 3 in the demo:
+
+```text
+ "chunks": 8,
+ "signal_edges": {"semantic": 28, "adjacency": 5, "section": 3, "entity": 14, "utility": 0, "citation": 3},
+ "graph_edges": 21,
+ "weights_used": {"semantic": 0.3272, "section": 0.2726, "entity": 0.2181,
+                  "adjacency": 0.0916, "utility": 0.0, "citation": 0.0905},
+ "spectral_dims": 7,
+ "clusters": 3
+
+Files: chunks.json, edges.json, eigenvalues.npy, embeddings.npy, info.json, question_owners.json,
+       question_vectors.npy, settings.json, signals.json, spectral.npy
+Smallest non-trivial eigenvalues: [0.515, 0.699, 1.059, 1.293]
+
+Chunk  cluster  spectral u2   section / start
+[0]    0       +0.203      aurora_labs.md: 1. History
+[1]    2       -0.324      aurora_labs.md: 2.1 Sensors
+[2]    2       -0.379      aurora_labs.md: 2.2 Software
+[3]    1       -0.032      aurora_labs.md: 3. Partnerships
+[4]    0       +0.571      helios_energy.txt: Helios Energy is a solar power
+[5]    0       +0.597      helios_energy.txt: It predicts how much energy a
+[6]    1       -0.022      river_valley_farming.md: Members
+[7]    1       -0.164      river_valley_farming.md: Irrigation
+```
+
+What this shows:
+
+- **Utility had no edges** (no LLM), so its 0.083 weight was shared among the other five, which
+  again sum to 1.
+- **The clusters are communities across documents**, not one cluster per document:
+  - cluster 0 = Aurora's history + Helios, the Maya Chen story;
+  - cluster 2 = Aurora's two product sections;
+  - cluster 1 = Aurora's partnerships + River Valley, the supply relationship.
+
+  `nomic-embed-text` gives the same three clusters.
+- The first spectral coordinate `u2` (the Fiedler vector) places Helios at one end (+0.6) and the
+  product sections at the other (−0.35). That is position in the graph, not text similarity
+  (paper Fig. 4).
+
+Planned API for the online half (Phases 7–9):
+
+```python
+from spectrag import SpectRAGRetrieval
 
 # Online: run per question
 search = SpectRAGRetrieval(index_dir="my_index")
@@ -647,7 +714,7 @@ chunking receives it as `embed_fn`.
   is reachable on `localhost:11434`; otherwise it is skipped.
 - **Opt-in LLM test**: `SPECTRAG_LIVE_LLM=1 pytest tests/test_questions.py` calls a real Ollama
   LLM (default `gemma3:4b`; change it with `SPECTRAG_LLM_MODEL=qwen3:4b`).
-- Run all tests: `pytest -q`. Run one file: `pytest tests/test_edges.py -q`. See skipped tests
+- Run all tests: `pytest -q`. Run one file: `pytest tests/test_ingestion.py -q`. See skipped tests
   with `pytest -q -rs`.
 
 ---
@@ -687,6 +754,19 @@ chunking receives it as `embed_fn`.
 - The hashing embedder captures word overlap, not meaning (see the Phase 4 demo). Use Ollama
   `nomic-embed-text` for real semantic quality. Hash collisions between different words are rare
   at 768 dimensions but possible.
+- When `semantic_k` is close to the number of chunks, the semantic signal links almost every
+  pair, the graph is nearly complete, and the eigenvalues bunch up near 1 (weak community
+  structure). With `nomic-embed-text` on the 8 sample chunks, 28 of 28 possible edges survive
+  `τ`. Use a smaller `semantic_k` or a higher `edge_threshold` for tiny corpora. On real corpora
+  (hundreds of chunks or more), `k = 10` is sparse.
+- `edge_threshold` (`τ` = 0.05) is a guess, and its effect depends on the embedder (see the
+  Phase 5 note on cosine ranges).
+- Auto-calibration of the edge weights per corpus (paper Section 3.2.2) is not implemented (D9).
+- The k-means start (farthest point from chunk 0) is deterministic but not always the best
+  clustering. Re-running gives the same result.
+- Eigenvectors have an arbitrary sign (`u` and `−u` are both valid). Phase 8 only compares
+  coordinates *between* chunks, so this does not matter, but the sign printed in the demo can flip
+  if the graph changes.
 - Dense eigen-decomposition (`numpy.linalg.eigh`) is `O(n³)`. It is fine up to a few thousand
   chunks; larger corpora would need `scipy.sparse.linalg.eigsh` (a possible later option).
 - Values marked ⚠️ in Section 9 are our guesses, not tuned values from the paper.
@@ -908,4 +988,62 @@ Run the Phase 5 tests:
 
 ```bash
 pytest -v -rs tests/test_entities.py tests/test_references.py tests/test_questions.py tests/test_edges.py
+```
+
+### Phase 6: weighted graph, spectral coordinates, SpectRAGIngestion
+
+```mermaid
+flowchart TD
+    P["ingest(path)"] --> MC["make_chunks()<br/>load_docs, chunk_documents(embed_fn),<br/>add_entities, add_references, add_utility_questions"]
+    MC --> EM["embed(texts, kind='document')"]
+    EM --> BS["build_edge_signals()<br/>6 lists"]
+    BS --> MG["make_graph()<br/>active_weights + fuse_edges (Eq. 10)"]
+    MG --> MS["make_spectral()"]
+    MS --> BM["build_matrix() W"] --> NL["normalized_laplacian() L_sym (Eq. 11)"]
+    NL --> SC["spectral_coords() u2..u33 (Eq. 12-13)"] --> CC["cluster_coords() k-means"]
+    CC --> SV["save_index() + return info"]
+```
+
+The index folder now holds:
+
+| File | Content | Used by |
+|---|---|---|
+| `chunks.json` | Every chunk with `id`, `doc_id`, `position`, `section`, `mode`, `text`, `tokens`, `entities`, `references`, `utility_questions`, `cluster` | All online stages |
+| `embeddings.npy` | `n × 768` float32, L2-normalised | Dense seeding (Phase 7), redundancy (Phase 9) |
+| `signals.json` | The six raw signals `{name: [[i, j, w], ...]}` | Inspection, graph view |
+| `edges.json` | The fused graph `[[i, j, w], ...]` after `τ` | Expansion and PageRank (Phase 8) |
+| `spectral.npy` | `n × m` spectral coordinates (`m = min(32, n − 1)`) | Spectral closeness (Phase 8) |
+| `eigenvalues.npy` | The `m` eigenvalues that belong to those coordinates | Inspection |
+| `question_vectors.npy`, `question_owners.json` | Utility-question vectors and their chunk ids (empty without an LLM) | Utility seeding (Phase 7) |
+| `settings.json` | The settings used to build the index | Retrieval uses the same embedder |
+| `info.json` | Summary: counts, weights used, clusters | You |
+
+| File | Function | What it does |
+|---|---|---|
+| `utils/graph.py` | `active_weights(edge_weights, signals)` | Sets the `α` of empty signals to 0 and rescales the rest to sum to 1. |
+| | `fuse_edges(signals, weights, threshold)` | `w_ij = Σ α_r · w_r,ij`, keeps `w_ij ≥ τ` (Eq. 10). |
+| | `build_matrix(edges, n)` | Symmetric `n × n` matrix `W`. |
+| | `neighbors(edges, n)` | `{node: {neighbour: weight}}` for graph walks in Phase 8. |
+| | `degrees(edges, n)` | Weighted degree, the sum of edge weights (paper Eq. 28). |
+| `utils/spectral.py` | `normalized_laplacian(W)` | `I − D^-1/2 W D^-1/2`, with 0 instead of `1/√0` for isolated nodes. |
+| | `spectral_coords(L, dims)` | `numpy.linalg.eigh` gives eigenvalues smallest first; skip the first (trivial) eigenvector and keep the next `dims`. |
+| | `auto_cluster_count(n)` | About `√(n/2)`, between 2 and `n`. |
+| | `farthest_point_start(points, k)` | Deterministic k-means start: each new centre is the point farthest from the existing ones. |
+| | `kmeans(points, k)` | Assign each point to the nearest centre, move the centres, repeat until nothing changes. |
+| | `cluster_coords(coords, count)` | Normalised spectral clustering on the first `k − 1` coordinates. |
+| `ingestion.py` | `SpectRAGIngestion(index_dir, settings, entity_fn, question_fn)` | Stores the settings, builds the embedder, and keeps the optional helper functions. |
+| | `make_chunks(path)` | Load → chunk (with the embedder for semantic breaks) → entities, references, questions. |
+| | `make_graph(signals)` | Weights used + fused edges. |
+| | `make_spectral(edges, n)` | Laplacian → coordinates → clusters. |
+| | `ingest(path)` | Runs everything, writes the index folder, returns `info`. |
+| `__init__.py` | — | Now exports `SpectRAGIngestion`. |
+| `examples/ingest_example.py` | `main()` | Runs `ingest()` and prints the summary, clusters, `u2` and the strongest edges. |
+| `tests/test_graph.py` | 4 tests | Weight sharing (and the all-empty case), weighted sum + threshold, matrix / neighbours / degrees. |
+| `tests/test_spectral.py` | 6 tests | Laplacian is symmetric with eigenvalues in [0, 2]; isolated nodes; trivial eigenvector skipped; `u2` separates two triangles; clusters match communities; k-means and cluster-count rules. |
+| `tests/test_ingestion.py` | 7 tests | Integration: all 10 index files written with matching shapes, valid edges ≥ `τ`, utility weight shared, `question_fn` and `entity_fn` used, settings applied, the same index every run, an empty folder raises. |
+
+Run the Phase 6 tests:
+
+```bash
+pytest -v tests/test_graph.py tests/test_spectral.py tests/test_ingestion.py
 ```

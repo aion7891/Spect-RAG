@@ -8,8 +8,8 @@ Retrieval-Augmented Generation"** (Sahinoglu et al., arXiv:2610.36991v2), includ
 This repository rebuilds the method as a **lightweight, beginner-friendly Python package**:
 short files, small functions, `numpy` as the only required dependency, and tests for every phase.
 
-> **Project status:** Phases 1–2 of 10 are done: paper analysis, architecture, package skeleton,
-> settings, document loader, and token counter. Chunking (Phase 3) is next. See
+> **Project status:** Phases 1–3 of 10 are done: paper analysis, architecture, package skeleton,
+> settings, document loader, token counter, and chunking. Embeddings (Phase 4) are next. See
 > [Section 11](#11-implementation-phases-and-progress) for progress and
 > [Section 15](#15-what-is-implemented-so-far) for the code that exists today.
 
@@ -150,8 +150,8 @@ Two main classes share one index folder on disk:
 flowchart LR
     subgraph OFFLINE["SpectRAGIngestion (run once)"]
         S["Settings<br/>config.py"]:::done
-        A["Documents<br/>.txt / .md / .pdf<br/>loader.py + tokens.py"]:::done --> B["Chunker"]:::todo
-        B --> C["Embedder"]:::todo
+        A["Documents<br/>.txt / .md / .pdf<br/>loader.py + tokens.py"]:::done --> B["Chunker<br/>chunker.py"]:::done
+        B --> C["Embedder"]:::doing
         C --> D["Edge signals x6"]:::todo
         D --> E["Weighted graph"]:::todo
         E --> F["Spectral coordinates"]:::todo
@@ -188,25 +188,31 @@ Colours: green = done, yellow = in progress, grey = pending.
 
 ```mermaid
 flowchart TD
-    A["load_docs(folder)"] --> B{"Has headings?"}
-    B -- yes --> C["split_by_sections()<br/>structural mode"]
-    B -- no --> D["split_by_meaning()<br/>semantic mode, 90th pct breaks"]
-    C --> E["pack_sentences()<br/>1200 tokens, 100 overlap"]
-    D --> E
-    E --> F["merge_small_chunks()<br/>&lt; 32 tokens"]
-    F --> G["embed_texts()<br/>'search_document:' prefix"]
-    G --> H1["semantic_edges()"]
-    G --> H6["utility_edges()"]
-    F --> H2["adjacency_edges()"]
-    F --> H3["section_edges()"]
-    F --> H4["entity_edges()"]
-    F --> H5["citation_edges()"]
-    H1 & H2 & H3 & H4 & H5 & H6 --> I["fuse_edges()<br/>w = Σ α·w_r, drop w &lt; τ"]
-    I --> J["normalized_laplacian()"]
-    J --> K["spectral_coords()<br/>32 smallest non-trivial"]
-    K --> L["cluster_coords()<br/>k-means for ClusterGain"]
-    L --> M["save_index()"]
+    A["load_docs(folder)"]:::done --> B{"has_structure()?"}:::done
+    B -- yes --> C["split_by_sections()<br/>structural mode"]:::done
+    B -- no --> D["split_by_meaning()<br/>semantic mode, 90th pct breaks"]:::done
+    C --> U["split_units()<br/>sentences + whole tables"]:::done
+    D --> U
+    U --> E["pack_units()<br/>1200 tokens, 100 overlap"]:::done
+    E --> F["merge_small_chunks()<br/>&lt; 32 tokens"]:::done
+    F --> G["embed_texts()<br/>'search_document:' prefix"]:::doing
+    G --> H1["semantic_edges()"]:::todo
+    G --> H6["utility_edges()"]:::todo
+    F --> H2["adjacency_edges()"]:::todo
+    F --> H3["section_edges()"]:::todo
+    F --> H4["entity_edges()"]:::todo
+    F --> H5["citation_edges()"]:::todo
+    H1 & H2 & H3 & H4 & H5 & H6 --> I["fuse_edges()<br/>w = Σ α·w_r, drop w &lt; τ"]:::todo
+    I --> J["normalized_laplacian()"]:::todo
+    J --> K["spectral_coords()<br/>32 smallest non-trivial"]:::todo
+    K --> L["cluster_coords()<br/>k-means for ClusterGain"]:::todo
+    L --> M["save_index()"]:::todo
+    classDef done fill:#2e7d32,color:#fff,stroke:#1b5e20
+    classDef doing fill:#f9a825,color:#000,stroke:#f57f17
+    classDef todo fill:#9e9e9e,color:#fff,stroke:#616161
 ```
+
+Note: in semantic mode, `split_units()` runs before `split_by_meaning()`, so tables stay whole there too.
 
 ---
 
@@ -283,8 +289,10 @@ Spect-RAG/
 │           ├── __init__.py
 │           ├── loader.py           # read .txt/.md/.pdf files
 │           ├── tokens.py           # count tokens, split sentences
-│           ├── chunker.py          # structural chunking + packing
+│           ├── sections.py         # find headings, split by section
+│           ├── units.py            # sentences + whole tables
 │           ├── semantic_split.py   # semantic chunking
+│           ├── chunker.py          # pack units into chunks
 │           ├── embedder.py         # hashing embedder + Ollama nomic-embed-text
 │           ├── entities.py         # simple entity extraction
 │           ├── edges.py            # the six edge signals
@@ -318,8 +326,10 @@ Every function is meant to be about 5–20 lines and do one job.
 | `config.py` | `DEFAULTS`, `make_settings(overrides)` | One dict of settings; users override only what they need |
 | `utils/loader.py` | `load_docs(path)`, `read_file(path)` | Read a file or a folder into `{"doc_id", "text"}` dicts |
 | `utils/tokens.py` | `count_tokens(text)`, `split_sentences(text)` | `tiktoken` when installed, otherwise a word-based estimate |
-| `utils/chunker.py` | `split_by_sections()`, `pack_sentences()`, `merge_small_chunks()`, `find_tables()` | Heading-aware chunks with overlap, tables kept whole |
-| `utils/semantic_split.py` | `split_by_meaning()`, `find_breakpoints()` | Break where sentence distance is above the 90th percentile |
+| `utils/sections.py` | `is_heading()`, `has_structure()`, `split_by_sections()` | Find headings and section paths |
+| `utils/units.py` | `split_units()`, `split_table()` | Sentences and whole tables |
+| `utils/semantic_split.py` | `split_by_meaning()`, `find_breakpoints()` | Break where sentence distance reaches the 90th percentile |
+| `utils/chunker.py` | `pack_units()`, `take_overlap()`, `merge_small_chunks()`, `chunk_documents()` | Chunks with size limit and overlap |
 | `utils/embedder.py` | `hash_embed(texts)`, `ollama_embed(texts)`, `normalize(vectors)` | Offline default embedder; optional real `nomic-embed-text` |
 | `utils/entities.py` | `extract_entities(text)` | Capitalised phrases, acronyms, numbers, dates (regex) |
 | `utils/edges.py` | `semantic_edges()`, `adjacency_edges()`, `section_edges()`, `entity_edges()`, `citation_edges()`, `utility_edges()` | Six lists of `(i, j, weight)` |
@@ -383,6 +393,12 @@ Every function is meant to be about 5–20 lines and do one job.
 | D13 | Isolated nodes (degree 0) make `D^-1/2` undefined | Use 0 for those entries | Keeps the Laplacian well defined |
 | D14 | Alternative selectors (`mmr`, `protected_mmr`, `anchor_expand_ce`) | Not implemented; only the default selector | Not described in enough detail |
 | D15 | Benchmarks (MultiHopRAG, UltraDomain), LLM judge | Not reproduced; we include Recall@k, MRR, EM, F1 helpers and a toy evaluation | Needs datasets and paid APIs |
+| D16 | 100-token overlap "as a suffix of the previous chunk" | Overlap only between chunks of the **same** section or semantic segment; no overlap across a heading or topic break | Overlap across sections would put one section's text under another's section path |
+| D17 | Semantic breaks use `nomic-embed-text` sentence vectors | `split_by_meaning()` accepts any `embed_fn`; without one it uses word-count cosine. Ties at the percentile count as breaks unless all distances are equal | Phase 3 comes before the embedder; word overlap often gives many distances of exactly 1.0 |
+| D18 | Chunks < 32 tokens are concatenated with the previous chunk | Merged only if the result stays within `chunk_tokens`, so a small chunk can survive when chunks are tiny (e.g. 60) | The maximum chunk size is treated as the harder limit |
+| D19 | Overlap always present | Dropped for the next chunk when overlap + the next unit would go over the limit | Keeps every chunk within `chunk_tokens` |
+| D20 | Section headings | The heading line is kept as the first line of its section's first chunk; a heading with no body text (e.g. `## 2. Products`) gives no chunk but stays in its children's section path | Keeps heading words searchable without empty chunks |
+| D21 | Numbered headings | A line like `2.1 Datasets` counts as a heading only if it starts with a capital letter after the number, has ≤ 10 words, and does not end in `.`, `:`, `,` or `;` | Avoids treating numbered list items as headings |
 
 ---
 
@@ -391,8 +407,8 @@ Every function is meant to be about 5–20 lines and do one job.
 ```mermaid
 flowchart LR
     P1["1. Paper analysis<br/>& architecture"]:::done --> P2["2. Package skeleton,<br/>config, loader, tokens"]:::done
-    P2 --> P3["3. Chunking"]:::doing
-    P3 --> P4["4. Embeddings<br/>& index store"]:::todo
+    P2 --> P3["3. Chunking"]:::done
+    P3 --> P4["4. Embeddings<br/>& index store"]:::doing
     P4 --> P5["5. Six edge signals"]:::todo
     P5 --> P6["6. Graph + spectral<br/>= SpectRAGIngestion"]:::todo
     P6 --> P7["7. BM25 + hybrid<br/>seeding (RRF)"]:::todo
@@ -410,8 +426,8 @@ Legend: 🟩 done · 🟨 in progress · ⬜ pending
 |---|---|---|---|
 | 1 | Paper analysis, architecture, plan, diagrams | This README | 🟩 Done |
 | 2 | `pyproject.toml`, `config.py`, `loader.py`, `tokens.py`, sample docs | Load sample docs, count tokens, split sentences | 🟩 Done (18 tests) |
-| 3 | `chunker.py`, `semantic_split.py` | Chunks respect size, overlap, sentences, tables | 🟨 Next |
-| 4 | `embedder.py`, `store.py` | Vectors are normalised; save/load gives the same data back | ⬜ Pending |
+| 3 | `sections.py`, `units.py`, `semantic_split.py`, `chunker.py` | Chunks respect size, overlap, sentences, tables | 🟩 Done (44 tests in total) |
+| 4 | `embedder.py`, `store.py` | Vectors are normalised; save/load gives the same data back | 🟨 Next |
 | 5 | `entities.py`, `edges.py` | Each signal finds the expected links on a toy corpus | ⬜ Pending |
 | 6 | `graph.py`, `spectral.py`, `ingestion.py` | `SpectRAGIngestion().ingest()` writes a full index | ⬜ Pending |
 | 7 | `bm25.py`, `seeding.py` | Seeds contain the obvious matching chunks | ⬜ Pending |
@@ -423,15 +439,23 @@ Legend: 🟩 done · 🟨 in progress · ⬜ pending
 
 ## 12. Installation and usage
 
-Installation works now:
+Installation works now, with either `pip` or `uv`:
 
 ```bash
 git clone <your-repo-url> && cd Spect-RAG
+
+# Option A: pip
 python3 -m venv .venv && source .venv/bin/activate
 pip install -e .              # installs numpy
 pip install -e ".[dev]"       # adds pytest
 pip install -e ".[extras]"    # optional: tiktoken (exact token counts), pypdf (PDF files)
+
+# Option B: uv (installs everything, including the optional extras)
+uv sync --all-extras
 ```
+
+With `uv`, put `uv run --all-extras` in front of each command below (e.g.
+`uv run --all-extras pytest -q`). A plain `uv sync` removes the extras, including `pytest`.
 
 Runnable now (Phase 2 demo):
 
@@ -457,6 +481,49 @@ river_valley_farming.md
 ```
 
 Without `tiktoken`, the counter line says `word estimate`, and the token counts are 280, 164, and 145.
+
+Runnable now (Phase 3 demo):
+
+```bash
+python examples/chunk_example.py           # paper default: 1200 tokens, 100 overlap
+python examples/chunk_example.py 60 20     # tiny chunks, to see packing and overlap
+```
+
+Expected output with the default settings and `tiktoken` (shortened):
+
+```text
+chunk_tokens = 1200  overlap_tokens = 100
+8 chunks
+
+[0] aurora_labs.md #0  structural  109 tokens
+    section: Aurora Labs > 1. History
+    starts : ## 1. History
+[1] aurora_labs.md #1  structural  47 tokens
+    section: Aurora Labs > 2. Products > 2.1 Sensors
+    starts : ### 2.1 Sensors
+...
+[4] helios_energy.txt #0  semantic  45 tokens
+    section: (no headings)
+    starts : Helios Energy is a solar power company based in Porto.
+[5] helios_energy.txt #1  semantic  111 tokens
+...
+[7] river_valley_farming.md #1  structural  85 tokens
+    section: River Valley Cooperative > Irrigation
+    starts : ## Irrigation
+```
+
+What this shows:
+
+- The Markdown files use **structural** mode and keep their section path. `# Aurora Labs` and
+  `## 2. Products` have no body text, so they give no chunk of their own but appear in the path.
+- `helios_energy.txt` has no headings, so it uses **semantic** mode and breaks where the topic
+  changes.
+- The 3-row product table stays inside chunk 2.
+- `## Plans` (about 30 tokens) is under the 32-token minimum, so it was merged into the
+  "Irrigation" chunk.
+
+With `60 20` you get 13 chunks, all ≤ 60 tokens. Long sections are split across several chunks,
+and each next chunk starts with the last sentence(s) of the previous one.
 
 Planned API (runnable from Phases 6 and 9):
 
@@ -490,7 +557,7 @@ To use the real `nomic-embed-text` model (optional), install [Ollama](https://ol
 - **Integration tests**: from Phase 6, ingest `examples/docs` into a temporary folder; from
   Phase 9, run `search()` on it.
 - **Offline by default**: no test needs the internet, an API key, or Ollama.
-- Run all tests: `pytest -q`. Run one file: `pytest tests/test_tokens.py -q`.
+- Run all tests: `pytest -q`. Run one file: `pytest tests/test_chunker.py -q`.
 
 ---
 
@@ -499,8 +566,16 @@ To use the real `nomic-embed-text` model (optional), install [Ollama](https://ol
 - `split_sentences()` is rule-based. It handles common abbreviations (`Dr.`, `e.g.`, `Fig.`) and
   decimals (`2.1`), but an unusual abbreviation followed by a capital letter can still cause a
   wrong split.
-- `split_sentences()` treats a Markdown heading or a whole table block as one "sentence". Phase 3
-  will detect headings and tables before sentence splitting.
+- Semantic chunking currently measures sentence distance by **word overlap**, so its topic breaks
+  are rough. From Phase 4 the real embedder can be passed as `embed_fn`.
+- With very small `chunk_tokens` (e.g. 60), a chunk can stay under the 32-token minimum when
+  merging it would break the maximum (see D18).
+- A single sentence longer than `chunk_tokens` becomes its own over-size chunk, because chunks
+  never cut a sentence.
+- Only Markdown pipe tables (`| a | b |`) are recognised as tables. Tables from PDFs come out as
+  plain text.
+- Chunks do not yet store `references` (Table 1 lists them). They will be extracted with the
+  citation edges in Phase 5.
 - With `tiktoken` installed, the first call to `count_tokens()` may download the `cl100k_base`
   file. If that fails (for example, offline), the counter silently falls back to the word estimate.
 - PDF text comes from `pypdf`'s `extract_text()`, so layout such as columns and tables can come
@@ -557,4 +632,65 @@ Run the Phase 2 tests:
 
 ```bash
 pytest -v tests/test_config.py tests/test_loader.py tests/test_tokens.py
+```
+
+### Phase 3: chunking
+
+```mermaid
+flowchart TD
+    DOC["doc text"] --> HS{"has_structure()<br/>Markdown heading, or 2+ numbered headings"}
+    HS -- yes --> SBS["split_by_sections()<br/>section path, heading, body"]
+    SBS --> SU1["split_units(body)"]
+    SU1 --> PK1["pack_units()<br/>per section"]
+    HS -- no --> SU2["split_units(text)"]
+    SU2 --> SBM["split_by_meaning()<br/>break at 90th pct distance"]
+    SBM --> PK2["pack_units()<br/>per segment"]
+    PK1 & PK2 --> MS["merge_small_chunks()<br/>&lt; 32 tokens joins previous if it fits"]
+    MS --> OUT["chunk dicts<br/>id, doc_id, position, section, mode, text, tokens"]
+```
+
+Each chunk is a plain dict:
+
+```python
+{"id": 0, "doc_id": "aurora_labs.md", "position": 0, "mode": "structural",
+ "section": ["Aurora Labs", "1. History"], "tokens": 109,
+ "text": "## 1. History\nAurora Labs was founded in 2014 ...\n..."}
+```
+
+`id` is unique across all documents (it becomes the graph node number later). `position` is the
+order inside one document (used for adjacency edges in Phase 5). `section` is the path used for
+hierarchy edges.
+
+| File | Function | What it does |
+|---|---|---|
+| `utils/sections.py` | `is_heading(line)` | Returns `(level, title)` for `## Title` (level = number of `#`) or `2.1 Title` (level = number of parts), otherwise `None`. |
+| | `is_numbered_heading(line)` | Accepts `2.1 Datasets` but rejects list items such as `1. Buy milk.` |
+| | `heading_lines(text)` | Lists every heading, ignoring lines inside ```` ``` ```` code blocks. |
+| | `has_structure(text)` | Chooses structural mode: any Markdown heading, or at least two numbered headings. |
+| | `split_by_sections(text)` | Walks the lines with a stack of headings and returns `{"section", "heading", "body"}` for every section that has text. |
+| | `add_section(...)` | Saves one finished section and skips heading-only sections. |
+| `utils/units.py` | `split_units(text, max_tokens)` | Turns text into a list of whole sentences and whole tables, in order. |
+| | `is_table_line(line)` / `is_separator_row(line)` | Recognise Markdown table rows and the `|---|` row. |
+| | `add_table(...)` | Adds one table as a unit, or splits it if it is too big. |
+| | `split_table(table, max_tokens)` | Splits a big table between rows and repeats the header in each part, so no row is cut. |
+| `utils/semantic_split.py` | `word_cosine(a, b)` | Similarity from word counts. The default when no embedder is given. |
+| | `sentence_distances(sentences, embed_fn)` | `1 − cosine` between neighbouring sentences, from `embed_fn` vectors or word counts. |
+| | `find_breakpoints(distances, percentile)` | Indexes where a new segment starts: distance ≥ the 90th percentile (and not all distances equal). |
+| | `split_by_meaning(sentences, ...)` | Cuts the sentence list at those breakpoints. |
+| `utils/chunker.py` | `pack_units(units, max, overlap)` | Fills a chunk until the next unit would not fit, then starts a new one with an overlap from the previous one. |
+| | `take_overlap(units, overlap)` | Last sentences of a chunk that fit in `overlap_tokens`. Stops at a table and never takes the first unit. |
+| | `structural_pieces()` / `semantic_pieces()` | Run the two modes and return `(section_path, chunk_text)` pairs. |
+| | `merge_small_chunks(chunks, min, max)` | Joins chunks under 32 tokens onto the previous chunk when the result still fits. |
+| | `chunk_document(doc, settings, embed_fn)` | One document → chunk dicts with `position`. |
+| | `chunk_documents(docs, settings, embed_fn)` | All documents → chunk dicts with a global `id`. |
+| `examples/chunk_example.py` | `main()` | Prints every chunk. Optional arguments: `chunk_tokens overlap_tokens`. |
+| `tests/test_sections.py` | 6 tests | Markdown and numbered headings, structure detection, section paths, text before the first heading, code blocks. |
+| `tests/test_units.py` | 4 tests | Sentence/table order, small tables whole, big tables split by row with the header repeated, size limit. |
+| `tests/test_semantic_split.py` | 6 tests | Word cosine, breakpoint placement, no breaks for equal distances, topic change, custom `embed_fn`, short inputs. |
+| `tests/test_chunker.py` | 11 tests | Size limit, whole sentences, overlap is a suffix of the previous chunk, zero overlap, overlap edge cases, merging and its limit, sample-doc modes, paths, positions, table kept in one chunk, 32-token minimum. |
+
+Run the Phase 3 tests:
+
+```bash
+pytest -v tests/test_sections.py tests/test_units.py tests/test_semantic_split.py tests/test_chunker.py
 ```

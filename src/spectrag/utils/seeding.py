@@ -32,21 +32,29 @@ def ranking(scores, keep=None):
     """Chunk ids from best to worst score. 'keep' (True/False per chunk) leaves some out.
     Equal scores keep the chunk order, so the result is the same every run."""
     order = np.argsort(-np.asarray(scores), kind="stable")
-    return [int(i) for i in order if keep is None or keep[i]]
+    if keep is not None:
+        order = order[np.asarray(keep, dtype=bool)[order]]
+    return order.tolist()
 
 
-def rrf_fuse(rankings, k=60):
-    """Reciprocal Rank Fusion: a chunk at rank r in a list earns 1 / (k + r)."""
-    fused = {}
+def rrf_fuse(rankings, k=60, size=None):
+    """Reciprocal Rank Fusion: a chunk at rank r in a list earns 1 / (k + r).
+
+    Returns one fused score per chunk id (0 for chunks that are in no list)."""
+    if size is None:
+        size = max((max(ranked) + 1 for ranked in rankings if len(ranked)), default=0)
+    fused = np.zeros(size)
     for ranked in rankings:
-        for rank, chunk_id in enumerate(ranked, start=1):
-            fused[chunk_id] = fused.get(chunk_id, 0.0) + 1.0 / (k + rank)
+        ranked = np.asarray(ranked, dtype=int)
+        fused[ranked] += 1.0 / (k + np.arange(1, len(ranked) + 1))
     return fused
 
 
 def top_seeds(fused, count):
     """The 'count' chunks with the highest fused score (ties: lower id first)."""
-    return sorted(fused, key=lambda chunk_id: (-fused[chunk_id], chunk_id))[:count]
+    ids = np.flatnonzero(fused > 0)
+    order = np.lexsort((ids, -fused[ids]))  # sort by score, then by id
+    return ids[order][:count].tolist()
 
 
 def min_max(scores):
@@ -64,15 +72,16 @@ def hybrid_relevance(dense, lexical, bm25_weight):
 def find_seeds(query, query_vector, index, bm25, settings):
     """Run stage 1. Returns the seed ids plus every score, so each step can be inspected."""
     chunk_count = len(index["chunks"])
-    owners = index["question_owners"]
+    owners = [int(owner) for owner in index["question_owners"]]  # list or saved array
     dense = dense_scores(index["embeddings"], query_vector)
     lexical = bm25_scores(bm25, query, settings["bm25_k1"], settings["bm25_b"])
     utility = utility_scores(index["question_vectors"], owners, query_vector, chunk_count)
     rankings = [ranking(dense), ranking(lexical, keep=lexical > 0)]
     if owners:  # utility questions exist only when an LLM made them at ingestion
-        has_questions = set(owners)
-        rankings.append(ranking(utility, keep=[i in has_questions for i in range(chunk_count)]))
-    fused = rrf_fuse(rankings, settings["rrf_k"])
+        has_questions = np.zeros(chunk_count, dtype=bool)
+        has_questions[owners] = True
+        rankings.append(ranking(utility, keep=has_questions))
+    fused = rrf_fuse(rankings, settings["rrf_k"], size=chunk_count)
     return {"seeds": top_seeds(fused, settings["seed_count"]),
             "relevance": hybrid_relevance(dense, lexical, settings["bm25_weight"]),
             "dense": dense, "bm25": lexical, "utility": utility, "rrf": fused,

@@ -1,8 +1,11 @@
 """Save and load the index folder (paper Table 1, "Persist").
 
 An index is a plain dict. Each key becomes one file:
-  numpy arrays  -> <key>.npy   (e.g. embeddings.npy)
-  anything else -> <key>.json  (e.g. chunks.json, settings.json)
+  numpy array              -> <key>.npy   (embeddings, spectral, edges, ...)
+  dict of numpy arrays     -> <key>.npz   (the six raw edge signals)
+  anything else            -> <key>.json  (chunks, settings, info)
+Binary files keep big edge lists fast to save and small on disk. Arrays are always loaded
+with allow_pickle=False, so opening an index never runs stored code.
 """
 
 import json
@@ -12,15 +15,20 @@ import numpy as np
 
 
 def save_json(path, data):
-    """Write data as readable JSON. Things JSON cannot store (like functions) become text."""
+    """Write data as JSON. Small files are indented; things JSON cannot store become text."""
     with open(path, "w", encoding="utf-8") as file:
-        json.dump(data, file, ensure_ascii=False, indent=1, default=str)
+        indent = 1 if path.name in ("settings.json", "info.json") else None
+        json.dump(data, file, ensure_ascii=False, indent=indent, default=str)
 
 
 def load_json(path):
     """Read a JSON file."""
     with open(path, encoding="utf-8") as file:
         return json.load(file)
+
+
+def is_array_dict(value):
+    return isinstance(value, dict) and value and all(isinstance(v, np.ndarray) for v in value.values())
 
 
 def save_index(folder, index):
@@ -30,19 +38,37 @@ def save_index(folder, index):
     for key, value in index.items():
         if isinstance(value, np.ndarray):
             np.save(folder / (key + ".npy"), value)
+        elif is_array_dict(value):
+            np.savez(folder / (key + ".npz"), **value)
         else:
             save_json(folder / (key + ".json"), value)
     return folder
 
 
-def load_index(folder):
-    """Load every .npy and .json file in the folder back into a dict."""
+def load_index(folder, skip=()):
+    """Load every .npy, .npz and .json file in the folder (except the keys in 'skip')."""
     folder = Path(folder)
     if not folder.is_dir():
         raise FileNotFoundError("No index folder: " + str(folder))
     index = {}
-    for path in sorted(folder.glob("*.npy")):
-        index[path.stem] = np.load(path)
-    for path in sorted(folder.glob("*.json")):
-        index[path.stem] = load_json(path)
+    for path in sorted(folder.iterdir()):
+        if path.stem in skip:
+            continue
+        if path.suffix == ".npy":
+            index[path.stem] = np.load(path, allow_pickle=False)
+        elif path.suffix == ".npz":
+            with np.load(path, allow_pickle=False) as data:
+                index[path.stem] = {name: data[name] for name in data.files}
+        elif path.suffix == ".json":
+            index[path.stem] = load_json(path)
     return index
+
+
+def edges_to_array(edges):
+    """[[i, j, w], ...] -> float array of shape (E, 3). Chunk ids stay exact as floats."""
+    return np.asarray(edges, dtype=np.float64).reshape(-1, 3)
+
+
+def array_to_edges(array):
+    """Float array (E, 3) or a JSON list (older indexes) -> [[i, j, w], ...] with int ids."""
+    return [[int(i), int(j), float(w)] for i, j, w in array]

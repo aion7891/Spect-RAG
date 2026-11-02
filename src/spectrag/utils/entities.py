@@ -20,7 +20,10 @@ STOPWORDS = {"the", "a", "an", "in", "on", "at", "of", "and", "or", "but", "by",
              "to", "it", "its", "this", "that", "these", "those", "he", "she", "they",
              "we", "you", "i", "his", "her", "their", "our", "see", "since", "under",
              "after", "before", "both", "dr", "mr", "mrs", "ms", "prof",
-             "section", "sections", "sec", "table", "figure", "fig", "chapter"}
+             "section", "sections", "sec", "table", "figure", "fig", "chapter", "new",
+             "january", "february", "march", "april", "may", "june", "july", "august",
+             "september", "october", "november", "december", "monday", "tuesday",
+             "wednesday", "thursday", "friday", "saturday", "sunday", "week", "today"}
 
 
 def clean_phrase(phrase):
@@ -60,6 +63,8 @@ def extract_entities(text):
     sentences = [s for line in text.splitlines() for s in split_sentences(line)]
     for sentence in sentences:  # chunks keep one sentence/heading per line
         for phrase in sentence_phrases(sentence):
+            if len(phrase) < 2:
+                continue  # one letter, e.g. the "U" of "U.S."
             entities.add(phrase)
             for word in phrase.split():
                 if len(word) > 1 and word not in STOPWORDS:

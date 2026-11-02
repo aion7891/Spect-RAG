@@ -33,7 +33,11 @@ def test_matrix_neighbors_and_degrees():
     matrix = build_matrix(edges, 3)
     assert np.allclose(matrix, matrix.T)
     assert matrix[1, 0] == 0.5
-    assert neighbors(edges, 3) == {0: {1: 0.5}, 1: {0: 0.5, 2: 0.25}, 2: {1: 0.25}}
+    graph = neighbors(edges, 3)                                     # CSR: rows 0, 1, 2
+    assert graph["indptr"].tolist() == [0, 1, 3, 4]
+    assert graph["indices"].tolist() == [1, 0, 2, 1]
+    assert graph["weights"].tolist() == [0.5, 0.5, 0.25, 0.25]
+    assert neighbors([], 2)["indptr"].tolist() == [0, 0, 0]
     assert np.allclose(degrees(edges, 3), [0.5, 0.75, 0.25])
 
 

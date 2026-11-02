@@ -10,9 +10,9 @@ import numpy as np
 from spectrag.utils.edge_list import add_edge, as_list
 from spectrag.utils.embedder import normalize
 
-# An entity found in more than 5% of the chunks (and more than 20 chunks) is too common to
+# An entity found in more than 1% of the chunks (and more than 20 chunks) is too common to
 # say two chunks are related, like a stopword. Skipping it also avoids n x n pair counting.
-COMMON_ENTITY_SHARE = 0.05
+COMMON_ENTITY_SHARE = 0.01
 COMMON_ENTITY_MIN = 20
 
 

@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+## 0.1.2 (2026-11-04)
+
+- **Custom embedders reopen:** an index built with a `functools.partial` or a callable object
+  as its embedder could not be opened again, even with `embed_fn=`, because `settings.json`
+  held the object's `str()`. Embed functions are now saved by name, as `"custom:<name>"`, and
+  indexes written by 0.1.1 or earlier open again when the function is passed.
+- **Embedder fingerprint:** a new index file, `embedder_probe.npy`, holds the vector of one fixed
+  sentence. Opening an index embeds it again and raises `EmbedderError` if the embedder gives a
+  different size or the cosine is below 0.99. Before, opening an index with a different
+  embedder of the same size (for example `hash` and `nomic-embed-text`, both 768-d) was
+  accepted, and every search returned unrelated chunks. A wrong-size embedder is now caught
+  when the index is opened, not at the first search. Indexes made before 0.1.2 have no
+  fingerprint and open as before, with a log message. The index format stays 2.
+
 ## 0.1.1 (2026-11-04)
 
 - **Every deliberate error is a `SpectRAGError`:** eight error paths that raised plain built-in

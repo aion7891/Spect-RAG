@@ -72,8 +72,10 @@ Ollama server). Any other model is a function from a list of texts to a list of 
 
     **Pass your function again when you search.** An index stores only the name of a function, not
     the function, so `SpectRAGRetrieval` asks for it: `SpectRAGRetrieval("my_index", embed_fn=embed)`.
-    The query must be embedded with the same model as the documents; a vector of the wrong size
-    raises `EmbedderError`.
+    This works for plain functions, `functools.partial` and callable objects. The query must be
+    embedded with the same model as the documents: opening the index checks the embedder against
+    a saved fingerprint, and a different model, or a vector of the wrong size, raises
+    `EmbedderError`.
 
 Your function receives the same call for documents and for questions. The built-in Ollama
 embedder adds the `search_document:` and `search_query:` prefixes that `nomic-embed-text`

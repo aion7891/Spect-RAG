@@ -16,7 +16,7 @@ working.
 | `SettingsError` | `ValueError` | a setting has the wrong type, is out of range, or is not an allowed choice |
 | `UnknownSettingError` | `SettingsError`, `KeyError` | a setting name is unknown, usually a typo; the message suggests the closest name |
 | `IndexError_` | `FileNotFoundError` | the index folder is missing or incomplete, was made by a newer version, or the target folder is not a SpectRAG index |
-| `EmbedderError` | `ConnectionError` | the embedder cannot be reached (for example Ollama is not running), or the query vector does not match the index |
+| `EmbedderError` | `ConnectionError` | the embedder cannot be reached (for example Ollama is not running), the query vector does not match the index, or the index is opened with a different embedder from the one that built it (see [Index format](index-format.md#safety)) |
 | `DocumentError` | `ValueError` | documents passed to `ingest_documents()` are not `{"doc_id", "text"}` dicts, or two share a `doc_id`; also an evaluation snippet found in no chunk |
 | `NoDocumentsError` | `DocumentError` | there is no document with text to ingest |
 | `DocumentNotFoundError` | `DocumentError`, `FileNotFoundError` | the file or folder passed to `ingest()` does not exist |
@@ -45,6 +45,8 @@ overlap_tokens (1200) must be smaller than chunk_tokens (1000)
 No index at my_index. Build one first: SpectRAGIngestion('my_index').ingest(path)
 Cannot reach Ollama at http://localhost:11434. Is 'ollama serve' running and 'ollama pull nomic-embed-text' done?
 Use rebuild_graph() to change graph settings: graph_k
+This index was built with a different embedder (the check sentence has cosine 0.000, below 0.99): open the index with the embedder it was built with (ollama).
+This index was built with your own embed function (my_embed). Pass it again: SpectRAGRetrieval(index_dir, embed_fn=...)
 ```
 
 Two more cases raise `SettingsError`: an index built with your own embed function opened

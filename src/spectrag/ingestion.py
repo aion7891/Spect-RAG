@@ -17,6 +17,7 @@ from spectrag.log import log_step, logger
 from spectrag.utils.chunker import chunk_documents
 from spectrag.utils.edges import build_edge_signals, count_edges
 from spectrag.utils.embedder import make_embedder
+from spectrag.utils.embedder_id import embed_probe, saved_settings
 from spectrag.utils.entities import add_entities
 from spectrag.utils.graph_build import build_graph, build_spectral
 from spectrag.utils.loader import load_docs
@@ -94,7 +95,8 @@ class SpectRAGIngestion:
             "spectral": coords, "eigenvalues": eigenvalues,
             "question_vectors": question_vectors,
             "question_owners": np.asarray(owners, dtype=np.int64),
-            "settings": self.settings, "info": info,
+            "settings": saved_settings(self.settings), "info": info,  # functions saved by name
+            "embedder_probe": embed_probe(self.embed),  # fingerprint, checked when opened
         })
         save_vector_index(vector_index, partial)
         replace_folder(partial, self.index_dir)

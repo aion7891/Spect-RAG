@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+## 0.1.1 (2026-11-04)
+
+- **Every deliberate error is a `SpectRAGError`:** eight error paths that raised plain built-in
+  exceptions now raise SpectRAG classes that still inherit the old built-in, so existing
+  `except ValueError` (or `FileNotFoundError`, `ImportError`, `ConnectionError`) code keeps
+  working, and the `spectrag` command prints one `spectrag: error: ...` line instead of a
+  traceback. New classes: `DocumentNotFoundError` (a missing file or folder given to
+  `ingest()`), `MissingPackageError` (`faiss-cpu`, `hnswlib` or `pypdf` not installed) and
+  `LLMError` (the Ollama LLM cannot be reached). A custom embedder opened without `embed_fn`, a
+  graph setting passed to `search(settings=...)` and an unknown selector or proximity mode now
+  raise `SettingsError`, a missing index folder in `load_index()` raises `IndexError_`, and
+  evidence found in no chunk raises `DocumentError`.
 - **Documentation site:** built with MkDocs (Material theme) from `docs/` and published with
   GitHub Pages at https://aion7891.github.io/Spect-RAG/ by the `docs` workflow: overview,
   installation, quick start, architecture, the spectral method, configuration, tuning, custom

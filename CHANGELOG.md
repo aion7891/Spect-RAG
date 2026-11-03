@@ -25,3 +25,5 @@ the paper where it gives values; tuned defaults are planned for a later version.
 - **Validation:** end-to-end tests on real documents (the paper PDF, MultiHopRAG articles) and
   `tools/validate_release.py`, which re-checks the mathematics on a real index; see
   `docs/PRODUCTION_READINESS.md`.
+- **Release automation:** pushing a version tag on `main` runs the tests, builds the package and
+  publishes it to PyPI (or TestPyPI for pre-release tags) with Trusted Publishing.

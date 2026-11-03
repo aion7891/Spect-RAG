@@ -1,9 +1,11 @@
 name: release
 
 # Push a version tag on main to publish:
-#   v0.1.0      -> PyPI, plus a GitHub Release with the built files
-#   v0.1.0rc1   -> TestPyPI only (a dry run; also a1, b1 and .dev1 tags)
-# Publishing uses PyPI Trusted Publishing, so no API token is stored in GitHub.
+#   v0.1.0      -> TestPyPI, install check, then PyPI, plus a GitHub Release with the built files
+#   v0.1.0rc1   -> TestPyPI and the install check only (a dry run; also a1, b1 and .dev1 tags)
+# Each step runs only if the one before it passed, so a package that does not install from
+# TestPyPI never reaches PyPI. Files that are already uploaded are skipped, so a failed run can
+# be re-run. Publishing uses PyPI Trusted Publishing, so no API token is stored in GitHub.
 
 on:
   push:
@@ -56,8 +58,7 @@ jobs:
           path: dist/
 
   testpypi:
-    needs: [check, build]
-    if: needs.check.outputs.prerelease == 'true'
+    needs: build
     runs-on: ubuntu-latest
     environment:
       name: testpypi
@@ -72,9 +73,36 @@ jobs:
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
           repository-url: https://test.pypi.org/legacy/
+          skip-existing: true  # a re-run does not fail on files uploaded the first time
+
+  testpypi-check:
+    needs: testpypi
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install the new version from TestPyPI and use it
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          python -m venv /tmp/check
+          # numpy comes from PyPI; only spectrag itself comes from TestPyPI (--no-deps), so a
+          # look-alike package on TestPyPI can never be installed in its place.
+          /tmp/check/bin/pip install -q numpy
+          for attempt in 1 2 3 4 5 6; do  # TestPyPI can take a minute to list a new upload
+            /tmp/check/bin/pip install -q --no-deps --index-url https://test.pypi.org/simple/ \
+              "spectrag==$version" && break
+            echo "spectrag $version is not on TestPyPI yet (try $attempt of 6), waiting 30 s"
+            sleep 30
+          done
+          /tmp/check/bin/spectrag --version | grep -x "spectrag $version"
+          mkdir /tmp/docs
+          echo "Helios Energy is based in Porto. It builds solar farms." > /tmp/docs/helios.txt
+          /tmp/check/bin/spectrag ingest /tmp/docs --index /tmp/idx
+          /tmp/check/bin/spectrag search "Where is Helios Energy based?" --index /tmp/idx | grep Porto
 
   pypi:
-    needs: [check, build]
+    needs: [check, testpypi-check]
     if: needs.check.outputs.prerelease == 'false'
     runs-on: ubuntu-latest
     environment:
@@ -88,6 +116,8 @@ jobs:
           name: dist
           path: dist/
       - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          skip-existing: true
 
   github-release:
     needs: pypi
@@ -102,4 +132,6 @@ jobs:
       - name: Create the GitHub Release with the built files
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" --title "SpectRAG $GITHUB_REF_NAME" --generate-notes
+        run: |  # on a re-run the release exists already: replace its files instead
+          gh release create "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" --title "SpectRAG $GITHUB_REF_NAME" --generate-notes \
+            || gh release upload "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" --clobber

@@ -14,6 +14,10 @@
   graph setting passed to `search(settings=...)` and an unknown selector or proximity mode now
   raise `SettingsError`, a missing index folder in `load_index()` raises `IndexError_`, and
   evidence found in no chunk raises `DocumentError`.
+- **Releases go through TestPyPI first:** every version tag is published to TestPyPI, installed
+  from there into a clean environment and tried (`spectrag --version`, one ingest and search),
+  and only then published to PyPI and as a GitHub Release. A failed release run can be re-run:
+  files that are already uploaded are skipped.
 - **Documentation site:** built with MkDocs (Material theme) from `docs/` and published with
   GitHub Pages at https://aion7891.github.io/Spect-RAG/ by the `docs` workflow: overview,
   installation, quick start, architecture, the spectral method, configuration, tuning, custom

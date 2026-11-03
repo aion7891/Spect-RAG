@@ -119,14 +119,24 @@ Pushing a version tag on `main` starts it:
 
 | Tag | Where it is published |
 |---|---|
-| `v0.1.0` (final) | PyPI, plus a GitHub Release with the wheel and sdist |
+| `v0.1.0` (final) | TestPyPI, then PyPI once it installs from TestPyPI, plus a GitHub Release with the wheel and sdist |
 | `v0.1.0rc1`, `a1`, `b1`, `.dev1` (pre-release) | TestPyPI only, as a dry run |
 
-The workflow stops before publishing if any of these fails:
-1. the tag is on `main`;
-2. the tag equals `__version__` in `src/spectrag/_version.py` (`v0.1.0` needs `0.1.0`);
-3. the full CI matrix from `tests.yml` passes;
-4. the build passes `twine check --strict`.
+The jobs run in this order, and each one runs only if the one before it passed:
+
+```
+check → tests → build → testpypi → testpypi-check → pypi (final tags only) → github-release
+```
+
+1. **check:** the tag is on `main`, and it equals `__version__` in `src/spectrag/_version.py`
+   (`v0.1.0` needs `0.1.0`);
+2. **tests:** the full CI matrix from `tests.yml` passes;
+3. **build:** the wheel and sdist pass `twine check --strict`;
+4. **testpypi:** both files are uploaded to TestPyPI;
+5. **testpypi-check:** `spectrag==<version>` is installed from TestPyPI into a clean environment
+   (numpy from PyPI, spectrag alone from TestPyPI with `--no-deps`); `spectrag --version` must
+   match the tag, and a one-document ingest and search must work;
+6. **pypi** and **github-release:** for a final tag only.
 
 Publishing uses PyPI Trusted Publishing (OpenID Connect), so no API token is stored in GitHub.
 
@@ -148,15 +158,17 @@ Publishing uses PyPI Trusted Publishing (OpenID Connect), so no API token is sto
 
 ```bash
 # 1. Set the version in src/spectrag/_version.py and add the CHANGELOG entry, through a PR to main
-# 2. Optional dry run on TestPyPI
-git checkout main && git pull
-#    (set __version__ = "0.1.0rc1" in a PR first)
-git tag -a v0.1.0rc1 -m "SpectRAG 0.1.0rc1" && git push origin v0.1.0rc1
-# 3. The real release
+# 2. The release: TestPyPI, the install check, then PyPI and the GitHub Release
+git switch main && git pull origin main
 git tag -a v0.1.0 -m "SpectRAG 0.1.0" && git push origin v0.1.0
+gh run watch
+# Optional: a pre-release first (set __version__ = "0.1.0rc1" in a PR), TestPyPI only
 ```
 
-A tag that fails a check publishes nothing. To retry, delete the tag
+A tag that fails before `testpypi` publishes nothing: delete the tag
 (`git push --delete origin v0.1.0 && git tag -d v0.1.0`), fix the problem, and tag again. A
-version that reached PyPI cannot be uploaded again, even after it is deleted there. A broken
-release is fixed with a new version, e.g. 0.1.1.
+run that failed later (for example a network error while publishing) can be re-run with
+`gh run rerun <run id> --failed`. Files that are already uploaded are skipped, and an existing
+GitHub Release gets its files replaced. A version that reached PyPI or TestPyPI cannot be
+uploaded again with different files, even after it is deleted there. A broken release is fixed
+with a new version, e.g. 0.1.1.

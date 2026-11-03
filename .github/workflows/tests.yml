@@ -1,10 +1,19 @@
 name: tests
 
+# Runs on every pull request, and on main after a merge. (A push to a PR branch already runs
+# through pull_request, so branch pushes are not a second trigger.) Releases run their own quick
+# tests in release.yml: the merged commit has already passed this full set on main.
+
 on:
   push:
-    branches: ["**"]  # tags run these tests through release.yml instead
+    branches: [main]
   pull_request:
-  workflow_call:      # used by release.yml before publishing
+  workflow_call:      # still used by release.yml (until it runs its own quick tests)
+
+# A new push to a pull request cancels its older, unfinished run. Runs on main always finish.
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   test:
@@ -12,10 +21,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest]
         python: ["3.10", "3.12", "3.14"]
         install: ["minimal", "all"]
-        include:  # the next Python, before its release (allowed to fail until numpy supports it)
+        include:
+          # One macOS job: hosted macOS runners are scarce and can queue for half an hour.
+          - {os: macos-latest, python: "3.12", install: "all"}
+          # The next Python, before its release (allowed to fail until numpy supports it).
           - {os: ubuntu-latest, python: "3.15", install: "minimal", prerelease: true}
     continue-on-error: ${{ matrix.prerelease == true }}
     steps:

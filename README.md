@@ -491,15 +491,13 @@ flowchart LR
     classDef done fill:#d4edda,stroke:#2e7d32,color:#1b5e20
     classDef doing fill:#fff3cd,stroke:#f9a825,color:#6d4c00
     classDef todo fill:#eceff1,stroke:#90a4ae,color:#455a64
-    class errors doing
-    class embedder,replace,escape todo
+    class errors done
+    class embedder doing
+    class replace,escape todo
 ```
 
 ## Limitations
 
-- An index built with a `functools.partial` or a callable object as its embedder cannot be
-  opened again, and an index opened with a different embedder of the same size is not
-  detected. Both are fixed in step 0.2.
 - The default settings are not tuned (see the benchmark). Tuning on your own validation
   questions is recommended.
 - Entity extraction is rule-based unless you pass an `entity_fn`; utility questions need an LLM.

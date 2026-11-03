@@ -15,7 +15,8 @@ edge signals are one `.npz`, and everything else is JSON.
 | `signals.npz` | the six raw edge signals before fusion; used by `rebuild_graph()` and tuning |
 | `spectral.npy`, `eigenvalues.npy` | the spectral coordinates (one row per chunk) and their eigenvalues |
 | `question_vectors.npy`, `question_owners.npy` | embeddings of the utility questions, and the chunk each belongs to |
-| `settings.json` | the settings the index was built with |
+| `settings.json` | the settings the index was built with; your own embed function is saved by name, as `"custom:<name>"` |
+| `embedder_probe.npy` | the embedder's fingerprint: the vector of one fixed sentence, checked when the index is opened (since 0.1.2) |
 | `info.json` | the [ingestion summary](python-api.md#the-summary), including `format_version` and `spectrag_version` |
 | `vectors.faiss` or `vectors.hnsw` | the approximate vector index, only with the `faiss` or `hnsw` backend |
 
@@ -28,11 +29,18 @@ edge signals are one `.npz`, and everything else is JSON.
   runs stored code.
 * **Versioned.** `format_version` (currently 2) is checked when an index is opened. A newer
   format than the installed package reads raises `IndexError_` and asks you to upgrade.
+* **The same embedder.** Opening an index embeds the fingerprint sentence again and compares
+  it with `embedder_probe.npy`. A different size, or a cosine below 0.99, raises
+  `EmbedderError`, because vectors from two different models can't be compared, even when
+  both have 768 dimensions (for example `hash` and `nomic-embed-text`). The threshold allows
+  the small run-to-run differences of a GPU. Indexes made before 0.1.2 have no fingerprint;
+  they open as before, with a log message that the embedder was not checked.
 
 ## Things to know
 
-* An index built with a custom embed function stores only the function's name in
-  `settings.json`; pass the function again with `SpectRAGRetrieval(dir, embed_fn=...)`.
+* An index built with a custom embed function (a function, a `functools.partial` or a
+  callable object) stores only its name in `settings.json`, as `"custom:<name>"`; pass the
+  function again with `SpectRAGRetrieval(dir, embed_fn=...)`.
 * The files are plain numpy and JSON, so you can read them with any tool:
 
 ```python

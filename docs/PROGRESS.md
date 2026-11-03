@@ -12,7 +12,7 @@ was actually run; the commands are listed so they can be repeated.
 | 4 | Production package: configuration, errors, logging, PyPI metadata, `quickstart.py` | ✅ Done (`8e5ee38`) |
 | 5 | Interactive graph view, README redesign, animated architecture flow | ✅ Done (`fc4b988`) |
 | 6 | Final testing and validation, production-readiness report | ✅ Done (awaiting your review) |
-| 7 | Hardening (roadmap Phase 0): 0.1 errors ✅ in review · 0.2 embedder marker and fingerprint · 0.3 safe index replace · 0.4 graph view escaping | 🟡 In progress |
+| 7 | Hardening (roadmap Phase 0): 0.1 errors ✅ (0.1.1) · 0.2 embedder marker and fingerprint 🟡 in review · 0.3 safe index replace · 0.4 graph view escaping | 🟡 In progress |
 
 ## Data used for testing and benchmarks
 
@@ -422,4 +422,21 @@ that also inherits the old built-in, so existing `except ValueError` (or `FileNo
 
 Tests: `tests/test_errors.py` (12 tests). Full suite: 372 passed, 1 skipped (all extras);
 358 passed, 15 skipped (fresh numpy-only environment).
+
+### 7.2 Which embedder built an index
+
+Two bugs, both reproduced before the fix:
+
+| Problem | Before | Now |
+|---|---|---|
+| An index built with a `functools.partial` or a callable object as its embedder | `settings.json` held `str(fn)`; opening the index raised `SettingsError`, even with `embed_fn=` | saved as `"custom:<name>"`; opens with `embed_fn=`. Indexes written by 0.1.1 open too |
+| An index opened with a different embedder of the same size (e.g. built with one 768-d model, opened with `"hash"`) | accepted; every search returned nonsense | `EmbedderError` when the index is opened |
+
+The fingerprint is `embedder_probe.npy`, the vector of one fixed sentence. Opening an index
+embeds the sentence again and compares the two vectors. The index is refused if the sizes
+differ or the cosine is below 0.99 (DESIGN.md D65). Indexes without the file open with a log
+message. The code is in `src/spectrag/utils/embedder_id.py`.
+
+Tests: `tests/test_embedder_id.py` (19 tests). Full suite: 391 passed, 1 skipped (all extras);
+377 passed, 15 skipped (numpy only).
 

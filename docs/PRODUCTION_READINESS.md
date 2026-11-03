@@ -110,19 +110,53 @@ largest on inference questions (0.802 vs 0.757). Full tables, charts and method:
 | Tests in the sdist | minor | The sdist includes `tests/`, but some tests need `benchmarks/`, `examples/` and `docs/` from the repository. Run the tests from a clone. |
 | `pip install git+…Spect-RAG.git` | waits for the merge | `main` still holds only the first commit, so installing from `main` fails ("does not appear to be a Python project"). It works once this branch is merged. Until then, the README shows `@base-2`. |
 | License and author | maintainer to confirm | MIT and "Kumar Nishant" were filled in as placeholders. |
-| PyPI release | maintainer's decision | Not uploaded. The steps are below. |
+| PyPI release | maintainer's decision | Not uploaded yet. The release workflow publishes on a version tag after a one-time setup (section 8). |
 
-## 8. Release steps (for the maintainer)
+## 8. Releasing (continuous delivery)
+
+Releases are automated by [`.github/workflows/release.yml`](../.github/workflows/release.yml).
+Pushing a version tag on `main` starts it:
+
+| Tag | Where it is published |
+|---|---|
+| `v0.1.0` (final) | PyPI, plus a GitHub Release with the wheel and sdist |
+| `v0.1.0rc1`, `a1`, `b1`, `.dev1` (pre-release) | TestPyPI only, as a dry run |
+
+The workflow stops before publishing if any of these fails:
+1. the tag is on `main`;
+2. the tag equals `__version__` in `src/spectrag/_version.py` (`v0.1.0` needs `0.1.0`);
+3. the full CI matrix from `tests.yml` passes;
+4. the build passes `twine check --strict`.
+
+Publishing uses PyPI Trusted Publishing (OpenID Connect), so no API token is stored in GitHub.
+
+### One-time setup
+
+1. **PyPI** → Account settings → Publishing → *Add a new pending publisher*:
+   - project `spectrag`;
+   - owner `aion7891`;
+   - repository `Spect-RAG`;
+   - workflow `release.yml`;
+   - environment `pypi`.
+2. **TestPyPI** (test.pypi.org; a separate account) → the same, with environment `testpypi`.
+3. **GitHub** → repository Settings → Environments → create `pypi` and `testpypi`. For `pypi`,
+   it is recommended to add yourself under *Required reviewers*, so each release waits for
+   one click of approval, and to allow only tags matching `v*` under deployment branches and
+   tags.
+
+### Each release
 
 ```bash
-# 1. Merge the release branch into main (PR #1), then tag it
+# 1. Set the version in src/spectrag/_version.py and add the CHANGELOG entry, through a PR to main
+# 2. Optional dry run on TestPyPI
 git checkout main && git pull
+#    (set __version__ = "0.1.0rc1" in a PR first)
+git tag -a v0.1.0rc1 -m "SpectRAG 0.1.0rc1" && git push origin v0.1.0rc1
+# 3. The real release
 git tag -a v0.1.0 -m "SpectRAG 0.1.0" && git push origin v0.1.0
-
-# 2. Build and check
-rm -rf dist && uv build && uvx twine check dist/*
-
-# 3. Optional dry run on TestPyPI, then the real upload
-uvx twine upload --repository testpypi dist/*
-uvx twine upload dist/*
 ```
+
+A tag that fails a check publishes nothing. To retry, delete the tag
+(`git push --delete origin v0.1.0 && git tag -d v0.1.0`), fix the problem, and tag again. A
+version that reached PyPI cannot be uploaded again, even after it is deleted there. A broken
+release is fixed with a new version, e.g. 0.1.1.

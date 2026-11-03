@@ -14,6 +14,8 @@ import urllib.request
 
 import numpy as np
 
+from spectrag.errors import EmbedderError
+
 # nomic-embed-text expects these task prefixes (paper: "search_document:").
 PREFIXES = {"document": "search_document: ", "query": "search_query: "}
 
@@ -60,7 +62,7 @@ def ollama_request(texts, model, url, retries=2):
                 return json.loads(response.read())["embeddings"]
         except OSError as error:
             if attempt == retries:
-                raise ConnectionError("Cannot reach Ollama at " + url + ". Is 'ollama serve' "
+                raise EmbedderError("Cannot reach Ollama at " + url + ". Is 'ollama serve' "
                                       "running and 'ollama pull " + model + "' done?") from error
 
 
@@ -84,4 +86,4 @@ def make_embedder(settings):
     if choice == "ollama":
         return lambda texts, kind="document": ollama_embed(
             texts, kind, settings["ollama_model"], settings["ollama_url"])
-    raise ValueError("Unknown embedder: " + str(choice))
+    raise EmbedderError("Unknown embedder: %r (use 'hash', 'ollama' or a function)" % (choice,))

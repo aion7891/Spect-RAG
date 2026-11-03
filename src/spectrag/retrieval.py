@@ -5,9 +5,13 @@
     print(result["context"])
 """
 
+import time
 from pathlib import Path
 
+from spectrag._version import INDEX_FORMAT
 from spectrag.config import make_settings
+from spectrag.errors import EmbedderError, IndexError_
+from spectrag.log import logger
 from spectrag.utils.bm25 import build_bm25
 from spectrag.utils.diffusion import score_candidates
 from spectrag.utils.embedder import make_embedder
@@ -16,7 +20,7 @@ from spectrag.utils.graph_build import build_graph, build_spectral
 from spectrag.utils.prompt import build_prompt, format_context
 from spectrag.utils.seeding import find_seeds
 from spectrag.utils.selectors import select
-from spectrag.utils.store import array_to_edges, load_index
+from spectrag.utils.store import array_to_edges, check_index_folder, load_index
 from spectrag.utils.vector_index import load_vector_index
 
 # These change the graph itself, so they need rebuild_graph() instead of a per-call override.
@@ -37,7 +41,12 @@ class SpectRAGRetrieval:
                    "anchor_expand_ce" selector.
         """
         self.index_dir = Path(index_dir)
+        check_index_folder(self.index_dir)
         self.index = load_index(index_dir, skip=("signals",))  # raw signals are loaded on demand
+        made_with = self.index["info"].get("format_version", 1)
+        if made_with > INDEX_FORMAT:
+            raise IndexError_("This index has format %d; this SpectRAG version reads up to %d. "
+                              "Upgrade spectrag." % (made_with, INDEX_FORMAT))
         self.index["edges"] = array_to_edges(self.index["edges"])
         self.index["question_owners"] = [int(owner) for owner in self.index["question_owners"]]
         built_with = make_settings(self.index["settings"])
@@ -87,8 +96,13 @@ class SpectRAGRetrieval:
     def retrieve(self, question, settings=None, query_vector=None):
         """Stages 1-4. Returns (seed result, scored candidates, picks)."""
         settings = self.settings_for(settings)
+        start = time.time()
         if query_vector is None:
             query_vector = self.embed([question], kind="query")[0]
+        if len(query_vector) != self.index["embeddings"].shape[1]:
+            raise EmbedderError("The query vector has %d dimensions but the index has %d: search "
+                                "with the same embedder the index was built with."
+                                % (len(query_vector), self.index["embeddings"].shape[1]))
         seeds = find_seeds(question, query_vector, self.index, self.bm25, settings,
                            self.vector_index)
         scored = score_candidates(seeds["seeds"], seeds["relevance"], self.index,
@@ -97,7 +111,11 @@ class SpectRAGRetrieval:
         if settings["selector"] == "anchor_expand_ce" and self.rerank_fn is not None:
             texts = [self.index["chunks"][c]["text"] for c in scored["candidates"]]
             rerank = self.rerank_fn(question, texts)
-        return seeds, scored, select(scored, self.index, settings, self.table, rerank)
+        picks = select(scored, self.index, settings, self.table, rerank)
+        logger.debug("query %r: %d seeds, %d candidates, %d picked in %.1f ms", question[:60],
+                     len(seeds["seeds"]), len(scored["candidates"]), len(picks),
+                     1000 * (time.time() - start))
+        return seeds, scored, picks
 
     def describe(self, k, reason, rank, scored):
         """One selected chunk with all its scores (the 'ranked source metadata')."""

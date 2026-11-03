@@ -13,6 +13,8 @@ from pathlib import Path
 
 import numpy as np
 
+from spectrag.errors import IndexError_
+
 
 def save_json(path, data):
     """Write data as JSON. Small files are indented; things JSON cannot store become text."""
@@ -73,3 +75,20 @@ def edges_to_array(edges):
 def array_to_edges(array):
     """Float array (E, 3) or a JSON list (older indexes) -> [[i, j, w], ...] with int ids."""
     return [[int(i), int(j), float(w)] for i, j, w in array]
+
+
+REQUIRED = ("chunks.json", "embeddings.npy", "spectral.npy", "eigenvalues.npy", "settings.json",
+            "info.json")
+
+
+def check_index_folder(folder):
+    """Fail early, with a clear message, if the folder is not a complete, readable index."""
+    if not folder.is_dir():
+        raise IndexError_("No index at %s. Build one first: SpectRAGIngestion(%r).ingest(path)"
+                          % (folder, str(folder)))
+    missing = [name for name in REQUIRED if not (folder / name).is_file()]
+    if not any((folder / name).is_file() for name in ("edges.npy", "edges.json")):
+        missing.append("edges.npy")
+    if missing:
+        raise IndexError_("The index at %s is incomplete (missing %s). Ingest the documents again."
+                          % (folder, ", ".join(missing)))

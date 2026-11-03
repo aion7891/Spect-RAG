@@ -9,8 +9,8 @@ was actually run; the commands are listed so they can be repeated.
 | 1 | Code and mathematical audit, performance | ✅ Done |
 | 2 | Algorithm improvements: MMR and other selectors, configuration, tuning, FAISS/HNSW | ✅ Done (`75f5238`) |
 | 3 | MultiHopRAG benchmark, baselines, tuning on validation data, tables and charts | ✅ Done, quick mode (`84f544a`) |
-| 4 | Production package: configuration, errors, logging, PyPI metadata, `quickstart.py` | ✅ Done (awaiting your review) |
-| 5 | Interactive graph view, README redesign, animated architecture flow | ⏳ Pending |
+| 4 | Production package: configuration, errors, logging, PyPI metadata, `quickstart.py` | ✅ Done (`8e5ee38`) |
+| 5 | Interactive graph view, README redesign, animated architecture flow | ✅ Done (awaiting your review) |
 | 6 | Final testing and validation, production-readiness report | ⏳ Pending |
 
 ## Data used for testing and benchmarks
@@ -321,3 +321,39 @@ New tests: `tests/test_production.py` (23).
 - The MIT license and the author name in `pyproject.toml` are placeholders for you to confirm.
   No email address is included in the package metadata.
 - Not done here: publishing to PyPI (`twine upload`), which is your decision.
+
+---
+
+## Phase 5: visualization and documentation
+
+### What was added
+
+| Item | Files | Notes |
+|---|---|---|
+| Interactive graph view (paper Fig. 5) | `utils/graph_view.py`, `utils/graph_template.py`, `spectrag graph`, `quickstart.py` | One self-contained HTML file (inline CSS/JS, no downloads). Layout: spectral coordinates (u2, u3) refined by a force layout with gravity. Edges coloured by their dominant signal (largest α_r·w_r), with on/off checkboxes. Nodes coloured by retrieval path (seed / expansion / selected), document or spectral cluster. Hover shows the chunk text; click highlights neighbours; zoom and pan; the selected context is listed in pick order. Large graphs show up to `max_nodes` chunks, grown outwards from the retrieval path |
+| Animated architecture flow | `docs/assets/pipeline.svg` | CSS-animated SVG (flowing connectors, each stage lit in turn; light/dark; frozen under `prefers-reduced-motion`). It renders as an image in the GitHub README |
+| README | `README.md` | Rewritten for users: highlights, installation and extras, quick start (script, Python, CLI), how it works (with the equations), graph view, the complete settings reference, tuning, plug-ins, errors and logging, the real MultiHopRAG results with charts, scale numbers, layout, testing, limitations, citation |
+| Design notes | `docs/DESIGN.md` | The paper analysis and every decision D1–D64 (D56–D64 are new: the selectors, heat proximity, sparsity, ANN, `semantic_embedder`, index format 2, defaults policy) |
+| History | `docs/DEVELOPMENT_LOG.md` | The previous README (the 10-phase build log), unchanged |
+| Docs tests | `tests/test_docs.py` | Every setting in `DEFAULTS` is documented in the README; every local link and image in the docs exists |
+
+### Verified
+
+- Graph view rendered in headless Chrome for the 14-document evaluation set and for 600 chunks
+  of the MultiHopRAG index (5 s to build). Two bugs found this way and fixed:
+  - a JavaScript name clash (`top` is a browser global), which left the page blank;
+  - a layout where disconnected pieces pushed the main graph into a small blob; fixed with
+    gravity, percentile scaling, and node selection that grows from the retrieval path.
+- Edge colours: the six signal colours pass the colour-vision checks in light and dark mode;
+  every colour also has a text label.
+- The pipeline animation: rendered at a still frame and at its peak frame (every stage outlined).
+- Python 3.15: only an alpha exists, and numpy does not load on it (`unknown slot ID 85`).
+  `requires-python` has no upper bound; CI now has an allowed-to-fail 3.15 pre-release job.
+
+### Tests
+
+```text
+uv run --all-extras pytest -q     313 passed, 1 skipped
+```
+
+New: `tests/test_graph_view.py` (5), `tests/test_docs.py` (6).

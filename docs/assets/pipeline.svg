@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 400" width="980" height="400" role="img" aria-label="SpectRAG pipeline: offline ingestion builds a graph index; online retrieval walks it">
+<title>SpectRAG pipeline</title><style>
+svg{--bg:#fcfcfb;--ink:#0b0b0b;--ink2:#52514e;--line:#c3c2b7;--box:#ffffff;--a:#2a78d6;--b:#eb6834;--c:#1baf7a}
+@media (prefers-color-scheme: dark){svg{--bg:#1a1a19;--ink:#f0efec;--ink2:#c3c2b7;--line:#52514e;--box:#242423;--a:#3987e5;--b:#d95926;--c:#199e70}}
+text{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif}
+.t{font-size:12.5px;font-weight:600;fill:var(--ink)}.s{font-size:10.5px;fill:var(--ink2)}.h{font-size:13px;font-weight:700}
+.box{fill:var(--box);stroke:var(--line);stroke-width:1.2}
+.flow{fill:none;stroke-width:2;stroke-dasharray:6 6;animation:flow 1.2s linear infinite}
+@keyframes flow{to{stroke-dashoffset:-12}}
+.glow{fill:none;stroke-width:3;opacity:0;animation:glow 14s ease-in-out infinite}
+@keyframes glow{0%{opacity:0}4.6%{opacity:1}12.3%{opacity:0}100%{opacity:0}}
+@media (prefers-reduced-motion: reduce){.flow,.glow{animation:none}.glow{opacity:0}}
+</style><rect width="100%" height="100%" rx="12" fill="var(--bg)"/>
+<text class="h" x="20" y="30" fill="var(--a)">OFFLINE: SpectRAGIngestion.ingest()  (once per document set)</text>
+<text class="h" x="960" y="262" text-anchor="end" fill="var(--b)">ONLINE: SpectRAGRetrieval.search() / answer()  (per question)</text>
+<rect class="box" x="20" y="48" width="138" height="58" rx="9"/>
+<rect class="glow" stroke="var(--a)" x="20" y="48" width="138" height="58" rx="9" style="animation-delay:0.00s"/>
+<text class="t" x="89" y="73" text-anchor="middle">Documents</text>
+<text class="s" x="89" y="91" text-anchor="middle">.txt .md .pdf</text>
+<path class="flow" stroke="var(--a)" d="M158 77 H180"/>
+<rect class="box" x="180" y="48" width="138" height="58" rx="9"/>
+<rect class="glow" stroke="var(--a)" x="180" y="48" width="138" height="58" rx="9" style="animation-delay:1.08s"/>
+<text class="t" x="249" y="73" text-anchor="middle">Chunking</text>
+<text class="s" x="249" y="91" text-anchor="middle">headings / semantic</text>
+<path class="flow" stroke="var(--a)" d="M318 77 H340"/>
+<rect class="box" x="340" y="48" width="138" height="58" rx="9"/>
+<rect class="glow" stroke="var(--a)" x="340" y="48" width="138" height="58" rx="9" style="animation-delay:2.15s"/>
+<text class="t" x="409" y="73" text-anchor="middle">Embedding</text>
+<text class="s" x="409" y="91" text-anchor="middle">nomic-embed-text</text>
+<path class="flow" stroke="var(--a)" d="M478 77 H500"/>
+<rect class="box" x="500" y="48" width="138" height="58" rx="9"/>
+<rect class="glow" stroke="var(--a)" x="500" y="48" width="138" height="58" rx="9" style="animation-delay:3.23s"/>
+<text class="t" x="569" y="73" text-anchor="middle">Six edge signals</text>
+<text class="s" x="569" y="91" text-anchor="middle">semantic, entity, ...</text>
+<path class="flow" stroke="var(--a)" d="M638 77 H660"/>
+<rect class="box" x="660" y="48" width="138" height="58" rx="9"/>
+<rect class="glow" stroke="var(--a)" x="660" y="48" width="138" height="58" rx="9" style="animation-delay:4.31s"/>
+<text class="t" x="729" y="73" text-anchor="middle">Weighted graph</text>
+<text class="s" x="729" y="91" text-anchor="middle">Eq. 10, top-k edges</text>
+<path class="flow" stroke="var(--a)" d="M798 77 H820"/>
+<rect class="box" x="820" y="48" width="138" height="58" rx="9"/>
+<rect class="glow" stroke="var(--a)" x="820" y="48" width="138" height="58" rx="9" style="animation-delay:5.38s"/>
+<text class="t" x="889" y="73" text-anchor="middle">Spectral coords</text>
+<text class="s" x="889" y="91" text-anchor="middle">L_sym, Eq. 11-13</text>
+<path class="flow" stroke="var(--a)" d="M889 106 V160"/>
+<rect class="box" x="20" y="160" width="938" height="48" rx="9" stroke-dasharray="4 3"/>
+<rect class="glow" stroke="var(--c)" x="20" y="160" width="938" height="48" rx="9" style="animation-delay:6.46s"/>
+<text class="t" x="489" y="189" text-anchor="middle">Index folder: chunks · embeddings (exact / FAISS / HNSW) · six signals · weighted graph · spectral coordinates · clusters</text>
+<path class="flow" stroke="var(--c)" d="M249 208 V280"/>
+<rect class="box" x="20" y="280" width="138" height="58" rx="9"/>
+<rect class="glow" stroke="var(--b)" x="20" y="280" width="138" height="58" rx="9" style="animation-delay:7.54s"/>
+<text class="t" x="89" y="305" text-anchor="middle">Question</text>
+<text class="s" x="89" y="323" text-anchor="middle">embed + BM25</text>
+<path class="flow" stroke="var(--b)" d="M158 309 H180"/>
+<rect class="box" x="180" y="280" width="138" height="58" rx="9"/>
+<rect class="glow" stroke="var(--b)" x="180" y="280" width="138" height="58" rx="9" style="animation-delay:8.62s"/>
+<text class="t" x="249" y="305" text-anchor="middle">Hybrid seeds</text>
+<text class="s" x="249" y="323" text-anchor="middle">dense, BM25, RRF</text>
+<path class="flow" stroke="var(--b)" d="M318 309 H340"/>
+<rect class="box" x="340" y="280" width="138" height="58" rx="9"/>
+<rect class="glow" stroke="var(--b)" x="340" y="280" width="138" height="58" rx="9" style="animation-delay:9.69s"/>
+<text class="t" x="409" y="305" text-anchor="middle">Graph expansion</text>
+<text class="s" x="409" y="323" text-anchor="middle">2 hops, 200 nodes</text>
+<path class="flow" stroke="var(--b)" d="M478 309 H500"/>
+<rect class="box" x="500" y="280" width="138" height="58" rx="9"/>
+<rect class="glow" stroke="var(--b)" x="500" y="280" width="138" height="58" rx="9" style="animation-delay:10.77s"/>
+<text class="t" x="569" y="305" text-anchor="middle">Re-scoring</text>
+<text class="s" x="569" y="323" text-anchor="middle">PageRank + spectral</text>
+<path class="flow" stroke="var(--b)" d="M638 309 H660"/>
+<rect class="box" x="660" y="280" width="138" height="58" rx="9"/>
+<rect class="glow" stroke="var(--b)" x="660" y="280" width="138" height="58" rx="9" style="animation-delay:11.85s"/>
+<text class="t" x="729" y="305" text-anchor="middle">Budget selection</text>
+<text class="s" x="729" y="323" text-anchor="middle">Eq. 21-22, 12k tokens</text>
+<path class="flow" stroke="var(--b)" d="M798 309 H820"/>
+<rect class="box" x="820" y="280" width="138" height="58" rx="9"/>
+<rect class="glow" stroke="var(--b)" x="820" y="280" width="138" height="58" rx="9" style="animation-delay:12.92s"/>
+<text class="t" x="889" y="305" text-anchor="middle">Answer</text>
+<text class="s" x="889" y="323" text-anchor="middle">any LLM + sources</text>
+<text class="s" x="20" y="385">Seeds find what looks like the question; the graph finds the bridge evidence that does not; the budget keeps the context relevant, diverse and short.</text></svg>

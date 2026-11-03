@@ -37,6 +37,7 @@ SEARCH_SETTINGS = {      # can be changed for every search
     "precision_floor": 0.4,
 }
 SHOW_PROGRESS = True     # print one line per pipeline step
+GRAPH_VIEW = Path(__file__).parent / "quickstart_graph.html"   # interactive graph (None = skip)
 # ----------------------------------------------------------------------------------------
 
 
@@ -65,6 +66,10 @@ def main():
         for chunk in result["chunks"][:5]:
             first_line = chunk["text"].splitlines()[0][:60]
             print("  %d. [%s] score %.2f  %s" % (chunk["rank"], chunk["doc_id"], chunk["score"], first_line))
+    if GRAPH_VIEW:
+        from spectrag.utils.graph_view import save_graph_view
+        save_graph_view(INDEX_DIR, GRAPH_VIEW, question=QUESTIONS[0], settings=SEARCH_SETTINGS)
+        print("\nGraph view of the first question: %s (open it in a browser)" % GRAPH_VIEW.name)
     print("\nTry: change SEARCH_SETTINGS at the top of this file and run it again.")
 
 

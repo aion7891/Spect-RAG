@@ -14,7 +14,7 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from mhr_data import gold_chunks, load_docs, load_questions, normalise, split  # noqa: E402
+from mhr_data import load_docs, load_questions, normalise, split  # noqa: E402
 from mhr_eval import average, metrics, run  # noqa: E402
 from multihoprag_benchmark import FULL, INDEXES, OUT, query_vectors, save, with_gold  # noqa: E402
 from spectrag import SpectRAGIngestion, SpectRAGRetrieval  # noqa: E402

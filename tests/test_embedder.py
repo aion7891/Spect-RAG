@@ -5,7 +5,6 @@ import numpy as np
 import pytest
 
 from spectrag.config import make_settings
-from spectrag.utils import embedder
 from spectrag.utils.embedder import hash_embed, make_embedder, normalize, ollama_embed
 
 

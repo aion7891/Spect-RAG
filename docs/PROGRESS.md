@@ -10,8 +10,8 @@ was actually run; the commands are listed so they can be repeated.
 | 2 | Algorithm improvements: MMR and other selectors, configuration, tuning, FAISS/HNSW | ✅ Done (`75f5238`) |
 | 3 | MultiHopRAG benchmark, baselines, tuning on validation data, tables and charts | ✅ Done, quick mode (`84f544a`) |
 | 4 | Production package: configuration, errors, logging, PyPI metadata, `quickstart.py` | ✅ Done (`8e5ee38`) |
-| 5 | Interactive graph view, README redesign, animated architecture flow | ✅ Done (awaiting your review) |
-| 6 | Final testing and validation, production-readiness report | ⏳ Pending |
+| 5 | Interactive graph view, README redesign, animated architecture flow | ✅ Done (`fc4b988`) |
+| 6 | Final testing and validation, production-readiness report | ✅ Done (awaiting your review) |
 
 ## Data used for testing and benchmarks
 
@@ -357,3 +357,45 @@ uv run --all-extras pytest -q     313 passed, 1 skipped
 ```
 
 New: `tests/test_graph_view.py` (5), `tests/test_docs.py` (6).
+
+---
+
+## Phase 6: final testing and validation
+
+The full report, with every number and how to repeat it, is
+[`PRODUCTION_READINESS.md`](PRODUCTION_READINESS.md).
+
+### What was added
+
+| Item | Files | Notes |
+|---|---|---|
+| End-to-end tests on real documents | `tests/test_end_to_end.py` | The paper PDF (3 questions, each must retrieve the passage with the answer); 60 MultiHopRAG articles with every test question whose evidence lies in them; a live test with `nomic-embed-text` and `gemma3:4b` (skipped without Ollama) |
+| Release validation on a real index | `tools/validate_release.py`, `docs/validation/results.json` | 10 checks on the MultiHopRAG index (10,335 chunks): graph symmetry, eigenpairs, orthonormality, eigenvalue range, trivial eigenvector, PageRank closed form, BM25, all selectors × proximity modes × budgets, invalid settings, benchmark reproducibility |
+| Production-readiness report | `docs/PRODUCTION_READINESS.md` | Results, known issues, release steps |
+| README | `README.md` | Note on installing from `@base-2` until the merge; the tuning example now builds `eval_index` first; link to the report |
+
+### Verified
+
+- `tools/validate_release.py`: 10 of 10 checks pass (eigenpair residual 5.3 × 10⁻¹⁵, PageRank
+  error 1.7 × 10⁻¹⁷, BM25 error 0.0, 1,125 selector runs within budget, 1,955 benchmark
+  questions reproduce with 0 differences). Two problems found and fixed on the way:
+  - the BM25 check first failed because it tokenized differently from the reference (a bug
+    in the check, not in the package);
+  - the README tuning example used the wrong index folder.
+- Every README Python example and 7 shell commands were run.
+- Graph view: the number of circles and lines in the page equals the data (8/21, 26/140,
+  600/2,826 nodes/edges); the selected-context list matches (8/8, 75/75).
+- Wheel and sdist: `twine check` PASSED; the wheel installed in fresh Python 3.10 and 3.14
+  environments passes the test suite (318 passed, 1 skipped); `quickstart.py` and the CLI work.
+- `pip install "spectrag[all] @ git+https://github.com/aion7891/Spect-RAG.git@base-2"` works.
+  Installing from `main` fails until PR #1 is merged (`main` holds only the first commit).
+- Lint: 6 unused imports removed; no other pyflakes errors.
+
+### Tests
+
+```text
+uv run --all-extras pytest -q                                   319 passed, 1 skipped
+numpy-only environment (pip install -e . pytest)                305 passed, 15 skipped
+SPECTRAG_LIVE_LLM=1 pytest tests/test_end_to_end.py tests/test_questions.py   10 passed
+python tools/validate_release.py                                10 checks, 0 failed
+```

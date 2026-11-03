@@ -1,6 +1,7 @@
 """Check settings before they are used, with messages that say how to fix them."""
 
 from spectrag.errors import SettingsError
+from spectrag.utils.embedder_id import BUILT_IN, is_saved_function
 
 # Whole numbers: name -> smallest allowed value.
 AT_LEAST = {"chunk_tokens": 16, "overlap_tokens": 0, "min_chunk_tokens": 0, "embed_dims": 8,
@@ -15,7 +16,7 @@ BETWEEN = {"semantic_percentile": (0, 100), "edge_threshold": (0, None), "bm25_k
 CHOICES = {"ann_backend": ("auto", "exact", "faiss", "hnsw"),
            "proximity_mode": ("hybrid", "ppr", "spectral", "heat", "none"),
            "selector": ("spectrag", "mmr", "protected_mmr", "anchor_expand_ce", "topk")}
-EMBEDDERS = ("hash", "ollama")
+EMBEDDERS = BUILT_IN
 SIGNALS = ("semantic", "adjacency", "section", "entity", "utility", "citation")
 SELECT_WEIGHTS = ("a", "b", "c", "d", "lambda")
 
@@ -47,11 +48,10 @@ def check_choices(settings):
 
 def check_embedders(settings):
     choice = settings["embedder"]
-    saved_function = isinstance(choice, str) and choice.startswith("<function")  # from an index
-    if not (callable(choice) or choice in EMBEDDERS or saved_function):
+    if not (callable(choice) or choice in EMBEDDERS or is_saved_function(choice)):
         raise SettingsError("embedder must be 'hash', 'ollama' or a function texts -> vectors, got %r" % (choice,))
     split = settings["semantic_embedder"]
-    if not (split is None or callable(split) or split in EMBEDDERS):
+    if not (split is None or callable(split) or split in EMBEDDERS or is_saved_function(split)):
         raise SettingsError("semantic_embedder must be None, 'hash', 'ollama' or a function, got %r" % (split,))
 
 

@@ -15,6 +15,7 @@ from spectrag.log import logger
 from spectrag.utils.bm25 import build_bm25
 from spectrag.utils.diffusion import score_candidates
 from spectrag.utils.embedder import make_embedder
+from spectrag.utils.embedder_id import CUSTOM, is_saved_function, read_saved_settings
 from spectrag.utils.graph import degrees, neighbors
 from spectrag.utils.graph_build import build_graph, build_spectral
 from spectrag.utils.prompt import build_prompt, format_context
@@ -49,13 +50,14 @@ class SpectRAGRetrieval:
                               "Upgrade spectrag." % (made_with, INDEX_FORMAT))
         self.index["edges"] = array_to_edges(self.index["edges"])
         self.index["question_owners"] = [int(owner) for owner in self.index["question_owners"]]
-        built_with = make_settings(self.index["settings"])
+        built_with = make_settings(read_saved_settings(self.index["settings"]))
         self.settings = make_settings(dict(built_with, **(settings or {})))
         if embed_fn is not None:
             self.settings["embedder"] = embed_fn
-        elif str(self.settings["embedder"]).startswith("<function"):
-            raise SettingsError("This index was built with your own embed function. "
-                                "Pass it again: SpectRAGRetrieval(index_dir, embed_fn=...)")
+        elif is_saved_function(self.settings["embedder"]):
+            raise SettingsError("This index was built with your own embed function (%s). "
+                                "Pass it again: SpectRAGRetrieval(index_dir, embed_fn=...)"
+                                % self.settings["embedder"][len(CUSTOM):])
         self.embed = make_embedder(self.settings)
         self.rerank_fn = rerank_fn
         self.bm25 = build_bm25([chunk["text"] for chunk in self.index["chunks"]])

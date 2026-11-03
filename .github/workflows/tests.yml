@@ -8,7 +8,6 @@ on:
   push:
     branches: [main]
   pull_request:
-  workflow_call:      # still used by release.yml (until it runs its own quick tests)
 
 # A new push to a pull request cancels its older, unfinished run. Runs on main always finish.
 concurrency:

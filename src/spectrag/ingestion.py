@@ -4,22 +4,21 @@
     info = ingest.ingest("examples/docs")
 """
 
-import shutil
 import time
-from pathlib import Path
 
 import numpy as np
 
 from spectrag._version import INDEX_FORMAT, __version__
 from spectrag.config import make_settings
-from spectrag.errors import DocumentError, IndexError_, NoDocumentsError
-from spectrag.log import log_step, logger
+from spectrag.errors import DocumentError, NoDocumentsError
+from spectrag.log import log_step
 from spectrag.utils.chunker import chunk_documents
 from spectrag.utils.edges import build_edge_signals, count_edges
 from spectrag.utils.embedder import make_embedder
 from spectrag.utils.embedder_id import embed_probe, saved_settings
 from spectrag.utils.entities import add_entities
 from spectrag.utils.graph_build import build_graph, build_spectral
+from spectrag.utils.index_folder import prepare_folder, replace_folder
 from spectrag.utils.loader import load_docs
 from spectrag.utils.questions import add_utility_questions
 from spectrag.utils.references import add_references
@@ -117,27 +116,3 @@ def check_documents(docs):
         seen.add(doc["doc_id"])
     if not any(doc["text"].strip() for doc in docs):
         raise NoDocumentsError("Every document is empty")
-
-
-def is_index(folder):
-    return (folder / "info.json").is_file() and (folder / "chunks.json").is_file()
-
-
-def prepare_folder(index_dir):
-    """A fresh '<index_dir>.partial' folder to write into, so a crash never leaves half an index."""
-    target = Path(index_dir)
-    if target.exists() and (not target.is_dir() or (any(target.iterdir()) and not is_index(target))):
-        raise IndexError_("%s already exists and is not a SpectRAG index; choose another folder" % target)
-    partial = target.with_name(target.name + ".partial")
-    if partial.exists():
-        shutil.rmtree(partial)
-    return partial
-
-
-def replace_folder(partial, index_dir):
-    """Move the finished index into place (replacing an older SpectRAG index)."""
-    target = Path(index_dir)
-    if target.exists():
-        logger.info("replacing the existing index in %s", target)
-        shutil.rmtree(target)
-    partial.rename(target)

@@ -30,7 +30,7 @@ description: Install SpectRAG from PyPI, choose the extras you need, and set up 
 Check that it works:
 
 ```bash
-spectrag --version                  # spectrag 0.1.1
+spectrag --version                  # spectrag 0.1.2
 ```
 
 ## Optional extras

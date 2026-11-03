@@ -7,8 +7,8 @@ was actually run; the commands are listed so they can be repeated.
 | Phase | Scope | Status |
 |---|---|---|
 | 1 | Code and mathematical audit, performance | ✅ Done |
-| 2 | Algorithm improvements: MMR and other selectors, configuration, tuning, FAISS/HNSW | ✅ Done (awaiting your review) |
-| 3 | MultiHopRAG benchmark, baselines, tuning on validation data, tables and charts | ⏳ Pending |
+| 2 | Algorithm improvements: MMR and other selectors, configuration, tuning, FAISS/HNSW | ✅ Done (`75f5238`) |
+| 3 | MultiHopRAG benchmark, baselines, tuning on validation data, tables and charts | ✅ Done, quick mode (awaiting your review) |
 | 4 | Production package: configuration, errors, logging, PyPI metadata, `quickstart.py` | ⏳ Pending |
 | 5 | Interactive graph view, README redesign, animated architecture flow | ⏳ Pending |
 | 6 | Final testing and validation, production-readiness report | ⏳ Pending |
@@ -173,3 +173,101 @@ New tests: `tests/test_selectors.py` (10) and `tests/test_phase2.py` (15).
   without one it ranks by score.
 - `pyproject.toml` lists FAISS and hnswlib in the `extras` group for now; Phase 4 splits the
   optional dependencies properly.
+
+---
+
+## Phase 3: MultiHopRAG benchmark (quick mode)
+
+Full report with every table and both charts: `benchmarks/results/multihoprag/REPORT.md`.
+Raw per-question results: `benchmarks/results/multihoprag/*.json`.
+
+### Setup
+
+- **Data:** MultiHopRAG, 609 articles; 2,255 questions with evidence (null questions excluded),
+  split once with a fixed seed into **300 validation** (tuning only) and **1,955 test** (all reported numbers).
+- **Index:** `nomic-embed-text` via Ollama, 1,200-token max chunks with 100 overlap (paper Table 1)
+  → 7,807 chunks (semantic chunking makes chunks shorter than the maximum), 56,390 graph edges, 39.5 MB.
+- **Budget:** 12,000 tokens for **every** method (paper Table 2).
+- **Gold:** a chunk of the evidence's own article that contains the fact word for word; 13 facts
+  crossing a chunk boundary use a half-fact fallback.
+- **Quick mode:** at your request this phase was cut from hours to minutes, which means one chunk
+  setting, 30 tuning trials, and small LLM samples. `SPECTRAG_BENCH_FULL=1` runs the full version.
+  Quick mode also finds semantic-chunking breaks with the offline hash embedder (new setting
+  `semantic_embedder`), because embedding about 60,000 sentences through Ollama took over an hour.
+
+### Retrieval, 1,955 test questions
+
+| Method | Recall@5 | Recall@10 | Evidence recall (budget) | All evidence found | MRR |
+|---|---|---|---|---|---|
+| Standard RAG (dense top-k) | 0.355 | 0.483 | 0.758 | 0.512 | 0.507 |
+| BM25 top-k | 0.462 | 0.577 | 0.788 | 0.545 | 0.617 |
+| Dense + MMR | 0.359 | 0.482 | 0.756 | 0.507 | 0.508 |
+| Hybrid RAG (dense + BM25, RRF) | 0.445 | 0.574 | 0.832 | 0.615 | 0.609 |
+| SpectRAG, default settings | 0.385 | 0.433 | 0.803 | 0.550 | 0.592 |
+| **SpectRAG, tuned on validation** | **0.470** | **0.592** | **0.846** | **0.639** | **0.617** |
+
+Paired bootstrap, tuned SpectRAG − hybrid: evidence recall **+0.014** (95% CI +0.007 … +0.021),
+Recall@10 **+0.017** (+0.009 … +0.025). Tuned SpectRAG − standard RAG: +0.088 and +0.109.
+By question type, the largest gain is on **inference** questions (0.802 vs hybrid 0.757); on
+comparison questions hybrid is slightly ahead (0.911 vs 0.902), as in the paper.
+
+Tuned settings (best of 30 trials on validation, validation recall 0.794 → 0.841):
+`alpha 0.3, precision_floor 0.2, seed_count 20, selector protected_mmr, proximity hybrid,
+bm25_weight 0.7, edge_threshold 0.05, graph_k 5`.
+
+**Finding about the defaults.** The default selector (paper Eq. 21–22 with the guessed `ρ = 0.5`)
+favours very short chunks: it picks 85 chunks where other methods pick about 47, and its Recall@10
+falls to 0.433. With `length_power = 0` its Recall@10 rises to 0.580. `topk` and `mmr` selectors on
+SpectRAG's graph-re-scored candidates reach 0.845 evidence recall without any tuning. Ablations:
+no graph expansion 0.705 (this also shrinks the candidate pool); heat-kernel proximity 0.732.
+
+### Other baselines and answers
+
+| Test | Result |
+|---|---|
+| HyDE, 60 test questions (evidence recall) | HyDE 0.760, dense 0.807, SpectRAG default 0.825 |
+| Answers, `gemma3:4b`, 30 test questions (10 per type), EM / token F1 / contains | dense 0.333 / 0.363 / 0.367; hybrid 0.267 / 0.298 / 0.333; SpectRAG default 0.367 / 0.394 / 0.367; **tuned 0.400 / 0.402 / 0.433** |
+| LightRAG, 4-article subset (6,805 tokens), 18 questions | **Inconclusive for quality.** At a matched budget (11,854 tokens, LightRAG's own context size) the whole subset fits, so every method scores 1.0. At 2,400 tokens LightRAG's entity/relation text fills the budget and leaves no source chunks (0.0), while hybrid reaches 0.898 |
+| LightRAG cost | Indexing ≈ 225 s of `gemma3:4b` per 1,000-word article (uncontended measurement); one article timed out once and had to be retried; ≈ 7 s per query (an LLM call). `gemma3:4b` produced truncated and malformed extraction records |
+
+The answer sample is small: with 30 questions one answer moves EM by 0.033, so these numbers show
+a direction, not a significant difference.
+
+### Latency and memory (idle machine, 300 questions × 3)
+
+| Method | Median ms | p95 ms |
+|---|---|---|
+| BM25 | 0.96 | 1.29 |
+| Dense + MMR | 1.30 | 1.53 |
+| Standard RAG | 1.33 | 2.13 |
+| Hybrid RAG | 2.76 | 3.61 |
+| SpectRAG tuned | 3.51 | 3.86 |
+| SpectRAG default | 4.39 | 4.94 |
+
+Plus 19.2 ms for the query embedding (shared). Memory after loading the index: 256 MB. Timings
+from runs while other jobs used the machine were discarded.
+
+### Fixes made during the benchmark
+
+- `ollama_llm()` never set `num_ctx`, so Ollama silently cut long (12k-token) prompts: it is now
+  sized to the prompt.
+- Ollama calls (LLM and embedder) had no retries; one slow call aborted a run: 2 retries, then a
+  clear `ConnectionError`.
+- New `max_tokens` option for `ollama_llm()`; new `semantic_embedder` setting.
+
+### Tests
+
+```text
+uv run --all-extras pytest -q        279 passed, 1 skipped
+```
+
+New: `tests/test_benchmark_helpers.py` (gold labels, @k metrics by hand, fixed split), retry and
+`num_ctx` tests, the `semantic_embedder` test.
+
+### Open after Phase 3
+
+- **Decision for you:** ship the validation-tuned settings (or just `length_power = 0`) as the
+  package defaults? They are better on MultiHopRAG, but they were tuned on one dataset.
+- The full run (`SPECTRAG_BENCH_FULL=1`: both chunk settings, 120 trials, 300 HyDE and 150 answer
+  questions) has not been run.
+- A meaningful LightRAG quality comparison needs a bigger subset: hours with a local 4B model.

@@ -28,3 +28,40 @@ class FakeResponse:
 def test_ollama_llm_cleans_the_reply(monkeypatch):
     monkeypatch.setattr(urllib.request, "urlopen", lambda request, timeout: FakeResponse())
     assert ollama_llm("qwen3:4b")("question") == "Porto"
+
+
+def test_context_window_grows_with_the_prompt(monkeypatch):
+    from spectrag.utils.llm import context_size
+    assert context_size("short prompt") == 4096
+    assert context_size("word " * 12000) == 16384                     # a 12k-token context
+    sent = []
+
+    def fake_urlopen(request, timeout):
+        sent.append(json.loads(request.data))
+        return FakeResponse()
+
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+    ollama_llm("m")("word " * 12000)
+    ollama_llm("m", num_ctx=8192)("hi")
+    assert sent[0]["options"]["num_ctx"] == 16384 and sent[1]["options"]["num_ctx"] == 8192
+
+
+def test_retries_after_a_timeout_then_gives_a_clear_error(monkeypatch):
+    import pytest
+    calls = []
+
+    def flaky(request, timeout):
+        calls.append(1)
+        if len(calls) < 3:
+            raise TimeoutError("timed out")
+        return FakeResponse()
+
+    monkeypatch.setattr(urllib.request, "urlopen", flaky)
+    assert ollama_llm("m", retries=2)("hi") == "Porto" and len(calls) == 3
+
+    def always_down(request, timeout):
+        raise TimeoutError("timed out")
+
+    monkeypatch.setattr(urllib.request, "urlopen", always_down)
+    with pytest.raises(ConnectionError, match="failed after 2 tries"):
+        ollama_llm("m", retries=1)("hi")

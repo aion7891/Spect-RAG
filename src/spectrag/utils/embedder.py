@@ -49,17 +49,19 @@ def hash_embed(texts, dims=768):
     return normalize(vectors)
 
 
-def ollama_request(texts, model, url):
-    """Send one batch to Ollama's /api/embed and return its list of vectors."""
+def ollama_request(texts, model, url, retries=2):
+    """Send one batch to Ollama's /api/embed and return its list of vectors (with retries)."""
     body = json.dumps({"model": model, "input": texts}).encode("utf-8")
-    request = urllib.request.Request(url.rstrip("/") + "/api/embed", data=body,
-                                     headers={"Content-Type": "application/json"})
-    try:
-        with urllib.request.urlopen(request, timeout=120) as response:
-            return json.loads(response.read())["embeddings"]
-    except OSError as error:
-        raise ConnectionError("Cannot reach Ollama at " + url + ". Is 'ollama serve' "
-                              "running and 'ollama pull " + model + "' done?") from error
+    for attempt in range(retries + 1):
+        request = urllib.request.Request(url.rstrip("/") + "/api/embed", data=body,
+                                         headers={"Content-Type": "application/json"})
+        try:
+            with urllib.request.urlopen(request, timeout=300) as response:
+                return json.loads(response.read())["embeddings"]
+        except OSError as error:
+            if attempt == retries:
+                raise ConnectionError("Cannot reach Ollama at " + url + ". Is 'ollama serve' "
+                                      "running and 'ollama pull " + model + "' done?") from error
 
 
 def ollama_embed(texts, kind="document", model="nomic-embed-text",

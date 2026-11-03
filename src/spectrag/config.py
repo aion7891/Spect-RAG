@@ -32,6 +32,7 @@ DEFAULTS = {
     "overlap_tokens": 100,
     "min_chunk_tokens": 32,
     "semantic_percentile": 90,
+    "semantic_embedder": None,   # embedder for semantic-chunking breaks; None = "embedder" (paper)
     # --- Embedding ---
     "embedder": "hash",          # "hash" (offline), "ollama" (nomic-embed-text), or your own function
     "embed_dims": 768,           # paper: nomic-embed-text is 768-d (used by the hash embedder)

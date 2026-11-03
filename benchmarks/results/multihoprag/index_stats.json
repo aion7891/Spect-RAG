@@ -1,0 +1,28 @@
+{
+ "chunk1200": {
+  "documents": 609,
+  "chunks": 7807,
+  "signal_edges": {
+   "semantic": 56317,
+   "adjacency": 7198,
+   "section": 8,
+   "entity": 51874,
+   "utility": 0,
+   "citation": 0
+  },
+  "graph_edges": 56390,
+  "weights_used": {
+   "semantic": 0.3597,
+   "section": 0.2998,
+   "entity": 0.2398,
+   "adjacency": 0.1007,
+   "utility": 0.0,
+   "citation": 0.0
+  },
+  "spectral_dims": 32,
+  "ann_backend": "exact",
+  "clusters": 62,
+  "seconds": 1591.5,
+  "index_mb": 39.5
+ }
+}

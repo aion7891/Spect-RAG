@@ -1,0 +1,3 @@
+Warehouse robots carry boxes between shelves and packing stations. They help companies ship orders faster and reduce heavy lifting for workers.
+
+Most warehouse robots follow markers on the floor or use cameras to find their way. Large shipping companies often buy robot makers to control the technology they depend on, and the robot makers usually keep their own engineers and factories.

@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="730" height="274" viewBox="0 0 730 274">
+<style>svg{--surface:#fcfcfb;--ink:#0b0b0b;--muted:#52514e;--grid:#e4e3df;--s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;}@media (prefers-color-scheme: dark){svg{--surface:#1a1a19;--ink:#f0efec;--muted:#c3c2b7;--grid:#33322f;--s1:#3987e5;--s2:#d95926;--s3:#199e70;}}text{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif}</style>
+<rect width="100%" height="100%" fill="var(--surface)"/>
+<text x="16" y="24" font-size="14" font-weight="600" fill="var(--ink)">Evidence within the token budget (chunk1200)</text>
+<rect x="250" y="36" width="10" height="10" rx="2" fill="var(--s1)"/><text x="264" y="45" font-size="11" fill="var(--muted)">Evidence recall</text>
+<rect x="360" y="36" width="10" height="10" rx="2" fill="var(--s2)"/><text x="374" y="45" font-size="11" fill="var(--muted)">All evidence found</text>
+<line x1="250.0" y1="56" x2="250.0" y2="260" stroke="var(--grid)"/><text x="250.0" y="272" font-size="10" fill="var(--muted)" text-anchor="middle">0</text>
+<line x1="355.0" y1="56" x2="355.0" y2="260" stroke="var(--grid)"/><text x="355.0" y="272" font-size="10" fill="var(--muted)" text-anchor="middle">0.25</text>
+<line x1="460.0" y1="56" x2="460.0" y2="260" stroke="var(--grid)"/><text x="460.0" y="272" font-size="10" fill="var(--muted)" text-anchor="middle">0.5</text>
+<line x1="565.0" y1="56" x2="565.0" y2="260" stroke="var(--grid)"/><text x="565.0" y="272" font-size="10" fill="var(--muted)" text-anchor="middle">0.75</text>
+<line x1="670.0" y1="56" x2="670.0" y2="260" stroke="var(--grid)"/><text x="670.0" y="272" font-size="10" fill="var(--muted)" text-anchor="middle">1</text>
+<text x="242" y="77" font-size="11" fill="var(--ink)" text-anchor="end">Standard RAG (dense top-k)</text>
+<rect x="250" y="60" width="318.5" height="9" rx="2" fill="var(--s1)"><title>Standard RAG (dense top-k), Evidence recall: 0.758</title></rect>
+<rect x="250" y="71" width="214.8" height="9" rx="2" fill="var(--s2)"><title>Standard RAG (dense top-k), All evidence found: 0.512</title></rect>
+<text x="242" y="111" font-size="11" fill="var(--ink)" text-anchor="end">BM25 top-k</text>
+<rect x="250" y="94" width="330.9" height="9" rx="2" fill="var(--s1)"><title>BM25 top-k, Evidence recall: 0.788</title></rect>
+<rect x="250" y="105" width="229.0" height="9" rx="2" fill="var(--s2)"><title>BM25 top-k, All evidence found: 0.545</title></rect>
+<text x="242" y="145" font-size="11" fill="var(--ink)" text-anchor="end">Hybrid RAG (dense + BM25, RRF)</text>
+<rect x="250" y="128" width="349.3" height="9" rx="2" fill="var(--s1)"><title>Hybrid RAG (dense + BM25, RRF), Evidence recall: 0.832</title></rect>
+<rect x="250" y="139" width="258.4" height="9" rx="2" fill="var(--s2)"><title>Hybrid RAG (dense + BM25, RRF), All evidence found: 0.615</title></rect>
+<text x="242" y="179" font-size="11" fill="var(--ink)" text-anchor="end">Dense + MMR</text>
+<rect x="250" y="162" width="317.7" height="9" rx="2" fill="var(--s1)"><title>Dense + MMR, Evidence recall: 0.756</title></rect>
+<rect x="250" y="173" width="213.1" height="9" rx="2" fill="var(--s2)"><title>Dense + MMR, All evidence found: 0.507</title></rect>
+<text x="242" y="213" font-size="11" fill="var(--ink)" text-anchor="end">SpectRAG (default)</text>
+<rect x="250" y="196" width="337.1" height="9" rx="2" fill="var(--s1)"><title>SpectRAG (default), Evidence recall: 0.803</title></rect>
+<rect x="250" y="207" width="230.9" height="9" rx="2" fill="var(--s2)"><title>SpectRAG (default), All evidence found: 0.550</title></rect>
+<text x="242" y="247" font-size="11" fill="var(--ink)" text-anchor="end">SpectRAG (tuned on validation)</text>
+<rect x="250" y="230" width="355.3" height="9" rx="2" fill="var(--s1)"><title>SpectRAG (tuned on validation), Evidence recall: 0.846</title></rect>
+<rect x="250" y="241" width="268.3" height="9" rx="2" fill="var(--s2)"><title>SpectRAG (tuned on validation), All evidence found: 0.639</title></rect>
+</svg>

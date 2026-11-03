@@ -10,7 +10,7 @@ from pathlib import Path
 
 from spectrag._version import INDEX_FORMAT
 from spectrag.config import make_settings
-from spectrag.errors import EmbedderError, IndexError_
+from spectrag.errors import EmbedderError, IndexError_, SettingsError
 from spectrag.log import logger
 from spectrag.utils.bm25 import build_bm25
 from spectrag.utils.diffusion import score_candidates
@@ -54,8 +54,8 @@ class SpectRAGRetrieval:
         if embed_fn is not None:
             self.settings["embedder"] = embed_fn
         elif str(self.settings["embedder"]).startswith("<function"):
-            raise ValueError("This index was built with your own embed function. "
-                             "Pass it again: SpectRAGRetrieval(index_dir, embed_fn=...)")
+            raise SettingsError("This index was built with your own embed function. "
+                                "Pass it again: SpectRAGRetrieval(index_dir, embed_fn=...)")
         self.embed = make_embedder(self.settings)
         self.rerank_fn = rerank_fn
         self.bm25 = build_bm25([chunk["text"] for chunk in self.index["chunks"]])
@@ -90,7 +90,7 @@ class SpectRAGRetrieval:
         changed = [key for key in GRAPH_SETTINGS
                    if key in overrides and overrides[key] != self.settings[key]]
         if changed:
-            raise ValueError("Use rebuild_graph() to change graph settings: " + ", ".join(changed))
+            raise SettingsError("Use rebuild_graph() to change graph settings: " + ", ".join(changed))
         return make_settings(dict(self.settings, **overrides))
 
     def retrieve(self, question, settings=None, query_vector=None):

@@ -2,6 +2,8 @@
 
 from pathlib import Path
 
+from spectrag.errors import DocumentNotFoundError, MissingPackageError
+
 SUPPORTED = (".txt", ".md", ".markdown", ".pdf")
 
 
@@ -10,7 +12,7 @@ def read_pdf(path):
     try:
         import pypdf
     except ImportError:
-        raise ImportError("Reading PDFs needs pypdf: pip install pypdf")
+        raise MissingPackageError("Reading PDFs needs pypdf: pip install pypdf")
     reader = pypdf.PdfReader(str(path))
     pages = [page.extract_text() or "" for page in reader.pages]
     return "\n\n".join(pages)
@@ -28,7 +30,7 @@ def list_files(path):
     """Return a sorted list of supported files under 'path'."""
     path = Path(path)
     if not path.exists():
-        raise FileNotFoundError("No such file or folder: " + str(path))
+        raise DocumentNotFoundError("No such file or folder: " + str(path))
     if path.is_file():
         return [path]
     files = [p for p in path.rglob("*") if p.is_file() and p.suffix.lower() in SUPPORTED]

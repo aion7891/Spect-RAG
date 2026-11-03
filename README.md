@@ -370,7 +370,9 @@ applied by `search.rebuild_graph({...})` from the saved signals, so nothing is e
 
 All errors raised on purpose subclass `spectrag.SpectRAGError` and the matching built-in:
 `SettingsError` (`ValueError`), `UnknownSettingError` (`KeyError`), `IndexError_`
-(`FileNotFoundError`), `EmbedderError` (`ConnectionError`), `DocumentError` (`ValueError`).
+(`FileNotFoundError`), `EmbedderError` (`ConnectionError`), `DocumentError` (`ValueError`),
+`DocumentNotFoundError` (`FileNotFoundError`), `MissingPackageError` (`ImportError`) and
+`LLMError` (`ConnectionError`). The CLI prints them as one `spectrag: error: ...` line.
 SpectRAG is silent by default; `spectrag.enable_logging()` prints one timed line per pipeline
 step, and `enable_logging("DEBUG")` one line per query.
 
@@ -477,8 +479,27 @@ MultiHopRAG index (eigenpairs, PageRank, BM25, every selector and proximity mode
 benchmark reproduces. The results are in the
 [production-readiness report](docs/PRODUCTION_READINESS.md).
 
+## Development status
+
+The hardening work in [docs/PROGRESS.md](docs/PROGRESS.md) (Phase 7) runs in small, reviewed
+steps. Green = done, yellow = in review, grey = next.
+
+```mermaid
+flowchart LR
+    errors["0.1 errors.py: every error is a SpectRAGError"] --> embedder["0.2 embedder marker and fingerprint"]
+    embedder --> replace["0.3 safe index replace"] --> escape["0.4 graph view escaping"]
+    classDef done fill:#d4edda,stroke:#2e7d32,color:#1b5e20
+    classDef doing fill:#fff3cd,stroke:#f9a825,color:#6d4c00
+    classDef todo fill:#eceff1,stroke:#90a4ae,color:#455a64
+    class errors doing
+    class embedder,replace,escape todo
+```
+
 ## Limitations
 
+- An index built with a `functools.partial` or a callable object as its embedder cannot be
+  opened again, and an index opened with a different embedder of the same size is not
+  detected. Both are fixed in step 0.2.
 - The default settings are not tuned (see the benchmark). Tuning on your own validation
   questions is recommended.
 - Entity extraction is rule-based unless you pass an `entity_fn`; utility questions need an LLM.

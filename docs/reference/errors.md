@@ -17,8 +17,11 @@ working.
 | `UnknownSettingError` | `SettingsError`, `KeyError` | a setting name is unknown, usually a typo; the message suggests the closest name |
 | `IndexError_` | `FileNotFoundError` | the index folder is missing or incomplete, was made by a newer version, or the target folder is not a SpectRAG index |
 | `EmbedderError` | `ConnectionError` | the embedder cannot be reached (for example Ollama is not running), or the query vector does not match the index |
-| `DocumentError` | `ValueError` | documents passed to `ingest_documents()` are not `{"doc_id", "text"}` dicts, or two share a `doc_id` |
+| `DocumentError` | `ValueError` | documents passed to `ingest_documents()` are not `{"doc_id", "text"}` dicts, or two share a `doc_id`; also an evaluation snippet found in no chunk |
 | `NoDocumentsError` | `DocumentError` | there is no document with text to ingest |
+| `DocumentNotFoundError` | `DocumentError`, `FileNotFoundError` | the file or folder passed to `ingest()` does not exist |
+| `MissingPackageError` | `ImportError` | an optional package is needed: `faiss-cpu` or `hnswlib` for `ann_backend`, `pypdf` for PDF files |
+| `LLMError` | `ConnectionError` | the Ollama LLM cannot be reached or does not reply, after every retry |
 
 `IndexError_` has a trailing underscore so that it does not hide Python's built-in `IndexError`.
 
@@ -44,10 +47,12 @@ Cannot reach Ollama at http://localhost:11434. Is 'ollama serve' running and 'ol
 Use rebuild_graph() to change graph settings: graph_k
 ```
 
-Three cases raise plain Python exceptions: a file or folder passed to `ingest()` that does not
-exist (`FileNotFoundError`), an index built with your own embed function opened without
-`embed_fn` (`ValueError`, with a message that says to pass it), and a graph setting passed to
-`search(settings=...)` (`ValueError`: *Use rebuild_graph() to change graph settings*).
+Two more cases raise `SettingsError`: an index built with your own embed function opened
+without `embed_fn` (the message says to pass it again), and a graph setting passed to
+`search(settings=...)` (*Use rebuild_graph() to change graph settings*).
+
+The `spectrag` command prints any of these as one line, `spectrag: error: ...`, and exits
+with code 1 instead of showing a traceback.
 
 ## Logging
 

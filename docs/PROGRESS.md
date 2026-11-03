@@ -12,6 +12,7 @@ was actually run; the commands are listed so they can be repeated.
 | 4 | Production package: configuration, errors, logging, PyPI metadata, `quickstart.py` | ✅ Done (`8e5ee38`) |
 | 5 | Interactive graph view, README redesign, animated architecture flow | ✅ Done (`fc4b988`) |
 | 6 | Final testing and validation, production-readiness report | ✅ Done (awaiting your review) |
+| 7 | Hardening (roadmap Phase 0): 0.1 errors ✅ in review · 0.2 embedder marker and fingerprint · 0.3 safe index replace · 0.4 graph view escaping | 🟡 In progress |
 
 ## Data used for testing and benchmarks
 
@@ -399,3 +400,26 @@ numpy-only environment (pip install -e . pytest)                305 passed, 15 s
 SPECTRAG_LIVE_LLM=1 pytest tests/test_end_to_end.py tests/test_questions.py   10 passed
 python tools/validate_release.py                                10 checks, 0 failed
 ```
+
+## Phase 7: hardening (roadmap Phase 0)
+
+### 7.1 Every error is a SpectRAGError
+
+Before this step, eight error paths raised plain built-in exceptions, so `except SpectRAGError`
+missed them and the `spectrag` command printed a traceback. Each now raises a SpectRAG class
+that also inherits the old built-in, so existing `except ValueError` (or `FileNotFoundError`,
+`ImportError`, `ConnectionError`) code keeps working.
+
+| Where | Before | Now |
+|---|---|---|
+| `retrieval.py`: custom embedder opened without `embed_fn`; graph setting per call | `ValueError` | `SettingsError` |
+| `selectors.py`, `diffusion.py`: unknown name | `ValueError` | `SettingsError` |
+| `store.load_index`: missing folder | `FileNotFoundError` | `IndexError_` |
+| `loader.list_files`: missing path | `FileNotFoundError` | `DocumentNotFoundError` (new) |
+| `vector_index`, `loader`: optional package missing | `ImportError` | `MissingPackageError` (new) |
+| `llm.post_json`: Ollama LLM unreachable | `ConnectionError` | `LLMError` (new) |
+| `evaluation.gold_map`: snippet in no chunk | `ValueError` | `DocumentError` |
+
+Tests: `tests/test_errors.py` (12 tests). Full suite: 372 passed, 1 skipped (all extras);
+358 passed, 15 skipped (fresh numpy-only environment).
+

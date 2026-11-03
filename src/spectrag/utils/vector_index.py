@@ -13,6 +13,8 @@ from pathlib import Path
 
 import numpy as np
 
+from spectrag.errors import MissingPackageError
+
 ANN_AUTO_LIMIT = 20000
 FILES = {"faiss": "vectors.faiss", "hnsw": "vectors.hnsw"}
 
@@ -34,7 +36,7 @@ def resolve_backend(backend, count):
         return next((name for name in ("faiss", "hnsw") if installed(name)), "exact")
     if backend != "exact" and not installed(backend):
         package = {"faiss": "faiss-cpu", "hnsw": "hnswlib"}[backend]
-        raise ImportError("ann_backend '%s' needs: pip install %s" % (backend, package))
+        raise MissingPackageError("ann_backend '%s' needs: pip install %s" % (backend, package))
     return backend
 
 

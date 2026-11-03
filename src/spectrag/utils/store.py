@@ -48,11 +48,11 @@ def save_index(folder, index):
 
 
 def load_index(folder, skip=(), only=None):
-    """Load every .npy, .npz and .json file in the folder.
+    """Load every .npy, .npz and .json file in the folder (IndexError_ if it is missing).
     skip: keys to leave out; only: if given, load just these keys."""
     folder = Path(folder)
     if not folder.is_dir():
-        raise FileNotFoundError("No index folder: " + str(folder))
+        raise IndexError_("No index folder: " + str(folder))
     index = {}
     for path in sorted(folder.iterdir()):
         if path.stem in skip or (only is not None and path.stem not in only):

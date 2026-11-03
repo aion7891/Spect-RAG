@@ -13,6 +13,7 @@ Every selector returns [(candidate number, reason), ...] and never exceeds the t
 
 import numpy as np
 
+from spectrag.errors import SettingsError
 from spectrag.utils.selection import add_pick, fits, select_context, start_state
 
 SELECTORS = ("spectrag", "mmr", "protected_mmr", "anchor_expand_ce", "topk")
@@ -100,4 +101,4 @@ def select(scored, index, settings, graph=None, rerank_scores=None):
         return select_anchor_expand(scored, index, settings, graph, rerank_scores)
     if name == "topk":
         return select_topk(scored, index, settings)
-    raise ValueError("Unknown selector: %r (choose from %s)" % (name, ", ".join(SELECTORS)))
+    raise SettingsError("Unknown selector: %r (choose from %s)" % (name, ", ".join(SELECTORS)))

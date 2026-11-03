@@ -38,3 +38,15 @@ class DocumentError(SpectRAGError, ValueError):
 
 class NoDocumentsError(DocumentError):
     """There was no document with text to ingest."""
+
+
+class DocumentNotFoundError(DocumentError, FileNotFoundError):
+    """The file or folder given to ingest() does not exist."""
+
+
+class MissingPackageError(SpectRAGError, ImportError):
+    """An optional package is needed (e.g. faiss-cpu or pypdf); the message says what to install."""
+
+
+class LLMError(SpectRAGError, ConnectionError):
+    """The LLM (e.g. a local Ollama model) cannot be reached or did not reply in time."""

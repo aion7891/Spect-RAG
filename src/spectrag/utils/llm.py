@@ -8,6 +8,7 @@ import json
 import re
 import urllib.request
 
+from spectrag.errors import LLMError
 from spectrag.utils.tokens import count_tokens
 
 THINKING = re.compile(r"<think>.*?</think>", re.DOTALL)
@@ -30,7 +31,7 @@ def context_size(prompt, answer_tokens=1024):
 
 def post_json(url, body, timeout, retries):
     """POST JSON and return the decoded reply, trying again after a timeout or a dropped
-    connection (a busy local model can be slow). Raises ConnectionError if every try fails."""
+    connection (a busy local model can be slow). Raises LLMError if every try fails."""
     data = json.dumps(body).encode("utf-8")
     for attempt in range(retries + 1):
         request = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
@@ -39,8 +40,8 @@ def post_json(url, body, timeout, retries):
                 return json.loads(response.read())
         except OSError as error:  # timeouts and connection errors are both OSError
             if attempt == retries:
-                raise ConnectionError("Ollama request to %s failed after %d tries: %s"
-                                      % (url, retries + 1, error)) from error
+                raise LLMError("Ollama request to %s failed after %d tries: %s"
+                               % (url, retries + 1, error)) from error
 
 
 def ollama_llm(model="gemma3:4b", url="http://localhost:11434", num_ctx=None, timeout=600,

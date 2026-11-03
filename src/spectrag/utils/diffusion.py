@@ -15,6 +15,7 @@ PROXIMITY_MODES = ("hybrid", "ppr", "spectral", "heat", "none")
 
 import numpy as np
 
+from spectrag.errors import SettingsError
 from spectrag.utils.clusters import trivial_eigenvector
 from spectrag.utils.expansion import expand_graph, subgraph_matrix
 from spectrag.utils.graph import degrees
@@ -88,7 +89,7 @@ def proximity_scores(mode, index, table, candidates, restart, settings):
         return min_max(heat_diffusion(index, candidates, restart, settings["diffusion_t"])), ppr, spectral
     if mode == "none":
         return np.zeros(len(candidates)), ppr, spectral
-    raise ValueError("Unknown proximity_mode: %r (choose from %s)" % (mode, ", ".join(PROXIMITY_MODES)))
+    raise SettingsError("Unknown proximity_mode: %r (choose from %s)" % (mode, ", ".join(PROXIMITY_MODES)))
 
 
 def score_candidates(seeds, relevance, index, table, settings):

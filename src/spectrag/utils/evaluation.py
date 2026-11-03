@@ -14,6 +14,7 @@ import json
 
 import numpy as np
 
+from spectrag.errors import DocumentError
 from spectrag.utils.metrics import (contains, exact_match, precision_recall_f1, reciprocal_rank,
                                     token_f1)
 from spectrag.utils.prompt import build_prompt, format_context
@@ -33,7 +34,7 @@ def gold_map(chunks, evidence):
     gold = {snippet: {i for i, text in enumerate(texts) if snippet in text} for snippet in evidence}
     missing = [snippet for snippet, ids in gold.items() if not ids]
     if missing:
-        raise ValueError("Evidence not found in any chunk: " + str(missing))
+        raise DocumentError("Evidence not found in any chunk: " + str(missing))
     return gold
 
 

@@ -13,11 +13,15 @@ jobs:
         os: [ubuntu-latest, macos-latest]
         python: ["3.10", "3.12", "3.14"]
         install: ["minimal", "all"]
+        include:  # the next Python, before its release (allowed to fail until numpy supports it)
+          - {os: ubuntu-latest, python: "3.15", install: "minimal", prerelease: true}
+    continue-on-error: ${{ matrix.prerelease == true }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
+          allow-prereleases: true
       - name: Install (minimal = numpy only)
         if: matrix.install == 'minimal'
         run: pip install -e . pytest

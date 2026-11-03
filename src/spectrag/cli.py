@@ -4,6 +4,7 @@
     spectrag search "my question" --index my_index [--budget 4000] [--json]
     spectrag answer "my question" --index my_index --model gemma3:4b
     spectrag info --index my_index
+    spectrag graph --index my_index --out graph.html [--question "my question"]
 """
 
 import argparse
@@ -63,6 +64,12 @@ def command_info(args):
     print(json.dumps(load_index(args.index, only=("info",))["info"], indent=1))
 
 
+def command_graph(args):
+    from spectrag.utils.graph_view import save_graph_view
+    path = save_graph_view(args.index, args.out, args.question, parse_sets(args.set), args.max_nodes)
+    print("Graph view written to %s (open it in a browser)" % path)
+
+
 def build_parser():
     parser = argparse.ArgumentParser(prog="spectrag", description="SpectRAG: spectral graph RAG")
     parser.add_argument("--version", action="version", version="spectrag " + __version__)
@@ -79,9 +86,13 @@ def build_parser():
         else:
             sub.add_argument("--model", default="gemma3:4b", help="Ollama model")
     info = commands.add_parser("info", help="show what an index contains")
-    for sub in (ingest, commands.choices["search"], commands.choices["answer"], info):
+    graph = commands.add_parser("graph", help="write an interactive graph view (HTML)")
+    graph.add_argument("--out", default="graph.html", help="HTML file to write")
+    graph.add_argument("--question", default=None, help="show this question's retrieval path")
+    graph.add_argument("--max-nodes", type=int, default=1500, dest="max_nodes")
+    for sub in (ingest, commands.choices["search"], commands.choices["answer"], info, graph):
         sub.add_argument("--index", required=True, help="index folder")
-    for sub in (ingest, commands.choices["search"], commands.choices["answer"]):
+    for sub in (ingest, commands.choices["search"], commands.choices["answer"], graph):
         sub.add_argument("--set", action="append", metavar="KEY=VALUE", help="change a setting")
     return parser
 
@@ -91,7 +102,7 @@ def main(argv=None):
     if args.verbose:
         enable_logging()
     handlers = {"ingest": command_ingest, "search": command_search, "answer": command_answer,
-                "info": command_info}
+                "info": command_info, "graph": command_graph}
     try:
         handlers[args.command](args)
     except SpectRAGError as error:

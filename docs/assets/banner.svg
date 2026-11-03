@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 170" width="880" height="170" role="img" aria-label="SpectRAG">
+<title>SpectRAG</title><style>
+svg{--bg:#fcfcfb;--ink:#0b0b0b;--ink2:#52514e;--edge:#c3c2b7;--a:#2a78d6;--b:#eb6834;--c:#1baf7a;--bridge:#e34948}
+@media (prefers-color-scheme: dark){svg{--bg:#1a1a19;--ink:#f0efec;--ink2:#c3c2b7;--edge:#52514e;--a:#3987e5;--b:#d95926;--c:#199e70;--bridge:#e66767}}
+text{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif}
+.bridge{stroke-dasharray:5 5;animation:flow 1.4s linear infinite}@keyframes flow{to{stroke-dashoffset:-10}}
+@media (prefers-reduced-motion: reduce){.bridge{animation:none}}</style>
+<rect width="100%" height="100%" rx="16" fill="var(--bg)"/>
+<line x1="118.9" y1="70.4" x2="83.0" y2="85.6" stroke="var(--edge)" stroke-width="1.4"/>
+<line x1="118.9" y1="70.4" x2="65.1" y2="72.7" stroke="var(--edge)" stroke-width="1.4"/>
+<line x1="118.9" y1="70.4" x2="80.1" y2="48.8" stroke="var(--edge)" stroke-width="1.4"/>
+<line x1="107.0" y1="89.9" x2="83.0" y2="85.6" stroke="var(--edge)" stroke-width="1.4"/>
+<line x1="107.0" y1="89.9" x2="80.1" y2="48.8" stroke="var(--edge)" stroke-width="1.4"/>
+<line x1="83.0" y1="85.6" x2="65.1" y2="72.7" stroke="var(--edge)" stroke-width="1.4"/>
+<line x1="83.0" y1="85.6" x2="80.1" y2="48.8" stroke="var(--edge)" stroke-width="1.4"/>
+<line x1="191.7" y1="70.3" x2="203.0" y2="51.7" stroke="var(--edge)" stroke-width="1.4"/>
+<line x1="150.1" y1="56.0" x2="188.3" y2="29.0" stroke="var(--edge)" stroke-width="1.4"/>
+<line x1="161.1" y1="35.4" x2="203.0" y2="51.7" stroke="var(--edge)" stroke-width="1.4"/>
+<line x1="188.3" y1="29.0" x2="203.0" y2="51.7" stroke="var(--edge)" stroke-width="1.4"/>
+<line x1="137.6" y1="134.3" x2="162.5" y2="101.4" stroke="var(--edge)" stroke-width="1.4"/>
+<line x1="137.6" y1="134.3" x2="164.6" y2="139.4" stroke="var(--edge)" stroke-width="1.4"/>
+<line x1="127.0" y1="119.9" x2="136.7" y2="103.1" stroke="var(--edge)" stroke-width="1.4"/>
+<line x1="127.0" y1="119.9" x2="162.5" y2="101.4" stroke="var(--edge)" stroke-width="1.4"/>
+<line x1="136.7" y1="103.1" x2="162.5" y2="101.4" stroke="var(--edge)" stroke-width="1.4"/>
+<line x1="136.7" y1="103.1" x2="164.6" y2="139.4" stroke="var(--edge)" stroke-width="1.4"/>
+<line x1="162.5" y1="101.4" x2="164.6" y2="139.4" stroke="var(--edge)" stroke-width="1.4"/>
+<line class="bridge" x1="65.1" y1="72.7" x2="150.1" y2="56.0" stroke="var(--bridge)" stroke-width="2.4"/>
+<line class="bridge" x1="188.3" y1="29.0" x2="162.5" y2="101.4" stroke="var(--bridge)" stroke-width="2.4"/>
+<circle cx="118.9" cy="70.4" r="6" fill="var(--a)" stroke="var(--bg)" stroke-width="2"/>
+<circle cx="107.0" cy="89.9" r="6" fill="var(--a)" stroke="var(--bg)" stroke-width="2"/>
+<circle cx="83.0" cy="85.6" r="6" fill="var(--a)" stroke="var(--bg)" stroke-width="2"/>
+<circle cx="65.1" cy="72.7" r="6" fill="var(--a)" stroke="var(--bg)" stroke-width="2"/>
+<circle cx="80.1" cy="48.8" r="6" fill="var(--a)" stroke="var(--bg)" stroke-width="2"/>
+<circle cx="112.0" cy="50.7" r="6" fill="var(--a)" stroke="var(--bg)" stroke-width="2"/>
+<circle cx="191.7" cy="70.3" r="6" fill="var(--b)" stroke="var(--bg)" stroke-width="2"/>
+<circle cx="164.2" cy="68.8" r="6" fill="var(--b)" stroke="var(--bg)" stroke-width="2"/>
+<circle cx="150.1" cy="56.0" r="6" fill="var(--b)" stroke="var(--bg)" stroke-width="2"/>
+<circle cx="161.1" cy="35.4" r="6" fill="var(--b)" stroke="var(--bg)" stroke-width="2"/>
+<circle cx="188.3" cy="29.0" r="6" fill="var(--b)" stroke="var(--bg)" stroke-width="2"/>
+<circle cx="203.0" cy="51.7" r="6" fill="var(--b)" stroke="var(--bg)" stroke-width="2"/>
+<circle cx="137.6" cy="134.3" r="6" fill="var(--c)" stroke="var(--bg)" stroke-width="2"/>
+<circle cx="127.0" cy="119.9" r="6" fill="var(--c)" stroke="var(--bg)" stroke-width="2"/>
+<circle cx="136.7" cy="103.1" r="6" fill="var(--c)" stroke="var(--bg)" stroke-width="2"/>
+<circle cx="162.5" cy="101.4" r="6" fill="var(--c)" stroke="var(--bg)" stroke-width="2"/>
+<circle cx="175.0" cy="118.3" r="6" fill="var(--c)" stroke="var(--bg)" stroke-width="2"/>
+<circle cx="164.6" cy="139.4" r="6" fill="var(--c)" stroke="var(--bg)" stroke-width="2"/>
+<text x="250" y="92" font-size="56" font-weight="800" fill="var(--ink)" letter-spacing="-1">Spect<tspan fill="var(--a)">RAG</tspan></text>
+<text x="253" y="126" font-size="17" fill="var(--ink2)">Weighted chunk graphs · spectral coordinates · token-budgeted context</text>
+</svg>

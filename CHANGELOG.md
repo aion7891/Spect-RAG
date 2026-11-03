@@ -19,4 +19,6 @@ the paper where it gives values; tuned defaults are planned for a later version.
 - **Production:** exceptions that subclass the matching built-ins, a `spectrag` logger,
   versioned index format, safe (atomic) index saving, retries for Ollama calls, the `spectrag`
   command-line tool, `quickstart.py`.
+- **Visualization:** an interactive, self-contained HTML graph view of the chunk graph and of a
+  question's retrieval path (`spectrag graph`, `save_graph_view()`).
 - **Evaluation:** the paper's metrics and a reproducible MultiHopRAG benchmark (`benchmarks/`).

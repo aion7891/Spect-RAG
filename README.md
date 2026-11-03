@@ -471,8 +471,10 @@ The tests cover every formula against hand-computed or closed-form values (BM25,
 PageRank, the heat kernel against `scipy.linalg.expm`, the sparse eigensolver against the dense
 one, the paper's metrics). The fast vectorised code is checked against simple loop versions on
 random cases, and the full pipeline runs end to end on real documents. Live Ollama tests run
-when Ollama is available (`SPECTRAG_LIVE_LLM=1` for the LLM test). CI runs Linux and macOS ×
-Python 3.10 / 3.12 / 3.14 × minimal / all extras, and builds and installs the wheel.
+when Ollama is available (`SPECTRAG_LIVE_LLM=1` for the LLM test). CI runs on every pull request
+and on `main`: Linux × Python 3.10 / 3.12 / 3.14 × minimal / all extras, one macOS job (Python
+3.12, all extras), and a build that installs the wheel and runs the CLI. A release tag runs two
+quick Linux test jobs, because the merged commit has already passed the full set.
 
 Before a release, `python tools/validate_release.py` re-checks the mathematics on the real
 MultiHopRAG index (eigenpairs, PageRank, BM25, every selector and proximity mode) and that the

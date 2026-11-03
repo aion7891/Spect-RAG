@@ -1,18 +1,52 @@
 [build-system]
-requires = ["setuptools>=61"]
+requires = ["setuptools>=69"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "spectrag"
-version = "0.1.0"
-description = "A small, readable implementation of SpectRAG (spectral graph-augmented retrieval)"
+dynamic = ["version"]
+description = "SpectRAG: spectral graph-augmented retrieval with token-budgeted context selection for multi-hop RAG"
 readme = "README.md"
-requires-python = ">=3.9"
-dependencies = ["numpy"]
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Kumar Nishant" }]
+requires-python = ">=3.10"
+dependencies = ["numpy>=1.24"]
+keywords = ["rag", "retrieval-augmented-generation", "graph", "spectral", "retrieval", "llm", "multi-hop"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Text Processing :: Indexing",
+]
 
 [project.optional-dependencies]
-extras = ["tiktoken", "pypdf", "scipy", "faiss-cpu", "hnswlib"]
-dev = ["pytest"]
+tokens = ["tiktoken>=0.5"]                                 # exact cl100k_base token counts
+pdf = ["pypdf>=4"]                                         # read .pdf files
+scale = ["scipy>=1.10", "faiss-cpu>=1.8", "hnswlib>=0.8"]  # large corpora: sparse eigensolver, ANN
+all = ["spectrag[tokens,pdf,scale]"]
+extras = ["spectrag[all]"]                                 # older name for "all"
+dev = ["pytest>=8", "build>=1"]
+
+[project.scripts]
+spectrag = "spectrag.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/aion7891/Spect-RAG"
+Repository = "https://github.com/aion7891/Spect-RAG"
+Issues = "https://github.com/aion7891/Spect-RAG/issues"
+Paper = "https://arxiv.org/abs/2610.36991"
+
+[tool.setuptools.dynamic]
+version = { attr = "spectrag._version.__version__" }
 
 [tool.setuptools.packages.find]
 where = ["src"]

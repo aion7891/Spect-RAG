@@ -5,6 +5,10 @@ Values marked "assumed" are not given in the paper, so we picked a sensible valu
 """
 
 import copy
+import difflib
+
+from spectrag.errors import UnknownSettingError
+from spectrag.validation import validate_settings
 
 # Edge-signal weights from the paper's "signal configuration 1" (Table 9).
 EDGE_WEIGHTS_CONFIG_1 = {
@@ -77,11 +81,16 @@ DEFAULTS = {
 
 
 def make_settings(overrides=None):
-    """Return a fresh copy of DEFAULTS with the user's overrides applied."""
+    """Return a fresh copy of DEFAULTS with the user's overrides applied and checked.
+
+    Raises UnknownSettingError (a KeyError) for a misspelled name, and SettingsError
+    (a ValueError) for a value of the wrong type or out of range.
+    """
     settings = copy.deepcopy(DEFAULTS)
-    if overrides:
-        for key, value in overrides.items():
-            if key not in settings:
-                raise KeyError("Unknown setting: " + key)
-            settings[key] = copy.deepcopy(value)
-    return settings
+    for key, value in (overrides or {}).items():
+        if key not in settings:
+            close = difflib.get_close_matches(key, DEFAULTS, n=1)
+            hint = " (did you mean %r?)" % close[0] if close else ""
+            raise UnknownSettingError("Unknown setting: %r%s" % (key, hint))
+        settings[key] = copy.deepcopy(value)
+    return validate_settings(settings)

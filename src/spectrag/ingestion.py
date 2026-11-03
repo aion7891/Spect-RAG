@@ -4,9 +4,16 @@
     info = ingest.ingest("examples/docs")
 """
 
+import shutil
+import time
+from pathlib import Path
+
 import numpy as np
 
+from spectrag._version import INDEX_FORMAT, __version__
 from spectrag.config import make_settings
+from spectrag.errors import DocumentError, IndexError_, NoDocumentsError
+from spectrag.log import log_step, logger
 from spectrag.utils.chunker import chunk_documents
 from spectrag.utils.edges import build_edge_signals, count_edges
 from spectrag.utils.embedder import make_embedder
@@ -35,8 +42,6 @@ class SpectRAGIngestion:
 
     def make_chunks(self, docs):
         """Split documents into chunks with entities, references and utility questions."""
-        if not docs:
-            raise ValueError("No documents with text to ingest")
         chunks = chunk_documents(docs, self.settings, embed_fn=self.split_embed)
         add_entities(chunks, self.entity_fn)
         add_references(chunks)
@@ -55,26 +60,35 @@ class SpectRAGIngestion:
         """Ingest a file or a folder (.txt, .md, .pdf), save the index, return a summary."""
         docs = load_docs(path)
         if not docs:
-            raise ValueError("No documents with text found in " + str(path))
+            raise NoDocumentsError("No .txt, .md or .pdf file with text found in " + str(path))
         return self.ingest_documents(docs)
 
     def ingest_documents(self, docs):
         """Ingest documents already in memory: [{"doc_id": ..., "text": ...}, ...]."""
+        check_documents(docs)
+        start = begin = time.time()
         chunks = self.make_chunks(docs)
+        start = log_step("chunking", start, documents=len(docs), chunks=len(chunks))
         embeddings = self.embed([chunk["text"] for chunk in chunks], kind="document")
         vector_index = build_vector_index(embeddings, self.settings)  # exact, FAISS or HNSW
+        start = log_step("embedding", start, backend=vector_index["backend"])
         signals, question_vectors, owners = build_edge_signals(
             chunks, embeddings, self.embed, self.settings, vector_index)
+        start = log_step("edge signals", start, **count_edges(signals))
         edges, weights = self.make_graph(signals)
         coords, eigenvalues, clusters = self.make_spectral(edges, len(chunks))
+        start = log_step("graph and spectral", start, edges=len(edges), dims=coords.shape[1])
         for chunk, cluster in zip(chunks, clusters):
             chunk["cluster"] = int(cluster)
         info = {"documents": len({c["doc_id"] for c in chunks}), "chunks": len(chunks),
                 "signal_edges": count_edges(signals), "graph_edges": len(edges),
                 "weights_used": {name: round(w, 4) for name, w in weights.items()},
                 "spectral_dims": coords.shape[1], "ann_backend": vector_index["backend"],
-                "clusters": len(set(clusters.tolist()))}
-        save_index(self.index_dir, {
+                "clusters": len(set(clusters.tolist())),
+                "format_version": INDEX_FORMAT, "spectrag_version": __version__,
+                "seconds": round(time.time() - begin, 2)}
+        partial = prepare_folder(self.index_dir)
+        save_index(partial, {
             "chunks": chunks, "embeddings": embeddings, "edges": edges_to_array(edges),
             "signals": {name: edges_to_array(found) for name, found in signals.items()},
             "spectral": coords, "eigenvalues": eigenvalues,
@@ -82,5 +96,46 @@ class SpectRAGIngestion:
             "question_owners": np.asarray(owners, dtype=np.int64),
             "settings": self.settings, "info": info,
         })
-        save_vector_index(vector_index, self.index_dir)
+        save_vector_index(vector_index, partial)
+        replace_folder(partial, self.index_dir)
+        log_step("saved index", start, folder=self.index_dir)
         return info
+
+
+def check_documents(docs):
+    """Every document needs a text and a unique doc_id."""
+    if not docs:
+        raise NoDocumentsError("No documents with text to ingest")
+    seen = set()
+    for number, doc in enumerate(docs):
+        if not isinstance(doc, dict) or not isinstance(doc.get("text"), str) or "doc_id" not in doc:
+            raise DocumentError("Document %d must be a dict with 'doc_id' and 'text' (a string)" % number)
+        if doc["doc_id"] in seen:
+            raise DocumentError("Two documents have the same doc_id: %r" % (doc["doc_id"],))
+        seen.add(doc["doc_id"])
+    if not any(doc["text"].strip() for doc in docs):
+        raise NoDocumentsError("Every document is empty")
+
+
+def is_index(folder):
+    return (folder / "info.json").is_file() and (folder / "chunks.json").is_file()
+
+
+def prepare_folder(index_dir):
+    """A fresh '<index_dir>.partial' folder to write into, so a crash never leaves half an index."""
+    target = Path(index_dir)
+    if target.exists() and (not target.is_dir() or (any(target.iterdir()) and not is_index(target))):
+        raise IndexError_("%s already exists and is not a SpectRAG index; choose another folder" % target)
+    partial = target.with_name(target.name + ".partial")
+    if partial.exists():
+        shutil.rmtree(partial)
+    return partial
+
+
+def replace_folder(partial, index_dir):
+    """Move the finished index into place (replacing an older SpectRAG index)."""
+    target = Path(index_dir)
+    if target.exists():
+        logger.info("replacing the existing index in %s", target)
+        shutil.rmtree(target)
+    partial.rename(target)

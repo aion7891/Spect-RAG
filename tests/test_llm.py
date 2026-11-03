@@ -32,8 +32,12 @@ def test_ollama_llm_cleans_the_reply(monkeypatch):
 
 def test_context_window_grows_with_the_prompt(monkeypatch):
     from spectrag.utils.llm import context_size
+    from spectrag.utils.tokens import count_tokens
     assert context_size("short prompt") == 4096
-    assert context_size("word " * 12000) == 16384                     # a 12k-token context
+    long_prompt = "word " * 12000                                     # about 12k tokens
+    size = context_size(long_prompt)
+    assert size >= count_tokens(long_prompt) * 1.15 + 1024 and size & (size - 1) == 0   # power of 2
+    assert size // 2 < count_tokens(long_prompt) * 1.15 + 1024                          # smallest one
     sent = []
 
     def fake_urlopen(request, timeout):
@@ -43,7 +47,7 @@ def test_context_window_grows_with_the_prompt(monkeypatch):
     monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
     ollama_llm("m")("word " * 12000)
     ollama_llm("m", num_ctx=8192)("hi")
-    assert sent[0]["options"]["num_ctx"] == 16384 and sent[1]["options"]["num_ctx"] == 8192
+    assert sent[0]["options"]["num_ctx"] == size and sent[1]["options"]["num_ctx"] == 8192
 
 
 def test_retries_after_a_timeout_then_gives_a_clear_error(monkeypatch):

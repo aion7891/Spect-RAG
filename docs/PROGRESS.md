@@ -8,8 +8,8 @@ was actually run; the commands are listed so they can be repeated.
 |---|---|---|
 | 1 | Code and mathematical audit, performance | ✅ Done |
 | 2 | Algorithm improvements: MMR and other selectors, configuration, tuning, FAISS/HNSW | ✅ Done (`75f5238`) |
-| 3 | MultiHopRAG benchmark, baselines, tuning on validation data, tables and charts | ✅ Done, quick mode (awaiting your review) |
-| 4 | Production package: configuration, errors, logging, PyPI metadata, `quickstart.py` | ⏳ Pending |
+| 3 | MultiHopRAG benchmark, baselines, tuning on validation data, tables and charts | ✅ Done, quick mode (`84f544a`) |
+| 4 | Production package: configuration, errors, logging, PyPI metadata, `quickstart.py` | ✅ Done (awaiting your review) |
 | 5 | Interactive graph view, README redesign, animated architecture flow | ⏳ Pending |
 | 6 | Final testing and validation, production-readiness report | ⏳ Pending |
 
@@ -271,3 +271,53 @@ New: `tests/test_benchmark_helpers.py` (gold labels, @k metrics by hand, fixed s
 - The full run (`SPECTRAG_BENCH_FULL=1`: both chunk settings, 120 trials, 300 HyDE and 150 answer
   questions) has not been run.
 - A meaningful LightRAG quality comparison needs a bigger subset: hours with a local 4B model.
+
+---
+
+## Phase 4: production package and quick start
+
+Decision recorded: this base release keeps the paper-based defaults; tuned defaults come in a later
+version (every setting is already tunable).
+
+### What was added
+
+| Area | Files | What it does |
+|---|---|---|
+| Errors | `spectrag/errors.py` | `SpectRAGError` and `SettingsError`, `UnknownSettingError`, `IndexError_`, `EmbedderError`, `DocumentError`, `NoDocumentsError`. Each also subclasses the matching built-in (`ValueError`, `KeyError`, `FileNotFoundError`, `ConnectionError`), so existing `except` code keeps working |
+| Settings validation | `spectrag/validation.py`, `config.py` | Every setting is checked for type, range and allowed choices; an unknown name suggests the closest one ("did you mean 'token_budget'?") |
+| Logging | `spectrag/log.py` | `spectrag` logger, silent by default; `spectrag.enable_logging()` prints one timed line per ingestion step; DEBUG prints one line per query |
+| Index format | `spectrag/_version.py` | `info.json` records `format_version` (2) and `spectrag_version`; a newer format is refused with "Upgrade spectrag" |
+| Clear failures | `retrieval.py`, `utils/store.py`, `utils/embedder.py` | Missing or incomplete index, query vectors whose size does not match the index, Ollama unreachable |
+| Safe saving | `ingestion.py` | The index is written to `<index_dir>.partial` and moved into place when complete; a folder that holds other files is never deleted |
+| Document checks | `ingestion.py` | `ingest_documents()` requires a `doc_id` and text, and refuses duplicate ids or all-empty documents |
+| Command line | `spectrag/cli.py` | `spectrag ingest / search / answer / info`, `--set key=value` for any setting, `--json`, `--verbose` |
+| Packaging | `pyproject.toml`, `LICENSE`, `CHANGELOG.md` | Version from `_version.py`; extras `tokens`, `pdf`, `scale`, `all`, `dev` (`extras` kept as an alias); console script; classifiers; project URLs; Python ≥ 3.10 |
+| CI | `.github/workflows/tests.yml` | Linux and macOS × Python 3.10 / 3.12 / 3.14 × minimal / all extras; builds the wheel, installs it in a clean venv and runs the CLI |
+| Quick start | `quickstart.py` | Runs with `python quickstart.py`, no arguments. Documents, index folder, questions, ingestion and search settings and `USE_OLLAMA` are at the top of the file |
+
+### Verified
+
+| Check | Result |
+|---|---|
+| `uv build` | wheel 98 KB (47 files, no data, tests or benchmarks), sdist 0.6 MB |
+| `twine check dist/*` | PASSED for both |
+| Wheel installed in a **fresh Python 3.10** venv | `spectrag --version`, `ingest`, `search`, `quickstart.py` all run |
+| Tests against the installed wheel, Python 3.10, minimal | 292 passed, 11 skipped |
+| Tests against the installed wheel, Python 3.10, all extras | 302 passed, 1 skipped |
+| Dev, Python 3.14, all extras / minimal | 302 passed, 1 skipped / 292 passed, 11 skipped |
+| `quickstart.py` with `USE_OLLAMA = True` | both questions answered correctly, with sources |
+| All 9 phase example scripts | run |
+
+New tests: `tests/test_production.py` (23).
+
+### Known issues found in this phase
+
+- On macOS with numpy 2.2 (the newest numpy for Python 3.10), every float32 matrix product prints
+  `RuntimeWarning: divide by zero / overflow encountered in matmul`. The results are correct
+  (finite; within 2.9e-8 of float64): it is a spurious floating-point flag from the BLAS library,
+  absent with numpy 2.5. It is left visible rather than silenced globally.
+- A minimal install (no `tiktoken`) counts tokens with a word estimate, so its chunk boundaries
+  differ slightly (9 vs 8 chunks on the samples). Tests no longer depend on the exact count.
+- The MIT license and the author name in `pyproject.toml` are placeholders for you to confirm.
+  No email address is included in the package metadata.
+- Not done here: publishing to PyPI (`twine upload`), which is your decision.

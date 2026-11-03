@@ -7,7 +7,10 @@ description: Build an index and get a token-budgeted context for a question in f
 SpectRAG has two steps. **Ingestion** builds an index from your documents, once.
 **Retrieval** finds the context for each question, in a few milliseconds.
 
-<figure><img src="../assets/animations/terminal.gif" alt="Terminal recording: pip install spectrag; spectrag ingest docs; spectrag search returns three ranked chunks."><figcaption><p>The three commands below, recorded from a fresh install.</p></figcaption></figure>
+<figure markdown="span">
+  ![Terminal recording: pip install spectrag; spectrag ingest docs; spectrag search returns three ranked chunks.](../assets/animations/terminal.gif)
+  <figcaption markdown="span">The three commands below, recorded from a fresh install.</figcaption>
+</figure>
 
 ## From the command line
 

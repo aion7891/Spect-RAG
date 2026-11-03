@@ -9,3 +9,6 @@ examples/eval/index/
 benchmarks/indexes/
 quickstart_index/
 quickstart_graph.html
+promo/
+.DS_Store
+build/

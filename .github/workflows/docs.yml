@@ -1,0 +1,60 @@
+name: docs
+
+# Builds the documentation site (MkDocs, see mkdocs.yml) and publishes it with GitHub Pages at
+# https://aion7891.github.io/Spect-RAG/. The site includes the interactive explainers in docs/interactive/.
+# Pull requests build the site without publishing, so a broken link or anchor fails the check (strict mode).
+# One-time setup: Settings -> Pages -> Build and deployment -> Source: GitHub Actions.
+
+on:
+  push:
+    branches: [main]
+    paths: &site-sources
+      - "docs/**"
+      - "examples/graph_view.html"
+      - "mkdocs.yml"
+      - ".github/docs-requirements.txt"
+      - ".github/workflows/docs.yml"
+  pull_request:
+    paths: *site-sources
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build the docs site
+    runs-on: ubuntu-latest
+    env:
+      NO_MKDOCS_2_WARNING: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - run: python -m pip install -r .github/docs-requirements.txt
+      - name: Build (strict, links and anchors checked)
+        run: mkdocs build
+      - uses: actions/upload-pages-artifact@v3
+        if: github.event_name != 'pull_request'
+        with:
+          path: build/site
+
+  deploy:
+    name: Publish to GitHub Pages
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

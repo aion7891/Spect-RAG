@@ -10,31 +10,34 @@ are nodes, edges are coloured by their strongest signal, and a question's retrie
 highlighted (seeds, chunks reached by the graph walk, and the selected context). It is similar
 to Figure 5 of the paper, and needs no internet connection.
 
-<figure><img src="../assets/graph_view.png" alt="Graph view of 600 MultiHopRAG chunks with the selected context for one question highlighted"><figcaption><p>600 MultiHopRAG chunks, with the retrieval path of one question.</p></figcaption></figure>
+<figure markdown="span">
+  ![Graph view of 600 MultiHopRAG chunks with the selected context for one question highlighted](../assets/graph_view.png)
+  <figcaption markdown="span">600 MultiHopRAG chunks, with the retrieval path of one question.</figcaption>
+</figure>
 
-{% embed url="https://aion7891.github.io/Spect-RAG/graph-view.html" %}
+<div class="spectrag-embed" markdown>
+<iframe src="../../interactive/graph-view.html" title="Graph view example" loading="lazy"></iframe>
+
 **Live example:** the 14-document evaluation set and the question *"Which company acquired the
-former employer of the person who leads the Madrid office of Aurora Labs?"*
-{% endembed %}
+former employer of the person who leads the Madrid office of Aurora Labs?"* [Open it in a full window](../interactive/graph-view.html).
+</div>
 
 ## Make one
 
-{% tabs %}
-{% tab title="Command line" %}
-```bash
-spectrag graph --index my_index --out graph.html
-spectrag graph --index my_index --out graph.html --question "Where is Helios Energy based?"
-```
-{% endtab %}
+=== "Command line"
 
-{% tab title="Python" %}
-```python
-from spectrag.utils.graph_view import save_graph_view
+    ```bash
+    spectrag graph --index my_index --out graph.html
+    spectrag graph --index my_index --out graph.html --question "Where is Helios Energy based?"
+    ```
 
-save_graph_view("my_index", "graph.html", question="Where is Helios Energy based?")
-```
-{% endtab %}
-{% endtabs %}
+=== "Python"
+
+    ```python
+    from spectrag.utils.graph_view import save_graph_view
+
+    save_graph_view("my_index", "graph.html", question="Where is Helios Energy based?")
+    ```
 
 Open the file in any browser.
 
@@ -48,7 +51,7 @@ Open the file in any browser.
 
 ## What you see
 
-* **Layout:** each chunk starts at its spectral coordinates $$(u_2, u_3)$$, then a short force
+* **Layout:** each chunk starts at its spectral coordinates $(u_2, u_3)$, then a short force
   layout pulls linked chunks together and pushes the others apart.
 * **Edge colours:** the signal that contributed most to the edge's weight (semantic, section,
   entity, adjacency, utility or citation).

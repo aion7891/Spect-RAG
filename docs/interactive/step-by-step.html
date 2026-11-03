@@ -200,11 +200,14 @@ pre.code{font-family:var(--mono); font-size:13px; line-height:1.6; background:va
 .docbar a:hover{text-decoration:underline}
 .docnote{font-family:var(--sans); font-size:14px; line-height:1.5; color:var(--muted); background:var(--sunk); border-radius:10px; padding:10px 14px; margin:0 0 22px}
 .prose a{color:var(--accent)}
+.framed .docbar{display:none}
 </style>
+<script>if (window.top !== window.self) document.documentElement.classList.add("framed");</script>
+<base target="_top">
 </head>
 <body>
 <div class="wrap">
-<nav class="docbar" aria-label="SpectRAG links"><a href="https://aion7891.gitbook.io/spectrag/">SpectRAG documentation</a><span aria-hidden="true">·</span><a href="./">All interactive pages</a><span aria-hidden="true">·</span><a href="https://github.com/aion7891/Spect-RAG">GitHub</a><span aria-hidden="true">·</span><a href="https://pypi.org/project/spectrag/">PyPI</a></nav>
+<nav class="docbar" aria-label="SpectRAG links"><a href="../">SpectRAG documentation</a><span aria-hidden="true">·</span><a href="./">All interactive pages</a><span aria-hidden="true">·</span><a href="https://github.com/aion7891/Spect-RAG">GitHub</a><span aria-hidden="true">·</span><a href="https://pypi.org/project/spectrag/">PyPI</a></nav>
 <p class="docnote">This walkthrough runs a compact teaching implementation of the method on a 12-chunk corpus, so that every step fits on screen. Its parameter values (budget, core size, selection weights, α) are chosen for that corpus and differ from the package defaults. Each step names the package function that does the same job.</p>
 
 <header class="top">
@@ -280,7 +283,7 @@ pre.code{font-family:var(--mono); font-size:13px; line-height:1.6; background:va
 
 <section class="block">
   <h2>Run it yourself</h2>
-  <div class="prose"><p>The pip package runs the same stages; each step above names the function that does it. Its chunker keeps headings in the chunk text, and its entity rules and default settings differ from the teaching version, so on this toy corpus it picks different chunks. Start from the <a href="https://aion7891.gitbook.io/spectrag/getting-started/quick-start">quick start</a>.</p></div>
+  <div class="prose"><p>The pip package runs the same stages; each step above names the function that does it. Its chunker keeps headings in the chunk text, and its entity rules and default settings differ from the teaching version, so on this toy corpus it picks different chunks. Start from the <a href="../getting-started/quick-start/">quick start</a>.</p></div>
 <pre class="code"><span class="k">from</span> spectrag <span class="k">import</span> SpectRAGIngestion, SpectRAGRetrieval
 
 SpectRAGIngestion("my_index").ingest("docs/")             <span class="c"># Table 1: chunk, embed, graph, spectral</span>

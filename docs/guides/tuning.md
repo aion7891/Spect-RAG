@@ -66,18 +66,18 @@ holds the `settings` of that trial and its average scores.
 | `trials` | how many random combinations to try; `None` tries the full grid |
 | `seed` | the random seed for choosing combinations (default 0, so runs repeat) |
 
-{% hint style="info" %}
-**Graph settings are cheap to tune.** `edge_threshold`, `graph_k`, `edge_weights`,
-`spectral_dims` and `n_clusters` are applied by re-fusing the saved edge signals: nothing is
-embedded again. Trials are ordered so that the graph is rebuilt only when it changes. The query
-embeddings are also computed once, for all trials.
-{% endhint %}
+!!! info
 
-{% hint style="warning" %}
-Chunking and embedding settings (`chunk_tokens`, `embedder`, `semantic_k`, …) cannot be tuned
-with `tune()`, because they need a new index. To compare them, build one index per value and run
-`tune()` on each.
-{% endhint %}
+    **Graph settings are cheap to tune.** `edge_threshold`, `graph_k`, `edge_weights`,
+    `spectral_dims` and `n_clusters` are applied by re-fusing the saved edge signals: nothing is
+    embedded again. Trials are ordered so that the graph is rebuilt only when it changes. The query
+    embeddings are also computed once, for all trials.
+
+!!! warning
+
+    Chunking and embedding settings (`chunk_tokens`, `embedder`, `semantic_k`, …) cannot be tuned
+    with `tune()`, because they need a new index. To compare them, build one index per value and run
+    `tune()` on each.
 
 ## Which settings to try
 
@@ -116,10 +116,10 @@ retrieval (+0.014, 95% CI +0.007 to +0.021).
 * The worst trial (heat proximity, `alpha` 0.7, 10 seeds) scored 0.536. Bad combinations exist, so
   tune rather than guess.
 
-{% hint style="info" %}
-These settings were tuned on one dataset of news articles. Use them as a starting point for
-your own search, not as new defaults.
-{% endhint %}
+!!! info
+
+    These settings were tuned on one dataset of news articles. Use them as a starting point for
+    your own search, not as new defaults.
 
 ## Use the best settings
 

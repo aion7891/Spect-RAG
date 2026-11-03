@@ -6,28 +6,26 @@ description: Install SpectRAG from PyPI, choose the extras you need, and set up 
 
 ## Install the package
 
-{% tabs %}
-{% tab title="pip" %}
-```bash
-pip install spectrag                # core: numpy only
-pip install "spectrag[all]"         # every optional extra
-```
-{% endtab %}
+=== "pip"
 
-{% tab title="uv" %}
-```bash
-uv add spectrag                     # core: numpy only
-uv add "spectrag[all]"              # every optional extra
-```
-{% endtab %}
+    ```bash
+    pip install spectrag                # core: numpy only
+    pip install "spectrag[all]"         # every optional extra
+    ```
 
-{% tab title="From source" %}
-```bash
-git clone https://github.com/aion7891/Spect-RAG.git && cd Spect-RAG
-pip install -e ".[all,dev]"         # or: uv sync --all-extras
-```
-{% endtab %}
-{% endtabs %}
+=== "uv"
+
+    ```bash
+    uv add spectrag                     # core: numpy only
+    uv add "spectrag[all]"              # every optional extra
+    ```
+
+=== "From source"
+
+    ```bash
+    git clone https://github.com/aion7891/Spect-RAG.git && cd Spect-RAG
+    pip install -e ".[all,dev]"         # or: uv sync --all-extras
+    ```
 
 Check that it works:
 
@@ -49,11 +47,11 @@ The core package needs only `numpy`. Extras add features you may not need:
 
 Install several at once with `pip install "spectrag[tokens,pdf]"`.
 
-{% hint style="info" %}
-**Which extras do I need?** Install `tokens` if the token budget must match OpenAI-style token
-counts exactly, `pdf` to ingest PDF files, and `scale` once your corpus has more than a few
-thousand chunks (see [Large corpora](../guides/large-corpora.md)).
-{% endhint %}
+!!! info
+
+    **Which extras do I need?** Install `tokens` if the token budget must match OpenAI-style token
+    counts exactly, `pdf` to ingest PDF files, and `scale` once your corpus has more than a few
+    thousand chunks (see [Large corpora](../guides/large-corpora.md)).
 
 ## Embeddings and LLMs with Ollama (optional)
 
@@ -75,18 +73,18 @@ spectrag ingest docs/ --index my_index --set embedder=ollama
 SpectRAGIngestion("my_index", {"embedder": "ollama"}).ingest("docs/")
 ```
 
-{% hint style="warning" %}
-The offline `hash` embedder matches words, not meaning. It is good for trying the package and
-for tests, but use `ollama` or [your own embedder](../guides/custom-models.md) for real
-retrieval quality.
-{% endhint %}
+!!! warning
+
+    The offline `hash` embedder matches words, not meaning. It is good for trying the package and
+    for tests, but use `ollama` or [your own embedder](../guides/custom-models.md) for real
+    retrieval quality.
 
 You can use any other embedding model or LLM instead: see
 [Your own models](../guides/custom-models.md).
 
 ## Supported platforms
 
-| | Supported |
+| Platform | Supported |
 |---|---|
 | Python | 3.10, 3.11, 3.12, 3.13, 3.14 (CI tests 3.10, 3.12 and 3.14). There is no upper version limit; Python 3.15 waits for a numpy release that supports it. |
 | Operating systems | Linux and macOS are tested in CI |

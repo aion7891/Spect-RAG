@@ -72,8 +72,8 @@ the default settings, SpectRAG does not beat hybrid top-k on this small set (evi
 
 ## Interactive examples
 
-* [SpectRAG, step by step](https://aion7891.github.io/Spect-RAG/step-by-step.html): every stage on
+* [SpectRAG, step by step](../interactive/step-by-step.html): every stage on
   a 12-chunk corpus.
-* [The spectral part, explained visually](https://aion7891.github.io/Spect-RAG/spectral.html).
-* [Graph view of the evaluation set](https://aion7891.github.io/Spect-RAG/graph-view.html), with
+* [The spectral part, explained visually](../interactive/spectral.html).
+* [Graph view of the evaluation set](../interactive/graph-view.html), with
   one question's retrieval path.

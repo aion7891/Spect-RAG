@@ -6,7 +6,7 @@ description: >-
 
 # SpectRAG
 
-<figure><img src="assets/banner.svg" alt="SpectRAG"><figcaption></figcaption></figure>
+![SpectRAG](assets/banner.svg)
 
 SpectRAG retrieves context for retrieval-augmented generation (RAG) when the answer is spread
 over several documents. It links every chunk of your documents into a weighted graph, walks that
@@ -20,16 +20,19 @@ pip install spectrag
 **Links:** [GitHub](https://github.com/aion7891/Spect-RAG) ·
 [PyPI](https://pypi.org/project/spectrag/) ·
 [Paper (arXiv:2610.36991)](https://arxiv.org/abs/2610.36991) ·
-[Interactive explainers](https://aion7891.github.io/Spect-RAG/)
+[Interactive explainers](interactive/index.html)
 
-{% hint style="info" %}
-SpectRAG is an open-source implementation of the paper *SpectRAG: Weighted Chunk Graphs for
-Token-Budgeted Context Selection in Multi-Hop Retrieval-Augmented Generation* by Zafer
-Sahinoglu, Abdulazeez Mohammed, Buse Yaren Kazangirler and Cahit Berkay Kazangirler. If you use
-it, please [cite the paper](help/faq.md#how-do-i-cite-spectrag).
-{% endhint %}
+!!! info
 
-<figure><img src="assets/animations/graph-build.gif" alt="Chunks of 14 documents appear as nodes of a graph, coloured by spectral cluster; links between documents light up; then the command pip install spectrag."><figcaption><p>The chunk graph of the 14-document example set, built by <code>spectrag ingest</code>. Red links join chunks from different documents.</p></figcaption></figure>
+    SpectRAG is an open-source implementation of the paper *SpectRAG: Weighted Chunk Graphs for
+    Token-Budgeted Context Selection in Multi-Hop Retrieval-Augmented Generation* by Zafer
+    Sahinoglu, Abdulazeez Mohammed, Buse Yaren Kazangirler and Cahit Berkay Kazangirler. If you use
+    it, please [cite the paper](help/faq.md#how-do-i-cite-spectrag).
+
+<figure markdown="span">
+  ![Chunks of 14 documents appear as nodes of a graph, coloured by spectral cluster; links between documents light up; then the command pip install spectrag.](assets/animations/graph-build.gif)
+  <figcaption markdown="span">The chunk graph of the 14-document example set, built by `spectrag ingest`. Red links join chunks from different documents.</figcaption>
+</figure>
 
 ## Why SpectRAG
 
@@ -37,7 +40,7 @@ Most RAG pipelines rank chunks one by one by how similar they are to the questio
 the top *k*. That fails on multi-hop questions: the passage that completes the answer often
 shares no words with the question, and near-duplicates of the best match fill the context.
 
-| | Plain top-k RAG | SpectRAG |
+| Aspect | Plain top-k RAG | SpectRAG |
 |---|---|---|
 | **Unit of retrieval** | chunks ranked one by one | a *set* of chunks chosen together |
 | **Near-duplicates** | often fill the context | penalised (redundancy term) |
@@ -47,7 +50,7 @@ shares no words with the question, and near-duplicates of the best match fill th
 
 ## What it does, in one picture
 
-<figure><img src="assets/pipeline.svg" alt="SpectRAG pipeline: offline ingestion builds a chunk graph and its spectral coordinates; online retrieval seeds, expands, re-scores and selects within a token budget."><figcaption></figcaption></figure>
+![SpectRAG pipeline: offline ingestion builds a chunk graph and its spectral coordinates; online retrieval seeds, expands, re-scores and selects within a token budget.](assets/pipeline.svg)
 
 * **Offline, once per document set** (`SpectRAGIngestion`): split documents into chunks, embed
   them, link them with six signals (meaning, reading order, section, shared entities, the
@@ -57,7 +60,7 @@ shares no words with the question, and near-duplicates of the best match fill th
   select chunks under the token budget.
 
 Read more in [Architecture](concepts/architecture.md), or step through it in the
-[interactive walkthrough](https://aion7891.github.io/Spect-RAG/step-by-step.html).
+[interactive walkthrough](interactive/step-by-step.html).
 
 ## Features
 
@@ -88,11 +91,11 @@ On 1,955 MultiHopRAG test questions, with a 12,000-token budget for every method
 | BM25 | 0.788 |
 | Standard RAG (dense top-k) | 0.758 |
 
-{% hint style="warning" %}
-The default settings follow the paper and score **below** hybrid retrieval on this dataset.
-Tune on your own validation questions before relying on them: see
-[Hyperparameter tuning](guides/tuning.md) and [Benchmarks](results/benchmarks.md).
-{% endhint %}
+!!! warning
+
+    The default settings follow the paper and score **below** hybrid retrieval on this dataset.
+    Tune on your own validation questions before relying on them: see
+    [Hyperparameter tuning](guides/tuning.md) and [Benchmarks](results/benchmarks.md).
 
 ## Where to go next
 

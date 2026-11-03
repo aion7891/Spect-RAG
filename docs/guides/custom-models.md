@@ -26,56 +26,54 @@ Built in: `"hash"` (offline, the default) and `"ollama"` (`nomic-embed-text` thr
 Ollama server). Any other model is a function from a list of texts to a list of vectors (or a
 2-D numpy array). SpectRAG scales the vectors to length 1.
 
-{% tabs %}
-{% tab title="sentence-transformers" %}
-```python
-from sentence_transformers import SentenceTransformer
-from spectrag import SpectRAGIngestion, SpectRAGRetrieval
+=== "sentence-transformers"
 
-model = SentenceTransformer("all-MiniLM-L6-v2")
+    ```python
+    from sentence_transformers import SentenceTransformer
+    from spectrag import SpectRAGIngestion, SpectRAGRetrieval
 
-def embed(texts):
-    return model.encode(texts, batch_size=64)
+    model = SentenceTransformer("all-MiniLM-L6-v2")
 
-SpectRAGIngestion("my_index", {"embedder": embed}).ingest("docs/")
-search = SpectRAGRetrieval("my_index", embed_fn=embed)
-```
-{% endtab %}
+    def embed(texts):
+        return model.encode(texts, batch_size=64)
 
-{% tab title="OpenAI" %}
-```python
-from openai import OpenAI
-from spectrag import SpectRAGIngestion, SpectRAGRetrieval
+    SpectRAGIngestion("my_index", {"embedder": embed}).ingest("docs/")
+    search = SpectRAGRetrieval("my_index", embed_fn=embed)
+    ```
 
-client = OpenAI()   # reads OPENAI_API_KEY
+=== "OpenAI"
 
-def embed(texts, batch_size=256):
-    vectors = []
-    for start in range(0, len(texts), batch_size):
-        reply = client.embeddings.create(model="text-embedding-3-small",
-                                         input=texts[start:start + batch_size])
-        vectors += [item.embedding for item in reply.data]
-    return vectors
+    ```python
+    from openai import OpenAI
+    from spectrag import SpectRAGIngestion, SpectRAGRetrieval
 
-SpectRAGIngestion("my_index", {"embedder": embed}).ingest("docs/")
-search = SpectRAGRetrieval("my_index", embed_fn=embed)
-```
-{% endtab %}
+    client = OpenAI()   # reads OPENAI_API_KEY
 
-{% tab title="Ollama, another model" %}
-```python
-SpectRAGIngestion("my_index", {"embedder": "ollama", "ollama_model": "mxbai-embed-large"}).ingest("docs/")
-search = SpectRAGRetrieval("my_index")   # the index remembers the Ollama model
-```
-{% endtab %}
-{% endtabs %}
+    def embed(texts, batch_size=256):
+        vectors = []
+        for start in range(0, len(texts), batch_size):
+            reply = client.embeddings.create(model="text-embedding-3-small",
+                                             input=texts[start:start + batch_size])
+            vectors += [item.embedding for item in reply.data]
+        return vectors
 
-{% hint style="warning" %}
-**Pass your function again when you search.** An index stores only the name of a function, not
-the function, so `SpectRAGRetrieval` asks for it: `SpectRAGRetrieval("my_index", embed_fn=embed)`.
-The query must be embedded with the same model as the documents; a vector of the wrong size
-raises `EmbedderError`.
-{% endhint %}
+    SpectRAGIngestion("my_index", {"embedder": embed}).ingest("docs/")
+    search = SpectRAGRetrieval("my_index", embed_fn=embed)
+    ```
+
+=== "Ollama, another model"
+
+    ```python
+    SpectRAGIngestion("my_index", {"embedder": "ollama", "ollama_model": "mxbai-embed-large"}).ingest("docs/")
+    search = SpectRAGRetrieval("my_index")   # the index remembers the Ollama model
+    ```
+
+!!! warning
+
+    **Pass your function again when you search.** An index stores only the name of a function, not
+    the function, so `SpectRAGRetrieval` asks for it: `SpectRAGRetrieval("my_index", embed_fn=embed)`.
+    The query must be embedded with the same model as the documents; a vector of the wrong size
+    raises `EmbedderError`.
 
 Your function receives the same call for documents and for questions. The built-in Ollama
 embedder adds the `search_document:` and `search_query:` prefixes that `nomic-embed-text`
@@ -89,51 +87,49 @@ semantic chunking: for example `{"embedder": embed, "semantic_embedder": "hash"}
 `answer()` builds a grounded prompt from the selected context and passes it to `llm_fn`. Use
 temperature 0 for repeatable answers, as the paper does.
 
-{% tabs %}
-{% tab title="Ollama" %}
-```python
-from spectrag.utils.llm import ollama_llm
+=== "Ollama"
 
-llm_fn = ollama_llm("gemma3:4b")      # temperature 0, context window sized to the prompt
-result = search.answer("my question", llm_fn)
-```
-`ollama_llm(model, url, num_ctx=None, timeout=600, max_tokens=None, retries=2)` sizes Ollama's
-context window to each prompt (Ollama's default window silently drops the start of long
-prompts), retries after timeouts, and removes the `<think>…</think>` part of reasoning models.
-{% endtab %}
+    ```python
+    from spectrag.utils.llm import ollama_llm
 
-{% tab title="OpenAI" %}
-```python
-from openai import OpenAI
+    llm_fn = ollama_llm("gemma3:4b")      # temperature 0, context window sized to the prompt
+    result = search.answer("my question", llm_fn)
+    ```
+    `ollama_llm(model, url, num_ctx=None, timeout=600, max_tokens=None, retries=2)` sizes Ollama's
+    context window to each prompt (Ollama's default window silently drops the start of long
+    prompts), retries after timeouts, and removes the `<think>…</think>` part of reasoning models.
 
-client = OpenAI()
+=== "OpenAI"
 
-def llm_fn(prompt):
-    reply = client.chat.completions.create(
-        model="gpt-4o-mini", temperature=0,
-        messages=[{"role": "user", "content": prompt}])
-    return reply.choices[0].message.content
+    ```python
+    from openai import OpenAI
 
-result = search.answer("my question", llm_fn)
-```
-{% endtab %}
+    client = OpenAI()
 
-{% tab title="Anthropic" %}
-```python
-import anthropic
+    def llm_fn(prompt):
+        reply = client.chat.completions.create(
+            model="gpt-4o-mini", temperature=0,
+            messages=[{"role": "user", "content": prompt}])
+        return reply.choices[0].message.content
 
-client = anthropic.Anthropic()   # reads ANTHROPIC_API_KEY
+    result = search.answer("my question", llm_fn)
+    ```
 
-def llm_fn(prompt):
-    reply = client.messages.create(
-        model="claude-sonnet-5-5", max_tokens=1024,
-        messages=[{"role": "user", "content": prompt}])
-    return reply.content[0].text
+=== "Anthropic"
 
-result = search.answer("my question", llm_fn)
-```
-{% endtab %}
-{% endtabs %}
+    ```python
+    import anthropic
+
+    client = anthropic.Anthropic()   # reads ANTHROPIC_API_KEY
+
+    def llm_fn(prompt):
+        reply = client.messages.create(
+            model="claude-sonnet-5-5", max_tokens=1024,
+            messages=[{"role": "user", "content": prompt}])
+        return reply.content[0].text
+
+    result = search.answer("my question", llm_fn)
+    ```
 
 To send the context to an LLM yourself, use `result = search.search(question)` and either
 `result["prompt"]` (the grounded prompt) or `result["context"]` (the context only).

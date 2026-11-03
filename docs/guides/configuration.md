@@ -37,11 +37,11 @@ is taken as text (`--set selector=mmr`).
 graph setting passed to `search(settings=...)` raises an error that tells you to use
 `rebuild_graph()` instead.
 
-{% hint style="info" %}
-**Every value is checked.** A misspelled name raises `UnknownSettingError` with a suggestion
-(`Unknown setting: 'token_budjet' (did you mean 'token_budget'?)`); a wrong value raises
-`SettingsError` with the allowed range. See [Errors and logging](../reference/errors.md).
-{% endhint %}
+!!! info
+
+    **Every value is checked.** A misspelled name raises `UnknownSettingError` with a suggestion
+    (`Unknown setting: 'token_budjet' (did you mean 'token_budget'?)`); a wrong value raises
+    `SettingsError` with the allowed range. See [Errors and logging](../reference/errors.md).
 
 **Source** says whether a default comes from the paper or was chosen because the paper gives no
 value. The paper's values are a starting point, not the best values for your data: see
@@ -138,12 +138,12 @@ search.rebuild_graph({"edge_weights": EDGE_WEIGHTS_CONFIG_2})
 
 Every selector stops at the token budget and never picks a chunk twice.
 
-{% hint style="warning" %}
-With the defaults (`selector = "spectrag"`, `length_power = 0.5`), SpectRAG prefers many very
-short chunks. On MultiHopRAG this lowered Recall@10 to 0.433; `length_power = 0` raised it to
-0.580, and `topk`, `mmr` and `protected_mmr` reached 0.845 evidence recall without tuning. See
-[Benchmarks](../results/benchmarks.md#what-the-defaults-get-wrong).
-{% endhint %}
+!!! warning
+
+    With the defaults (`selector = "spectrag"`, `length_power = 0.5`), SpectRAG prefers many very
+    short chunks. On MultiHopRAG this lowered Recall@10 to 0.433; `length_power = 0` raised it to
+    0.580, and `topk`, `mmr` and `protected_mmr` reached 0.845 evidence recall without tuning. See
+    [Benchmarks](../results/benchmarks.md#what-the-defaults-get-wrong).
 
 ## Look at the current settings
 

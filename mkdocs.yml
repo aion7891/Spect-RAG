@@ -1,0 +1,125 @@
+# The documentation site (published by .github/workflows/docs.yml). Build it locally:
+#   pip install -r .github/docs-requirements.txt
+#   mkdocs serve        # http://127.0.0.1:8000/Spect-RAG/
+site_name: SpectRAG
+site_description: Spectral graph-augmented retrieval with token-budgeted context selection for multi-hop RAG
+site_url: https://aion7891.github.io/Spect-RAG/
+repo_url: https://github.com/aion7891/Spect-RAG
+repo_name: aion7891/Spect-RAG
+edit_uri: edit/main/docs/
+copyright: SpectRAG · MIT License · an implementation of arXiv:2610.36991 (Sahinoglu et al.)
+
+docs_dir: docs
+site_dir: build/site
+strict: true
+
+# Developer notes that live in docs/ but are not pages of the site (they are linked on GitHub).
+exclude_docs: |
+  /DESIGN.md
+  /DEVELOPMENT_LOG.md
+  /PRODUCTION_READINESS.md
+  /PROGRESS.md
+  /validation/
+  *.pdf
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - navigation.indexes
+    - toc.follow
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.tabs.link
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  icon:
+    logo: material/graph-outline
+    repo: fontawesome/brands/github
+
+extra:
+  generator: false
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/aion7891/Spect-RAG
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/spectrag/
+
+extra_css:
+  - stylesheets/extra.css
+
+extra_javascript:
+  - javascripts/mathjax.js
+  - https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - toc:
+      permalink: true
+      slugify: !!python/object/apply:pymdownx.slugs.slugify
+        kwds:
+          case: lower
+
+validation:
+  nav:
+    omitted_files: warn
+    not_found: warn
+  links:
+    not_found: warn
+    anchors: warn
+    unrecognized_links: warn
+
+nav:
+  - Home: index.md
+  - Get started:
+      - Installation: getting-started/installation.md
+      - Quick start: getting-started/quick-start.md
+      - Examples: getting-started/examples.md
+  - Concepts:
+      - Architecture: concepts/architecture.md
+      - The spectral part: concepts/spectral.md
+      - Interactive explainers: https://aion7891.github.io/Spect-RAG/interactive/
+  - Guides:
+      - Configuration: guides/configuration.md
+      - Hyperparameter tuning: guides/tuning.md
+      - Your own models: guides/custom-models.md
+      - Graph view: guides/graph-view.md
+      - Large corpora: guides/large-corpora.md
+  - Reference:
+      - Python API: reference/python-api.md
+      - Command line: reference/cli.md
+      - Errors and logging: reference/errors.md
+      - Index format: reference/index-format.md
+  - Benchmarks: results/benchmarks.md
+  - Help:
+      - FAQ: help/faq.md
+      - Maintaining these docs: help/maintaining-docs.md

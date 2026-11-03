@@ -10,12 +10,14 @@ SpectRAG has two pipelines. **Ingestion** (`SpectRAGIngestion`) runs once per do
 saves an index folder. **Retrieval** (`SpectRAGRetrieval`) loads that folder and runs once per
 question.
 
-<figure><img src="../assets/pipeline.svg" alt="SpectRAG pipeline: offline ingestion builds a chunk graph and its spectral coordinates; online retrieval seeds, expands, re-scores and selects within a token budget."><figcaption></figcaption></figure>
+![SpectRAG pipeline: offline ingestion builds a chunk graph and its spectral coordinates; online retrieval seeds, expands, re-scores and selects within a token budget.](../assets/pipeline.svg)
 
-{% embed url="https://aion7891.github.io/Spect-RAG/step-by-step.html" %}
+<div class="spectrag-embed" markdown>
+<iframe src="../../interactive/step-by-step.html" title="SpectRAG, step by step" loading="lazy"></iframe>
+
 **Interactive walkthrough:** click through all ten stages on a 12-chunk corpus, inspect any
-chunk or edge, and move the selection sliders.
-{% endembed %}
+chunk or edge, and move the selection sliders. [Open it in a full window](../interactive/step-by-step.html).
+</div>
 
 ## The problem it solves
 
@@ -73,14 +75,14 @@ $$
 
 ### Spectral coordinates
 
-From the weight matrix $$W$$ and the degrees $$D$$, the normalised Laplacian is
+From the weight matrix $W$ and the degrees $D$, the normalised Laplacian is
 
 $$
 L_{sym} = I - D^{-1/2} \, W \, D^{-1/2}
 $$
 
-Its eigenvectors $$u_2, \dots, u_{33}$$ (the first is trivial) give each chunk a 32-number
-coordinate $$z_i$$. Chunks that are strongly linked get similar coordinates, so communities of
+Its eigenvectors $u_2, \dots, u_{33}$ (the first is trivial) give each chunk a 32-number
+coordinate $z_i$. Chunks that are strongly linked get similar coordinates, so communities of
 the corpus become clusters of points. [The spectral part](spectral.md) explains why.
 
 ## Online: retrieval
@@ -89,7 +91,10 @@ the corpus become clusters of points. [The spectral part](spectral.md) explains 
 result = SpectRAGRetrieval("my_index").search(question, token_budget=4000)
 ```
 
-<figure><img src="../assets/animations/how-it-works.gif" alt="A three-hop question: two seed chunks light up, a two-hop graph walk reaches more chunks, scores grow, and a 256-token budget bar fills with the selected chunks."><figcaption><p>A three-hop question on the 14-document example set: seeds, the two-hop walk, PageRank scores, and the 256-token budget. This example was chosen to show the mechanism (64-token chunks, 3 edges per chunk, 2 seeds); measured results are in <a href="../results/benchmarks.md">Benchmarks</a>.</p></figcaption></figure>
+<figure markdown="span">
+  ![A three-hop question: two seed chunks light up, a two-hop graph walk reaches more chunks, scores grow, and a 256-token budget bar fills with the selected chunks.](../assets/animations/how-it-works.gif)
+  <figcaption markdown="span">A three-hop question on the 14-document example set: seeds, the two-hop walk, PageRank scores, and the 256-token budget. This example was chosen to show the mechanism (64-token chunks, 3 edges per chunk, 2 seeds); measured results are in [Benchmarks](../results/benchmarks.md).</figcaption>
+</figure>
 
 | Step | What happens | Paper | Module |
 |---|---|---|---|
@@ -105,13 +110,13 @@ $$
 \mathrm{RRF}(c) = \sum_{\text{lists}} \frac{1}{k + \mathrm{rank}(c)}, \qquad k = 60
 $$
 
-The relevance of a chunk is $$(1 - w)\cdot\text{dense} + w\cdot\text{BM25}$$, both scaled to
-0…1, with $$w$$ = `bm25_weight` (0.5).
+The relevance of a chunk is $(1 - w)\cdot\text{dense} + w\cdot\text{BM25}$, both scaled to
+0…1, with $w$ = `bm25_weight` (0.5).
 
 ### Re-scoring
 
 Personalized PageRank spreads the seeds' relevance over the candidate subgraph
-($$\tilde{A} = D^{-1/2} W D^{-1/2}$$, restart share $$\beta$$ = `ppr_beta`, 0.15):
+($\tilde{A} = D^{-1/2} W D^{-1/2}$, restart share $\beta$ = `ppr_beta`, 0.15):
 
 $$
 s^{(t+1)} = \beta \, r + (1-\beta)\, \tilde{A}\, s^{(t)}
@@ -140,7 +145,7 @@ $$
   yet in the context, ½ for the second, and so on: they reward coverage.
 * **Red** is the highest cosine similarity to a chunk already chosen: it penalises
   near-duplicates.
-* $$\ell(c)$$ is the chunk's length in tokens and $$\rho$$ = `length_power` (0.5).
+* $\ell(c)$ is the chunk's length in tokens and $\rho$ = `length_power` (0.5).
 
 Finally, backfill adds the best remaining chunks that still fit, so no budget is wasted. Other
 selectors (`mmr`, `protected_mmr`, `anchor_expand_ce`, `topk`) are described in
@@ -148,6 +153,6 @@ selectors (`mmr`, `protected_mmr`, `anchor_expand_ce`, `topk`) are described in
 
 ## Design decisions
 
-The paper leaves some details open: for example the value of $$\rho$$, the edge threshold
-$$\tau$$, and how entities are found. Every such choice, and why it was made, is listed in
+The paper leaves some details open: for example the value of $\rho$, the edge threshold
+$\tau$, and how entities are found. Every such choice, and why it was made, is listed in
 [DESIGN.md](https://github.com/aion7891/Spect-RAG/blob/main/docs/DESIGN.md) (decisions D1–D64).

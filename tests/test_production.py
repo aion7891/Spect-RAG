@@ -83,9 +83,11 @@ def test_future_index_format_is_refused(tmp_path):
 
 def test_embedder_with_the_wrong_size_is_caught(tmp_path):
     SpectRAGIngestion(tmp_path, {"embedder": lambda texts: hash_embed(texts, 32)}).ingest(EXAMPLES)
-    search = SpectRAGRetrieval(tmp_path, embed_fn=lambda texts: hash_embed(texts, 64))
     with pytest.raises(EmbedderError, match="64 dimensions but the index has 32"):
-        search.search("anything")
+        SpectRAGRetrieval(tmp_path, embed_fn=lambda texts: hash_embed(texts, 64))  # caught on open
+    search = SpectRAGRetrieval(tmp_path, embed_fn=lambda texts: hash_embed(texts, 32))
+    with pytest.raises(EmbedderError, match="64 dimensions but the index has 32"):
+        search.search("anything", query_vector=hash_embed(["anything"], 64)[0])  # and per query
 
 
 def test_saving_is_safe(tmp_path):

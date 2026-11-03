@@ -15,7 +15,8 @@ from spectrag.log import logger
 from spectrag.utils.bm25 import build_bm25
 from spectrag.utils.diffusion import score_candidates
 from spectrag.utils.embedder import make_embedder
-from spectrag.utils.embedder_id import CUSTOM, is_saved_function, read_saved_settings
+from spectrag.utils.embedder_id import (CUSTOM, check_embedder, is_saved_function,
+                                        read_saved_settings)
 from spectrag.utils.graph import degrees, neighbors
 from spectrag.utils.graph_build import build_graph, build_spectral
 from spectrag.utils.prompt import build_prompt, format_context
@@ -59,6 +60,7 @@ class SpectRAGRetrieval:
                                 "Pass it again: SpectRAGRetrieval(index_dir, embed_fn=...)"
                                 % self.settings["embedder"][len(CUSTOM):])
         self.embed = make_embedder(self.settings)
+        check_embedder(self.embed, self.index.get("embedder_probe"), built_with["embedder"])
         self.rerank_fn = rerank_fn
         self.bm25 = build_bm25([chunk["text"] for chunk in self.index["chunks"]])
         self.vector_index = load_vector_index(self.index_dir, self.index["embeddings"], self.settings)

@@ -9,7 +9,8 @@ from spectrag import SpectRAGIngestion
 from spectrag.utils.store import load_index
 
 EXAMPLES = Path(__file__).parent.parent / "examples" / "docs"
-EXPECTED_FILES = ["chunks.json", "edges.npy", "eigenvalues.npy", "embeddings.npy", "info.json",
+EXPECTED_FILES = ["chunks.json", "edges.npy", "eigenvalues.npy", "embedder_probe.npy",
+                  "embeddings.npy", "info.json",
                   "question_owners.npy", "question_vectors.npy", "settings.json",
                   "signals.npz", "spectral.npy"]
 
@@ -85,4 +86,4 @@ def test_semantic_embedder_is_used_only_for_chunk_breaks(tmp_path):
     SpectRAGIngestion(tmp_path, {"embedder": counting_embedder, "semantic_embedder": "hash"}).ingest(EXAMPLES)
     index = load_index(tmp_path)
     assert index["embeddings"].shape[1] == 32                         # chunks: the main embedder
-    assert sum(calls) == len(index["chunks"])                         # sentences went to "hash"
+    assert sum(calls) == len(index["chunks"]) + 1   # sentences went to "hash"; +1: the fingerprint

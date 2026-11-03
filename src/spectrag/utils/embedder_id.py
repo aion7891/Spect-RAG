@@ -3,10 +3,20 @@
 settings.json cannot store a function, so an embedder is saved by name:
   "hash", "ollama"          - the built-in embedders, saved as they are
   "custom:<function name>"  - your own function; pass it again with embed_fn=...
+A name alone cannot tell two embedders apart, so the index also keeps a fingerprint: the
+vector of one fixed sentence (embedder_probe.npy). Opening the index embeds it again and
+compares (DESIGN.md D65).
 """
+
+import numpy as np
+
+from spectrag.errors import EmbedderError
+from spectrag.log import logger
 
 BUILT_IN = ("hash", "ollama")
 CUSTOM = "custom:"
+PROBE_TEXT = "SpectRAG embedder check: Helios Energy builds solar farms near Porto."
+SAME_EMBEDDER = 0.99  # assumed: lowest cosine for "the same embedder" (GPUs vary a little)
 
 
 def function_name(fn):
@@ -43,3 +53,24 @@ def read_saved_settings(settings):
 def is_saved_function(choice):
     """True if the embedder is the saved name of your own function (not the function itself)."""
     return isinstance(choice, str) and choice.startswith(CUSTOM)
+
+
+def embed_probe(embed):
+    """The embedder's vector for PROBE_TEXT: the fingerprint saved with the index."""
+    return np.asarray(embed([PROBE_TEXT], kind="document")[0], dtype=np.float32)
+
+
+def check_embedder(embed, saved_probe, built_with):
+    """Raise EmbedderError if embed() is not the embedder that built the index ('built_with')."""
+    if saved_probe is None:
+        logger.info("this index has no embedder_probe.npy (made before 0.1.2): embedder not checked")
+        return
+    probe = embed_probe(embed)
+    fix = "open the index with the embedder it was built with (%s)" % embedder_name(built_with)
+    if len(probe) != len(saved_probe):
+        raise EmbedderError("The embedder gives %d dimensions but the index has %d: %s."
+                            % (len(probe), len(saved_probe), fix))
+    similarity = float(probe @ saved_probe)  # both vectors have length 1: this is the cosine
+    if similarity < SAME_EMBEDDER:
+        raise EmbedderError("This index was built with a different embedder (the check sentence "
+                            "has cosine %.3f, below %.2f): %s." % (similarity, SAME_EMBEDDER, fix))

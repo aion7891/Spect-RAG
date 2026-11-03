@@ -1,0 +1,29 @@
+{
+ "articles": 4,
+ "questions": 18,
+ "budget": 11854,
+ "lightrag_query_seconds_mean": 0.052222222222222225,
+ "summary": {
+  "dense": {
+   "recall": 1.0,
+   "complete": 1.0
+  },
+  "bm25": {
+   "recall": 1.0,
+   "complete": 1.0
+  },
+  "hybrid": {
+   "recall": 1.0,
+   "complete": 1.0
+  },
+  "spectrag": {
+   "recall": 1.0,
+   "complete": 1.0
+  },
+  "lightrag": {
+   "recall": 1.0,
+   "complete": 1.0
+  }
+ },
+ "note": "Budget matched to LightRAG median context (11,854 tokens). The 4-article subset is only 6,805 tokens, so every method can hold all of it: this run cannot separate retrieval quality."
+}

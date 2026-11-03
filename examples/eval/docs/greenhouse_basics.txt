@@ -1,0 +1,3 @@
+Greenhouse farming needs careful control of water and heat. Many growers place soil sensors near the roots of their plants. The sensors measure how wet the soil is, and the readings help farmers decide when to water.
+
+Drip irrigation brings water straight to the roots through thin pipes. Together with sensors, it can reduce waste and protect plants from disease. Most modern greenhouses also use fans and shade cloth to keep the air cool in summer.

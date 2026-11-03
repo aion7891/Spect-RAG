@@ -1,0 +1,899 @@
+{
+ "model": "gemma3:4b",
+ "questions": 30,
+ "summary": {
+  "dense": {
+   "em": 0.3333333333333333,
+   "f1": 0.3625641025641026,
+   "contains": 0.36666666666666664
+  },
+  "hybrid": {
+   "em": 0.26666666666666666,
+   "f1": 0.2977827215424546,
+   "contains": 0.3333333333333333
+  },
+  "spectrag": {
+   "em": 0.36666666666666664,
+   "f1": 0.3944444444444445,
+   "contains": 0.36666666666666664
+  },
+  "spectrag_tuned": {
+   "em": 0.4,
+   "f1": 0.40229885057471265,
+   "contains": 0.43333333333333335
+  }
+ },
+ "seconds": 2408.7,
+ "rows": [
+  {
+   "id": 91,
+   "type": "comparison",
+   "gold": "Yes",
+   "dense": {
+    "answer": "unknown",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   },
+   "hybrid": {
+    "answer": "Lexyu\u2019s Sorcerer leveling build",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   },
+   "spectrag": {
+    "answer": "unknown",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   },
+   "spectrag_tuned": {
+    "answer": "unknown",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   }
+  },
+  {
+   "id": 161,
+   "type": "temporal",
+   "gold": "Yes",
+   "dense": {
+    "answer": "unknown",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   },
+   "hybrid": {
+    "answer": "Inconsistent.",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   },
+   "spectrag": {
+    "answer": "Inconsistent",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   },
+   "spectrag_tuned": {
+    "answer": "unknown",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   }
+  },
+  {
+   "id": 235,
+   "type": "comparison",
+   "gold": "no",
+   "dense": {
+    "answer": "unknown",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   },
+   "hybrid": {
+    "answer": "unknown",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   },
+   "spectrag": {
+    "answer": "unknown",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   },
+   "spectrag_tuned": {
+    "answer": "Conflicting accounts",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   }
+  },
+  {
+   "id": 251,
+   "type": "inference",
+   "gold": "OpenAI",
+   "dense": {
+    "answer": "OpenAI",
+    "em": 1.0,
+    "f1": 1.0,
+    "contains": 1.0
+   },
+   "hybrid": {
+    "answer": "OpenAI",
+    "em": 1.0,
+    "f1": 1.0,
+    "contains": 1.0
+   },
+   "spectrag": {
+    "answer": "OpenAI",
+    "em": 1.0,
+    "f1": 1.0,
+    "contains": 1.0
+   },
+   "spectrag_tuned": {
+    "answer": "OpenAI",
+    "em": 1.0,
+    "f1": 1.0,
+    "contains": 1.0
+   }
+  },
+  {
+   "id": 437,
+   "type": "comparison",
+   "gold": "no",
+   "dense": {
+    "answer": "Mayweather\u2019s billionaire status",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   },
+   "hybrid": {
+    "answer": "Canelo Alvarez\u2019s wealth accumulation is on a different trajectory than Floyd Mayweather\u2019s, while Sam Bankman-Fried\u2019s wealth was linked to his philanthropic intentions.",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   },
+   "spectrag": {
+    "answer": "unknown",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   },
+   "spectrag_tuned": {
+    "answer": "Canelo Alvarez, TechCrunch, Sam Bankman-Fried",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   }
+  },
+  {
+   "id": 466,
+   "type": "temporal",
+   "gold": "Yes",
+   "dense": {
+    "answer": "unknown",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   },
+   "hybrid": {
+    "answer": "unknown",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   },
+   "spectrag": {
+    "answer": "yes",
+    "em": 1.0,
+    "f1": 1.0,
+    "contains": 1.0
+   },
+   "spectrag_tuned": {
+    "answer": "yes",
+    "em": 1.0,
+    "f1": 1.0,
+    "contains": 1.0
+   }
+  },
+  {
+   "id": 596,
+   "type": "comparison",
+   "gold": "no",
+   "dense": {
+    "answer": "unknown",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   },
+   "hybrid": {
+    "answer": "seven years",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   },
+   "spectrag": {
+    "answer": "unknown",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   },
+   "spectrag_tuned": {
+    "answer": "unknown",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   }
+  },
+  {
+   "id": 706,
+   "type": "inference",
+   "gold": "Will Smith and Jada Pinkett Smith",
+   "dense": {
+    "answer": "Will and Jada Smith",
+    "em": 0.0,
+    "f1": 0.8,
+    "contains": 0.0
+   },
+   "hybrid": {
+    "answer": "Will and Jada Smith",
+    "em": 0.0,
+    "f1": 0.8,
+    "contains": 0.0
+   },
+   "spectrag": {
+    "answer": "Will Smith y Jada Pinkett Smith",
+    "em": 0.0,
+    "f1": 0.8333333333333334,
+    "contains": 0.0
+   },
+   "spectrag_tuned": {
+    "answer": "Will Smith and Jada Pinkett Smith",
+    "em": 1.0,
+    "f1": 1.0,
+    "contains": 1.0
+   }
+  },
+  {
+   "id": 853,
+   "type": "inference",
+   "gold": "Shai Hope",
+   "dense": {
+    "answer": "Shai Hope",
+    "em": 1.0,
+    "f1": 1.0,
+    "contains": 1.0
+   },
+   "hybrid": {
+    "answer": "Shai Hope",
+    "em": 1.0,
+    "f1": 1.0,
+    "contains": 1.0
+   },
+   "spectrag": {
+    "answer": "Shai Hope",
+    "em": 1.0,
+    "f1": 1.0,
+    "contains": 1.0
+   },
+   "spectrag_tuned": {
+    "answer": "Shai Hope",
+    "em": 1.0,
+    "f1": 1.0,
+    "contains": 1.0
+   }
+  },
+  {
+   "id": 985,
+   "type": "temporal",
+   "gold": "no",
+   "dense": {
+    "answer": "unknown",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   },
+   "hybrid": {
+    "answer": "Inconsistent",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   },
+   "spectrag": {
+    "answer": "Google, Google, Google, Google, Google",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   },
+   "spectrag_tuned": {
+    "answer": "unknown",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   }
+  },
+  {
+   "id": 1071,
+   "type": "comparison",
+   "gold": "Yes",
+   "dense": {
+    "answer": "Yes",
+    "em": 1.0,
+    "f1": 1.0,
+    "contains": 1.0
+   },
+   "hybrid": {
+    "answer": "unknown",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   },
+   "spectrag": {
+    "answer": "Federal Reserve, economic data",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   },
+   "spectrag_tuned": {
+    "answer": "Federal Reserve",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   }
+  },
+  {
+   "id": 1174,
+   "type": "inference",
+   "gold": "Tyreek Hill",
+   "dense": {
+    "answer": "Tyreek Hill",
+    "em": 1.0,
+    "f1": 1.0,
+    "contains": 1.0
+   },
+   "hybrid": {
+    "answer": "Tyreek Hill",
+    "em": 1.0,
+    "f1": 1.0,
+    "contains": 1.0
+   },
+   "spectrag": {
+    "answer": "Tyreek Hill",
+    "em": 1.0,
+    "f1": 1.0,
+    "contains": 1.0
+   },
+   "spectrag_tuned": {
+    "answer": "Tyreek Hill",
+    "em": 1.0,
+    "f1": 1.0,
+    "contains": 1.0
+   }
+  },
+  {
+   "id": 1395,
+   "type": "inference",
+   "gold": "Sportsbooks",
+   "dense": {
+    "answer": "DraftKings, FanDuel, BetMGM, Caesars Sportsbook",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   },
+   "hybrid": {
+    "answer": "FanDuel, DraftKings, BetMGM",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   },
+   "spectrag": {
+    "answer": "DraftKings, FanDuel, BetMGM, Caesars, and Bet365",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   },
+   "spectrag_tuned": {
+    "answer": "DraftKings, FanDuel, BetMGM, Caesars Sportsbook",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   }
+  },
+  {
+   "id": 1581,
+   "type": "temporal",
+   "gold": "Yes",
+   "dense": {
+    "answer": "Yes, there was a consistent portrayal of Google's involvement in anticompetitive practices across both reports. Both sources highlighted Google's alleged \"siphoning off\" of news publishers' content",
+    "em": 0.0,
+    "f1": 0.07692307692307693,
+    "contains": 1.0
+   },
+   "hybrid": {
+    "answer": "Google, anticompetitive practices",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   },
+   "spectrag": {
+    "answer": "consistent portrayal of Google's involvement in anticompetitive practices",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   },
+   "spectrag_tuned": {
+    "answer": "Yes",
+    "em": 1.0,
+    "f1": 1.0,
+    "contains": 1.0
+   }
+  },
+  {
+   "id": 1642,
+   "type": "inference",
+   "gold": "Sam Bankman-Fried",
+   "dense": {
+    "answer": "Sam Bankman-Fried",
+    "em": 1.0,
+    "f1": 1.0,
+    "contains": 1.0
+   },
+   "hybrid": {
+    "answer": "Sam Bankman-Fried",
+    "em": 1.0,
+    "f1": 1.0,
+    "contains": 1.0
+   },
+   "spectrag": {
+    "answer": "Sam Bankman-Fried",
+    "em": 1.0,
+    "f1": 1.0,
+    "contains": 1.0
+   },
+   "spectrag_tuned": {
+    "answer": "Sam Bankman-Fried",
+    "em": 1.0,
+    "f1": 1.0,
+    "contains": 1.0
+   }
+  },
+  {
+   "id": 1644,
+   "type": "inference",
+   "gold": "Google",
+   "dense": {
+    "answer": "Google",
+    "em": 1.0,
+    "f1": 1.0,
+    "contains": 1.0
+   },
+   "hybrid": {
+    "answer": "Google",
+    "em": 1.0,
+    "f1": 1.0,
+    "contains": 1.0
+   },
+   "spectrag": {
+    "answer": "Google",
+    "em": 1.0,
+    "f1": 1.0,
+    "contains": 1.0
+   },
+   "spectrag_tuned": {
+    "answer": "Google",
+    "em": 1.0,
+    "f1": 1.0,
+    "contains": 1.0
+   }
+  },
+  {
+   "id": 1721,
+   "type": "temporal",
+   "gold": "no",
+   "dense": {
+    "answer": "unknown",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   },
+   "hybrid": {
+    "answer": "Kenneth Walker III",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   },
+   "spectrag": {
+    "answer": "Kenneth Walker III",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   },
+   "spectrag_tuned": {
+    "answer": "Kenneth Walker III, injuries",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   }
+  },
+  {
+   "id": 1805,
+   "type": "inference",
+   "gold": "Tyreek Hill",
+   "dense": {
+    "answer": "Tyreek Hill",
+    "em": 1.0,
+    "f1": 1.0,
+    "contains": 1.0
+   },
+   "hybrid": {
+    "answer": "Tyreek Hill",
+    "em": 1.0,
+    "f1": 1.0,
+    "contains": 1.0
+   },
+   "spectrag": {
+    "answer": "Tyreek Hill",
+    "em": 1.0,
+    "f1": 1.0,
+    "contains": 1.0
+   },
+   "spectrag_tuned": {
+    "answer": "Tyreek Hill",
+    "em": 1.0,
+    "f1": 1.0,
+    "contains": 1.0
+   }
+  },
+  {
+   "id": 1830,
+   "type": "comparison",
+   "gold": "no",
+   "dense": {
+    "answer": "unknown",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   },
+   "hybrid": {
+    "answer": "unknown",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   },
+   "spectrag": {
+    "answer": "unknown",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   },
+   "spectrag_tuned": {
+    "answer": "unknown",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   }
+  },
+  {
+   "id": 1937,
+   "type": "temporal",
+   "gold": "Yes",
+   "dense": {
+    "answer": "no",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   },
+   "hybrid": {
+    "answer": "unknown",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   },
+   "spectrag": {
+    "answer": "consistent",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   },
+   "spectrag_tuned": {
+    "answer": "consistent",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   }
+  },
+  {
+   "id": 1969,
+   "type": "temporal",
+   "gold": "Yes",
+   "dense": {
+    "answer": "Shift in focus",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   },
+   "hybrid": {
+    "answer": "Yes, there was a change in the focus of Messi's football activities as reported by the same news source. The first report focused on his potential return to Inter Miami for a playoff match, while",
+    "em": 0.0,
+    "f1": 0.06451612903225806,
+    "contains": 1.0
+   },
+   "spectrag": {
+    "answer": "Yes",
+    "em": 1.0,
+    "f1": 1.0,
+    "contains": 1.0
+   },
+   "spectrag_tuned": {
+    "answer": "Yes",
+    "em": 1.0,
+    "f1": 1.0,
+    "contains": 1.0
+   }
+  },
+  {
+   "id": 2146,
+   "type": "temporal",
+   "gold": "no",
+   "dense": {
+    "answer": "Yes",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   },
+   "hybrid": {
+    "answer": "The two events occurred in July and December.",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   },
+   "spectrag": {
+    "answer": "July",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   },
+   "spectrag_tuned": {
+    "answer": "inconsistent",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   }
+  },
+  {
+   "id": 2161,
+   "type": "inference",
+   "gold": "Google",
+   "dense": {
+    "answer": "Google",
+    "em": 1.0,
+    "f1": 1.0,
+    "contains": 1.0
+   },
+   "hybrid": {
+    "answer": "Google",
+    "em": 1.0,
+    "f1": 1.0,
+    "contains": 1.0
+   },
+   "spectrag": {
+    "answer": "Google",
+    "em": 1.0,
+    "f1": 1.0,
+    "contains": 1.0
+   },
+   "spectrag_tuned": {
+    "answer": "Google",
+    "em": 1.0,
+    "f1": 1.0,
+    "contains": 1.0
+   }
+  },
+  {
+   "id": 2228,
+   "type": "temporal",
+   "gold": "Yes",
+   "dense": {
+    "answer": "deep shot",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   },
+   "hybrid": {
+    "answer": "Mario Williams",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   },
+   "spectrag": {
+    "answer": "Yes",
+    "em": 1.0,
+    "f1": 1.0,
+    "contains": 1.0
+   },
+   "spectrag_tuned": {
+    "answer": "Watts, Notre Dame",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   }
+  },
+  {
+   "id": 2269,
+   "type": "comparison",
+   "gold": "Yes",
+   "dense": {
+    "answer": "Dallas Cowboys, late game\nArizona Wildcats, losing momentum",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   },
+   "hybrid": {
+    "answer": "unknown",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   },
+   "spectrag": {
+    "answer": "unknown",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   },
+   "spectrag_tuned": {
+    "answer": "unknown",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   }
+  },
+  {
+   "id": 2280,
+   "type": "inference",
+   "gold": "Sam Bankman-Fried",
+   "dense": {
+    "answer": "Sam Bankman-Fried",
+    "em": 1.0,
+    "f1": 1.0,
+    "contains": 1.0
+   },
+   "hybrid": {
+    "answer": "Sam Bankman-Fried",
+    "em": 1.0,
+    "f1": 1.0,
+    "contains": 1.0
+   },
+   "spectrag": {
+    "answer": "Sam Bankman-Fried",
+    "em": 1.0,
+    "f1": 1.0,
+    "contains": 1.0
+   },
+   "spectrag_tuned": {
+    "answer": "Sam Bankman-Fried",
+    "em": 1.0,
+    "f1": 1.0,
+    "contains": 1.0
+   }
+  },
+  {
+   "id": 2296,
+   "type": "comparison",
+   "gold": "no",
+   "dense": {
+    "answer": "Sam Bankman-Fried, offering $5B to Trump to cancel President re-run",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   },
+   "hybrid": {
+    "answer": "Sam Bankman-Fried, Michael Lewis, lack of awareness, not motivated by personal gain.",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   },
+   "spectrag": {
+    "answer": "Sam Bankman-Fried, Trump, political candidates",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   },
+   "spectrag_tuned": {
+    "answer": "TechCrunch articles, TechCrunch (031), TechCrunch (086), TechCrunch (582)",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   }
+  },
+  {
+   "id": 2306,
+   "type": "temporal",
+   "gold": "Yes",
+   "dense": {
+    "answer": "yes",
+    "em": 1.0,
+    "f1": 1.0,
+    "contains": 1.0
+   },
+   "hybrid": {
+    "answer": "Yes, there was a shift in the portrayal. The initial TechCrunch report focused on Bankman-Fried\u2019s claims of acting in good faith and not intending to defraud customers, while subsequent reports highlighted",
+    "em": 0.0,
+    "f1": 0.0689655172413793,
+    "contains": 1.0
+   },
+   "spectrag": {
+    "answer": "shifting narrative",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   },
+   "spectrag_tuned": {
+    "answer": "Yes, there was a change in the portrayal of his actions. The initial TechCrunch report presented Bankman-Fried as a \u201cman who stole billions of dollars from thousands of victims,\u201d while subsequent reports",
+    "em": 0.0,
+    "f1": 0.0689655172413793,
+    "contains": 1.0
+   }
+  },
+  {
+   "id": 2536,
+   "type": "comparison",
+   "gold": "no",
+   "dense": {
+    "answer": "The Sporting News article ranks Tyreek Hill as the top wide receiver for Week 14, while The Guardian article focuses on his performance in a specific game (the Dolphins vs. Chiefs). The other",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   },
+   "hybrid": {
+    "answer": "Tyreek Hill, Miami Dolphins, 1,000 receiving yards",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   },
+   "spectrag": {
+    "answer": "Tyreek Hill",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   },
+   "spectrag_tuned": {
+    "answer": "Tyreek Hill",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   }
+  },
+  {
+   "id": 2541,
+   "type": "comparison",
+   "gold": "Yes",
+   "dense": {
+    "answer": "Layoffs",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   },
+   "hybrid": {
+    "answer": "Epic Games",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   },
+   "spectrag": {
+    "answer": "Epic Games",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   },
+   "spectrag_tuned": {
+    "answer": "Epic Games",
+    "em": 0.0,
+    "f1": 0.0,
+    "contains": 0.0
+   }
+  }
+ ]
+}

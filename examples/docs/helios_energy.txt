@@ -1,0 +1,12 @@
+Helios Energy is a solar power company based in Porto. It was founded in 2011 and builds solar
+farms for small towns in southern Europe.
+
+In 2019 Helios Energy hired Maya Chen as chief technology officer. Under her lead the company
+started using soil and weather sensors to plan where new solar panels should be placed. This
+work led to the Helios Grid Planner, a tool released in 2021.
+
+The Helios Grid Planner combines satellite images with ground sensor data. It predicts how much
+energy a site will produce over a year. Engineers use it before they buy land for a new farm.
+
+By 2023 Helios Energy operated 35 solar farms. Its largest site, near Évora, produces enough
+electricity for about 60,000 homes.

@@ -1,0 +1,53 @@
+name: tests
+
+on:
+  push:
+    branches: ["**"]  # tags run these tests through release.yml instead
+  pull_request:
+  workflow_call:      # used by release.yml before publishing
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python: ["3.10", "3.12", "3.14"]
+        install: ["minimal", "all"]
+        include:  # the next Python, before its release (allowed to fail until numpy supports it)
+          - {os: ubuntu-latest, python: "3.15", install: "minimal", prerelease: true}
+    continue-on-error: ${{ matrix.prerelease == true }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          allow-prereleases: true
+      - name: Install (minimal = numpy only)
+        if: matrix.install == 'minimal'
+        run: pip install -e . pytest
+      - name: Install (all optional extras)
+        if: matrix.install == 'all'
+        run: pip install -e ".[all,dev]"
+      - name: Unit and integration tests
+        run: pytest -q -rs
+      - name: Quick start runs without arguments
+        run: python quickstart.py
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install build
+      - run: python -m build
+      - name: Install the wheel in a clean environment and run the CLI
+        run: |
+          python -m venv /tmp/clean
+          /tmp/clean/bin/pip install dist/*.whl
+          /tmp/clean/bin/spectrag --version
+          /tmp/clean/bin/spectrag ingest examples/docs --index /tmp/idx
+          /tmp/clean/bin/spectrag search "Where is Helios Energy based?" --index /tmp/idx --budget 300

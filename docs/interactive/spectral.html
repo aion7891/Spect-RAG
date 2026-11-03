@@ -148,11 +148,14 @@ input[type=range]{accent-color:var(--accent); flex:1; min-width:140px}
 .docbar a:hover{text-decoration:underline}
 .docnote{font-family:var(--sans); font-size:14px; line-height:1.5; color:var(--muted); background:var(--sunk); border-radius:10px; padding:10px 14px; margin:0 0 22px}
 .prose a{color:var(--accent)}
+.framed .docbar{display:none}
 </style>
+<script>if (window.top !== window.self) document.documentElement.classList.add("framed");</script>
+<base target="_top">
 </head>
 <body>
 <div class="page">
-<nav class="docbar" aria-label="SpectRAG links"><a href="https://aion7891.gitbook.io/spectrag/">SpectRAG documentation</a><span aria-hidden="true">·</span><a href="./">All interactive pages</a><span aria-hidden="true">·</span><a href="https://github.com/aion7891/Spect-RAG">GitHub</a><span aria-hidden="true">·</span><a href="https://pypi.org/project/spectrag/">PyPI</a></nav>
+<nav class="docbar" aria-label="SpectRAG links"><a href="../">SpectRAG documentation</a><span aria-hidden="true">·</span><a href="./">All interactive pages</a><span aria-hidden="true">·</span><a href="https://github.com/aion7891/Spect-RAG">GitHub</a><span aria-hidden="true">·</span><a href="https://pypi.org/project/spectrag/">PyPI</a></nav>
 <p class="docnote">Figures 1 and 2 use a seven-chunk toy graph and run in your browser. Section 6 and the end of Section 7 show what the pip package computes.</p>
 <header>
   <h1>The spectral part of SpectRAG, explained visually</h1>

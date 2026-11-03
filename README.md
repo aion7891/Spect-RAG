@@ -3,7 +3,7 @@
 <h3 align="center">Spectral graph-augmented retrieval with token-budgeted context selection for multi-hop RAG</h3>
 
 <p align="center">
-  <a href="https://aion7891.gitbook.io/spectrag/"><img src="https://img.shields.io/badge/docs-GitBook-3884FF" alt="documentation"></a>
+  <a href="https://aion7891.github.io/Spect-RAG/"><img src="https://img.shields.io/badge/docs-online-3F51B5" alt="documentation"></a>
   <a href="https://pypi.org/project/spectrag/"><img src="https://img.shields.io/pypi/v/spectrag" alt="PyPI version"></a>
   <a href="https://github.com/aion7891/Spect-RAG/actions/workflows/tests.yml"><img src="https://github.com/aion7891/Spect-RAG/actions/workflows/tests.yml/badge.svg" alt="tests"></a>
   <img src="https://img.shields.io/badge/python-3.10%20%E2%80%93%203.14-blue" alt="python 3.10 to 3.14">
@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-  <a href="https://aion7891.gitbook.io/spectrag/"><b>Documentation</b></a> ·
+  <a href="https://aion7891.github.io/Spect-RAG/"><b>Documentation</b></a> ·
   <a href="#installation">Installation</a> ·
   <a href="#quick-start">Quick start</a> ·
   <a href="#how-it-works">How it works</a> ·
@@ -29,9 +29,9 @@ A readable, tested Python implementation of the paper *SpectRAG: Weighted Chunk 
 Token-Budgeted Context Selection in Multi-Hop Retrieval-Augmented Generation*
 (Sahinoglu et al., [arXiv:2610.36991](https://arxiv.org/abs/2610.36991), [PDF](docs/2610.36991v2.pdf)).
 
-> **📖 Documentation: [aion7891.gitbook.io/spectrag](https://aion7891.gitbook.io/spectrag/)** covers installation, the quick
+> **📖 Documentation: [aion7891.github.io/Spect-RAG](https://aion7891.github.io/Spect-RAG/)** covers installation, the quick
 > start, architecture, configuration, tuning, API reference, benchmarks and FAQ, plus
-> [interactive explainers](https://aion7891.github.io/Spect-RAG/) of the method.
+> [interactive explainers](https://aion7891.github.io/Spect-RAG/interactive/) of the method.
 
 | | Plain top-k RAG | SpectRAG |
 |---|---|---|

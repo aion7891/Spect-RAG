@@ -11,11 +11,11 @@ All numbers on this page come from runs committed to the repository: the JSON re
 are in `benchmarks/results/multihoprag/`. A re-run of all 1,955 test questions reproduces them
 with 0 differences.
 
-<figure><img src="../assets/animations/benchmark.gif" alt="Bar chart of evidence recall: SpectRAG tuned 0.846, hybrid 0.832, SpectRAG defaults 0.803, BM25 0.788, dense 0.758; then inference questions: SpectRAG tuned 0.802, hybrid 0.757, dense 0.637."><figcaption></figcaption></figure>
+![Bar chart of evidence recall: SpectRAG tuned 0.846, hybrid 0.832, SpectRAG defaults 0.803, BM25 0.788, dense 0.758; then inference questions: SpectRAG tuned 0.802, hybrid 0.757, dense 0.637.](../assets/animations/benchmark.gif)
 
 ## Setup
 
-| | |
+| Item | Setting |
 |---|---|
 | Dataset | [MultiHopRAG](https://arxiv.org/abs/2401.15391): 609 news articles, multi-hop questions with gold evidence |
 | Questions | 300 for tuning only (validation); **1,955 for every reported number** (test) |
@@ -39,9 +39,15 @@ with 0 differences.
 multi-hop question usually needs all of them. Latency is the median on an idle machine, not
 counting the 19 ms to embed the question (the same for every method).
 
-<figure><img src="../assets/benchmark/recall_at_k_chunk1200.svg" alt="Recall at 2, 5 and 10 for each method"><figcaption><p>Recall@2, @5 and @10.</p></figcaption></figure>
+<figure markdown="span">
+  ![Recall at 2, 5 and 10 for each method](../assets/benchmark/recall_at_k_chunk1200.svg)
+  <figcaption markdown="span">Recall@2, @5 and @10.</figcaption>
+</figure>
 
-<figure><img src="../assets/benchmark/budget_chunk1200.svg" alt="Evidence recall and all evidence found within the 12,000-token budget, per method"><figcaption><p>Evidence recall and all evidence found within the budget.</p></figcaption></figure>
+<figure markdown="span">
+  ![Evidence recall and all evidence found within the 12,000-token budget, per method](../assets/benchmark/budget_chunk1200.svg)
+  <figcaption markdown="span">Evidence recall and all evidence found within the budget.</figcaption>
+</figure>
 
 Paired bootstrap differences (95% confidence intervals):
 
@@ -96,10 +102,10 @@ default run picked 85 chunks per question where other methods picked about 47, a
 Recall@10 fell to 0.433. The other selectors, on the same graph-re-scored candidates, reach 0.845
 evidence recall without any tuning.
 
-{% hint style="warning" %}
-Version 0.1.0 keeps the paper-based defaults. Better defaults are planned for a later version.
-Until then, use `selector = "protected_mmr"` or [tune on your own questions](../guides/tuning.md).
-{% endhint %}
+!!! warning
+
+    Version 0.1.0 keeps the paper-based defaults. Better defaults are planned for a later version.
+    Until then, use `selector = "protected_mmr"` or [tune on your own questions](../guides/tuning.md).
 
 ## Smaller experiments
 

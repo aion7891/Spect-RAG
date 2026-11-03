@@ -2,10 +2,12 @@
 
 ## Unreleased
 
-- **Documentation site:** a GitBook site built from `docs/` (overview, installation, quick start,
-  architecture, the spectral method, configuration, tuning, custom models, graph view, large
-  corpora, API and CLI reference, benchmarks, FAQ), and interactive explainers published to
-  GitHub Pages from `docs/interactive/`. `tests/test_docs.py` now also checks the site pages.
+- **Documentation site:** built with MkDocs (Material theme) from `docs/` and published with
+  GitHub Pages at https://aion7891.github.io/Spect-RAG/ by the `docs` workflow: overview,
+  installation, quick start, architecture, the spectral method, configuration, tuning, custom
+  models, graph view, large corpora, API and CLI reference, benchmarks, FAQ, and the interactive
+  explainers in `docs/interactive/`. Pull requests build it in strict mode, and
+  `tests/test_docs.py` checks the pages' links, navigation and copied files.
 
 ## 0.1.0 (2026-11-03): first public release
 

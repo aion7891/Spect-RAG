@@ -102,6 +102,10 @@ pip install "git+https://github.com/aion7891/Spect-RAG.git"                  # c
 pip install "spectrag[all] @ git+https://github.com/aion7891/Spect-RAG.git"   # every extra
 ```
 
+> [!NOTE]
+> Installing from GitHub uses the default branch (`main`). Until the 0.1.0 work is merged
+> into `main`, add `@base-2` to the URL, e.g. `pip install "git+https://github.com/aion7891/Spect-RAG.git@base-2"`.
+
 From a clone (for development):
 
 ```bash
@@ -332,11 +336,12 @@ value is checked: a typo gets "did you mean …?", a bad value says which range 
 ### Tuning
 
 ```python
-from spectrag import SpectRAGRetrieval
+from spectrag import SpectRAGIngestion, SpectRAGRetrieval
 from spectrag.utils.evaluation import load_questions
 from spectrag.utils.tuning import tune
 
-search = SpectRAGRetrieval("my_index")
+SpectRAGIngestion("eval_index").ingest("examples/eval/docs")     # the documents the questions are about
+search = SpectRAGRetrieval("eval_index")
 questions = load_questions("examples/eval/questions.json")   # [{"question", "evidence": [...]}, ...]
 grid = {"alpha": [0.1, 0.3, 0.5], "selector": ["spectrag", "protected_mmr"], "edge_threshold": [0.05, 0.1]}
 results = tune(search, questions, grid, objective="recall", budget=4000, trials=10)
@@ -440,7 +445,9 @@ quickstart.py                        runs with no arguments
 examples/                            sample documents, a 14-document evaluation set, demo scripts
 benchmarks/                          MultiHopRAG and ANN benchmarks, their data and results
 tests/                               unit, integration and equivalence tests
-docs/                                the paper, DESIGN.md, PROGRESS.md, DEVELOPMENT_LOG.md
+docs/                                the paper, DESIGN.md, PROGRESS.md, PRODUCTION_READINESS.md,
+                                     DEVELOPMENT_LOG.md
+tools/                               validate_release.py (release checks on a real index)
 ```
 
 </details>
@@ -450,7 +457,7 @@ Every module is short (under about 150 lines), and functions do one thing.
 ## Testing
 
 ```bash
-pytest -q          # 300+ tests, about 2 seconds, offline
+pytest -q          # 300+ tests, under 10 seconds, offline
 ```
 
 The tests cover every formula against hand-computed or closed-form values (BM25, RRF,
@@ -459,6 +466,11 @@ one, the paper's metrics). The fast vectorised code is checked against simple lo
 random cases, and the full pipeline runs end to end on real documents. Live Ollama tests run
 when Ollama is available (`SPECTRAG_LIVE_LLM=1` for the LLM test). CI runs Linux and macOS ×
 Python 3.10 / 3.12 / 3.14 × minimal / all extras, and builds and installs the wheel.
+
+Before a release, `python tools/validate_release.py` re-checks the mathematics on the real
+MultiHopRAG index (eigenpairs, PageRank, BM25, every selector and proximity mode) and that the
+benchmark reproduces. The results are in the
+[production-readiness report](docs/PRODUCTION_READINESS.md).
 
 ## Limitations
 

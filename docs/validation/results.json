@@ -1,0 +1,58 @@
+{
+ "index": "benchmarks/indexes/chunk1200",
+ "seconds": 13.1,
+ "checks": [
+  {
+   "name": "graph is symmetric with weights in (0, 1]",
+   "passed": true,
+   "edges": 56390
+  },
+  {
+   "name": "eigenpairs: max ||L u - lambda u||",
+   "passed": true,
+   "residual": 5.251923304431922e-15
+  },
+  {
+   "name": "eigenvectors orthonormal",
+   "passed": true
+  },
+  {
+   "name": "eigenvalues in [0, 2] and ascending",
+   "passed": true,
+   "smallest": 0.007665101884460457,
+   "largest": 0.058414544217126
+  },
+  {
+   "name": "coordinates exclude the trivial eigenvector",
+   "passed": true
+  },
+  {
+   "name": "PageRank iteration = closed form (real subgraph)",
+   "passed": true,
+   "candidates": 200,
+   "max_error": 1.734723475976807e-17
+  },
+  {
+   "name": "BM25 = reference formula (400 real chunks)",
+   "passed": true,
+   "max_error": 0.0
+  },
+  {
+   "name": "all 5 selectors x 5 proximity modes x 3 budgets respect the budget",
+   "passed": true,
+   "runs": 1125,
+   "highest_budget_use": 1.0
+  },
+  {
+   "name": "invalid settings are rejected",
+   "passed": true,
+   "rejected": 4
+  },
+  {
+   "name": "benchmark reproduces: SpectRAG on all test questions",
+   "passed": true,
+   "questions": 1955,
+   "different": 0
+  }
+ ]
+}

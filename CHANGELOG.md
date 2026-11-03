@@ -22,3 +22,6 @@ the paper where it gives values; tuned defaults are planned for a later version.
 - **Visualization:** an interactive, self-contained HTML graph view of the chunk graph and of a
   question's retrieval path (`spectrag graph`, `save_graph_view()`).
 - **Evaluation:** the paper's metrics and a reproducible MultiHopRAG benchmark (`benchmarks/`).
+- **Validation:** end-to-end tests on real documents (the paper PDF, MultiHopRAG articles) and
+  `tools/validate_release.py`, which re-checks the mathematics on a real index; see
+  `docs/PRODUCTION_READINESS.md`.

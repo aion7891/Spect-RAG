@@ -6,9 +6,9 @@ import numpy as np
 import pytest
 
 from spectrag import SpectRAGIngestion, SpectRAGRetrieval, make_settings
-from spectrag.utils.diffusion import PROXIMITY_MODES, heat_diffusion, score_candidates
+from spectrag.utils.diffusion import PROXIMITY_MODES, heat_diffusion
 from spectrag.utils.edges_content import ann_knn_edges, knn_edges
-from spectrag.utils.graph import build_matrix, degrees, neighbors
+from spectrag.utils.graph import build_matrix, degrees
 from spectrag.utils.spectral import normalized_laplacian, spectral_coords
 from spectrag.utils.store import load_index
 from spectrag.utils.tuning import expand_grid, sample_grid, tune

@@ -3,6 +3,8 @@
 <h3 align="center">Spectral graph-augmented retrieval with token-budgeted context selection for multi-hop RAG</h3>
 
 <p align="center">
+  <a href="https://aion7891.gitbook.io/spectrag/"><img src="https://img.shields.io/badge/docs-GitBook-3884FF" alt="documentation"></a>
+  <a href="https://pypi.org/project/spectrag/"><img src="https://img.shields.io/pypi/v/spectrag" alt="PyPI version"></a>
   <a href="https://github.com/aion7891/Spect-RAG/actions/workflows/tests.yml"><img src="https://github.com/aion7891/Spect-RAG/actions/workflows/tests.yml/badge.svg" alt="tests"></a>
   <img src="https://img.shields.io/badge/python-3.10%20%E2%80%93%203.14-blue" alt="python 3.10 to 3.14">
   <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT license">
@@ -11,6 +13,7 @@
 </p>
 
 <p align="center">
+  <a href="https://aion7891.gitbook.io/spectrag/"><b>Documentation</b></a> ·
   <a href="#installation">Installation</a> ·
   <a href="#quick-start">Quick start</a> ·
   <a href="#how-it-works">How it works</a> ·
@@ -25,6 +28,10 @@
 A readable, tested Python implementation of the paper *SpectRAG: Weighted Chunk Graphs for
 Token-Budgeted Context Selection in Multi-Hop Retrieval-Augmented Generation*
 (Sahinoglu et al., [arXiv:2610.36991](https://arxiv.org/abs/2610.36991), [PDF](docs/2610.36991v2.pdf)).
+
+> **📖 Documentation: [aion7891.gitbook.io/spectrag](https://aion7891.gitbook.io/spectrag/)** covers installation, the quick
+> start, architecture, configuration, tuning, API reference, benchmarks and FAQ, plus
+> [interactive explainers](https://aion7891.github.io/Spect-RAG/) of the method.
 
 | | Plain top-k RAG | SpectRAG |
 |---|---|---|
@@ -98,13 +105,11 @@ offline HTML file.
 ## Installation
 
 ```bash
-pip install "git+https://github.com/aion7891/Spect-RAG.git"                  # core (numpy only)
-pip install "spectrag[all] @ git+https://github.com/aion7891/Spect-RAG.git"   # every extra
+pip install spectrag              # core (numpy only)
+pip install "spectrag[all]"       # every extra
 ```
 
-> [!NOTE]
-> Installing from GitHub uses the default branch (`main`). Until the 0.1.0 work is merged
-> into `main`, add `@base-2` to the URL, e.g. `pip install "git+https://github.com/aion7891/Spect-RAG.git@base-2"`.
+The latest code from `main`: `pip install "git+https://github.com/aion7891/Spect-RAG.git"`.
 
 From a clone (for development):
 

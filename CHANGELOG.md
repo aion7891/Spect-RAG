@@ -1,6 +1,13 @@
 # Changelog
 
-## 0.1.0 (unreleased): first public release
+## Unreleased
+
+- **Documentation site:** a GitBook site built from `docs/` (overview, installation, quick start,
+  architecture, the spectral method, configuration, tuning, custom models, graph view, large
+  corpora, API and CLI reference, benchmarks, FAQ), and interactive explainers published to
+  GitHub Pages from `docs/interactive/`. `tests/test_docs.py` now also checks the site pages.
+
+## 0.1.0 (2026-11-03): first public release
 
 The base release, with every core part of SpectRAG (arXiv:2610.36991). Default settings follow
 the paper where it gives values; tuned defaults are planned for a later version.

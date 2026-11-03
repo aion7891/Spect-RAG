@@ -1,0 +1,793 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SpectRAG, step by step</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F3F5F9; --surface:#FFFFFF; --sunk:#EAEEF5; --ink:#17213A; --muted:#5A6680; --faint:#8E98AE; --rule:#D6DCE8;
+  --accent:#2944C9; --accent-soft:#DCE3FB; --gold:#C98A00; --good:#1A8A64; --bad:#C63D5E;
+  --s-semantic:#2A6FDB; --s-adjacency:#77808F; --s-section:#1F9D74; --s-entity:#D49400; --s-utility:#8A4FD6; --s-citation:#D6456A;
+  --k0:#3E6FE0; --k1:#1C9C8A; --k2:#D8962A; --k3:#9A5BD8; --k4:#E0577A;
+  --grid:rgba(23,33,58,.05);
+  --sans:"Instrument Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --serif:"Newsreader", Georgia, "Times New Roman", serif;
+  --mono:"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color-scheme: light;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F1524; --surface:#161E31; --sunk:#1C263D; --ink:#E5EAF4; --muted:#9AA6BF; --faint:#6C7894; --rule:#2A3552;
+    --accent:#8197FF; --accent-soft:#25305A; --gold:#F2B630; --good:#3CC293; --bad:#F0708F;
+    --s-semantic:#5C93F0; --s-adjacency:#98A1B2; --s-section:#3CC293; --s-entity:#F2B630; --s-utility:#AE80F0; --s-citation:#F0708F;
+    --k0:#6E93F5; --k1:#3CC2AE; --k2:#F0B24E; --k3:#B98AF2; --k4:#F27E9C;
+    --grid:rgba(229,234,244,.05);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F1524; --surface:#161E31; --sunk:#1C263D; --ink:#E5EAF4; --muted:#9AA6BF; --faint:#6C7894; --rule:#2A3552;
+  --accent:#8197FF; --accent-soft:#25305A; --gold:#F2B630; --good:#3CC293; --bad:#F0708F;
+  --s-semantic:#5C93F0; --s-adjacency:#98A1B2; --s-section:#3CC293; --s-entity:#F2B630; --s-utility:#AE80F0; --s-citation:#F0708F;
+  --k0:#6E93F5; --k1:#3CC2AE; --k2:#F0B24E; --k3:#B98AF2; --k4:#F27E9C;
+  --grid:rgba(229,234,244,.05);
+  color-scheme: dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{background:var(--bg); color:var(--ink); font-family:var(--sans); font-size:15px; line-height:1.45; -webkit-font-smoothing:antialiased}
+.wrap{max-width:1260px; margin:0 auto; padding:28px 22px 64px}
+button{font:inherit; color:inherit}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:6px}
+
+/* header */
+header.top{display:grid; grid-template-columns:minmax(0,1fr) auto; gap:18px 32px; align-items:end; margin-bottom:22px}
+h1{font-size:clamp(28px,3.6vw,40px); line-height:1.05; letter-spacing:-.02em; font-weight:600; margin:0 0 8px}
+.dek{font-family:var(--serif); font-size:18px; line-height:1.5; color:var(--muted); max-width:62ch; margin:0}
+.dek code, .prose code{font-family:var(--mono); font-size:.82em; background:var(--sunk); padding:.1em .35em; border-radius:4px; color:var(--ink)}
+.query{grid-column:1 / -1; display:flex; gap:14px; align-items:baseline; flex-wrap:wrap; background:var(--surface); border:1px solid var(--rule); border-left:4px solid var(--accent); border-radius:10px; padding:14px 18px}
+.query q{font-family:var(--serif); font-size:clamp(18px,2vw,22px); font-style:italic; quotes:"“" "”"}
+.query .need{color:var(--muted); font-size:14px}
+.chip{display:inline-flex; align-items:center; gap:6px; font-weight:600; font-size:13px; padding:2px 8px; border-radius:999px; background:var(--sunk); color:var(--ink); white-space:nowrap}
+.chip.gold::before{content:""; width:8px; height:8px; border-radius:2px; transform:rotate(45deg); background:var(--gold)}
+
+/* main grid */
+.stage{display:grid; grid-template-columns:minmax(0,1.42fr) minmax(330px,1fr); gap:18px; align-items:start}
+.canvas{background:var(--surface); border:1px solid var(--rule); border-radius:14px; overflow:hidden; position:relative}
+.canvas svg{display:block; width:100%; height:auto; touch-action:manipulation}
+.canvas-foot{display:flex; flex-wrap:wrap; gap:6px 8px; padding:10px 14px 12px; border-top:1px solid var(--rule); min-height:50px; align-items:center}
+.legend-btn{display:inline-flex; align-items:center; gap:7px; border:1px solid var(--rule); background:transparent; border-radius:999px; padding:4px 10px 4px 8px; font-size:13px; cursor:pointer; color:var(--ink)}
+.legend-btn[aria-pressed="false"]{opacity:.42; text-decoration:line-through}
+.legend-btn .sw{width:16px; height:3px; border-radius:2px}
+.legend-static{display:inline-flex; align-items:center; gap:7px; font-size:13px; color:var(--muted); padding:4px 6px}
+.legend-static .dot{width:12px; height:12px; border-radius:50%; border:2px solid var(--ink); background:var(--surface)}
+
+/* panel */
+.panel{background:var(--surface); border:1px solid var(--rule); border-radius:14px; padding:20px 22px 18px; position:sticky; top:calc(env(safe-area-inset-top,0px) + 14px); max-height:calc(100vh - 28px); overflow:auto}
+.step-of{font-size:13px; color:var(--muted); margin:0 0 4px}
+.panel h2{font-size:24px; line-height:1.15; letter-spacing:-.01em; margin:0 0 12px; font-weight:600}
+.prose{font-family:var(--serif); font-size:17px; line-height:1.58; max-width:62ch}
+.prose p{margin:0 0 12px}
+.prose em{font-style:italic}
+.eq{font-family:var(--serif); font-style:italic; font-size:18px; line-height:1.45; background:var(--sunk); border-radius:8px; padding:10px 14px; margin:4px 0 14px; overflow-x:auto}
+.eq .n{white-space:nowrap}
+.eq .n{font-style:normal; color:var(--muted); font-size:13px; font-family:var(--sans); margin-left:10px}
+.fn{font-family:var(--mono); font-size:12.5px; color:var(--muted); margin:14px 0 0; padding-top:12px; border-top:1px solid var(--rule)}
+.fn b{color:var(--ink); font-weight:500}
+.tbl-wrap{overflow-x:auto; margin:6px 0 12px}
+table{border-collapse:collapse; width:100%; font-size:13.5px; font-variant-numeric:tabular-nums}
+th,td{padding:5px 8px; text-align:right; border-bottom:1px solid var(--rule); white-space:nowrap}
+th{font-weight:600; color:var(--muted); font-size:12.5px}
+th:first-child,td:first-child{text-align:left}
+tr.hl td{background:var(--accent-soft)}
+tr.gold td:first-child::after{content:""; display:inline-block; width:7px; height:7px; margin-left:6px; transform:rotate(45deg); background:var(--gold); border-radius:1px; vertical-align:1px}
+.inspect{margin-top:14px; padding:12px 14px; border-radius:10px; background:var(--sunk); font-size:14px}
+.inspect .t{font-family:var(--serif); font-size:16px; line-height:1.5; margin:4px 0 6px}
+.inspect .meta{color:var(--muted); font-size:13px}
+.inspect:empty{display:none}
+
+/* timeline */
+.timeline{margin:0 0 16px; display:grid; grid-template-columns:1fr 1fr; gap:12px 18px; align-items:end}
+.canvas-bar{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px 12px; padding:10px 12px; border-bottom:1px solid var(--rule); background:var(--surface)}
+.bar-step{font-size:14px; font-weight:600; color:var(--muted); font-variant-numeric:tabular-nums}
+.step-btn .lbl{white-space:nowrap}
+.phase h3{font-size:13.5px; font-weight:600; color:var(--muted); margin:0 0 8px}
+.steps{display:flex; gap:6px}
+.step-btn{flex:1 1 0; min-width:0; text-align:left; border:1px solid var(--rule); background:var(--surface); border-radius:10px; padding:8px 10px 9px; cursor:pointer; position:relative}
+.step-btn .num{font-weight:700; font-size:13px; color:var(--muted); font-variant-numeric:tabular-nums}
+.step-btn .lbl{display:block; font-size:13px; line-height:1.2; margin-top:2px; overflow:hidden; text-overflow:ellipsis}
+.step-btn[aria-current="step"]{border-color:var(--accent); background:var(--accent-soft)}
+.step-btn[aria-current="step"] .num{color:var(--accent)}
+.step-btn.done .num::after{content:" ✓"; color:var(--good)}
+.nav{display:flex; gap:8px}
+.nav button{border:1px solid var(--rule); background:var(--surface); border-radius:10px; padding:9px 14px; cursor:pointer; font-weight:600; font-size:14px}
+.nav button.primary{background:var(--accent); color:#fff; border-color:var(--accent)}
+:root[data-theme="dark"] .nav button.primary{color:#0F1524}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .nav button.primary{color:#0F1524} }
+
+/* svg elements */
+.edge{stroke-linecap:round; fill:none}
+.edge-hit{stroke:transparent; stroke-width:12; cursor:pointer}
+.node{cursor:pointer}
+.node .body{fill:var(--surface); stroke:var(--ink); stroke-width:1.6}
+.node text{font-family:var(--sans); font-size:12px; font-weight:600; fill:var(--ink); text-anchor:middle; dominant-baseline:central; pointer-events:none}
+.node .ring{fill:none; stroke:var(--accent); stroke-width:3; opacity:0}
+.node .hopring{fill:none; stroke:var(--accent); stroke-width:1.6; stroke-dasharray:3 3; opacity:0}
+.node .goldmark{fill:var(--gold); opacity:0}
+.node.seed .body{fill:var(--accent); stroke:var(--accent)}
+.node.seed text{fill:#fff}
+:root[data-theme="dark"] .node.seed text{fill:#0F1524}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .node.seed text{fill:#0F1524} }
+.node.reached .hopring{opacity:1}
+.node.selected .ring{opacity:1; stroke:var(--good)}
+.node.dim{opacity:.28}
+.node.showgold .goldmark{opacity:1}
+.node:focus-visible .body{stroke:var(--accent); stroke-width:3}
+.node .doctag{font-family:var(--serif); font-style:italic; font-weight:400; font-size:12.5px; fill:var(--muted); display:none}
+#g-nodes.tags .node .doctag{display:inline}
+.node .doctag{paint-order:stroke; stroke:var(--surface); stroke-width:4px; stroke-linejoin:round}
+.axis{stroke:var(--rule); stroke-width:1}
+.axislabel{font-family:var(--serif); font-style:italic; font-size:13px; fill:var(--faint)}
+
+/* selection widgets */
+.budget{margin:8px 0 14px}
+.budget .bar{height:12px; border-radius:6px; background:var(--sunk); overflow:hidden; display:flex}
+.budget .seg{height:100%; border-right:2px solid var(--surface); transition:width .35s ease}
+.budget .cap{display:flex; justify-content:space-between; font-size:12.5px; color:var(--muted); margin-top:4px; font-variant-numeric:tabular-nums}
+.pick{display:grid; grid-template-columns:44px minmax(0,1fr); gap:4px 10px; padding:8px 0; border-bottom:1px solid var(--rule); font-size:13.5px}
+.pick .id{font-weight:700}
+.pick .why{color:var(--muted)}
+.ubar{grid-column:2; display:flex; height:9px; border-radius:3px; overflow:hidden; background:var(--sunk); position:relative}
+.ubar span{height:100%}
+.ulegend{display:flex; flex-wrap:wrap; gap:4px 12px; font-size:12.5px; color:var(--muted); margin:2px 0 6px}
+.ulegend i{display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:5px; vertical-align:-1px}
+pre.prompt{font-family:var(--mono); font-size:12px; line-height:1.55; background:var(--sunk); padding:12px 14px; border-radius:8px; white-space:pre-wrap; margin:6px 0 12px; max-height:340px; overflow:auto}
+
+/* lower sections */
+section.block{margin-top:44px}
+section.block > h2{font-size:26px; letter-spacing:-.01em; font-weight:600; margin:0 0 6px}
+section.block > .prose{color:var(--muted); margin-bottom:16px}
+.compare{display:grid; grid-template-columns:1fr 1fr; gap:18px}
+.col{background:var(--surface); border:1px solid var(--rule); border-radius:14px; padding:16px 18px}
+.col h3{margin:0 0 2px; font-size:17px}
+.col .score{font-size:13.5px; color:var(--muted); margin-bottom:10px}
+.col .score b{font-size:20px; color:var(--ink); font-variant-numeric:tabular-nums}
+.card{display:grid; grid-template-columns:40px minmax(0,1fr) auto; gap:10px; align-items:baseline; padding:8px 0; border-top:1px solid var(--rule)}
+.card .cid{font-weight:700}
+.card .ctext{font-family:var(--serif); font-size:15.5px; line-height:1.4}
+.card .ctok{font-size:12.5px; color:var(--muted); font-variant-numeric:tabular-nums}
+.card.isgold .cid{color:var(--gold)}
+.card.isgold .cid::after{content:""; display:inline-block; width:7px; height:7px; margin-left:5px; transform:rotate(45deg); background:var(--gold); border-radius:1px; vertical-align:2px}
+.missing{margin-top:10px; font-size:13.5px; color:var(--bad)}
+.controls{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px 22px; background:var(--surface); border:1px solid var(--rule); border-radius:14px; padding:16px 18px; margin-bottom:16px}
+.controls label{display:block; font-size:13.5px; font-weight:600}
+.controls output{float:right; font-variant-numeric:tabular-nums; color:var(--accent)}
+.controls .hint{font-size:12.5px; color:var(--muted); font-weight:400; margin-top:2px}
+input[type=range]{width:100%; accent-color:var(--accent); margin:8px 0 0}
+.abl{background:var(--surface); border:1px solid var(--rule); border-radius:14px; padding:14px 18px}
+.abl td:nth-child(2){text-align:left; font-family:var(--sans)}
+.okk{color:var(--good); font-weight:600}
+.nok{color:var(--bad); font-weight:600}
+pre.code{font-family:var(--mono); font-size:13px; line-height:1.6; background:var(--surface); border:1px solid var(--rule); border-radius:14px; padding:16px 18px; overflow-x:auto; margin:0}
+.code .c{color:var(--faint)}
+.code .k{color:var(--accent)}
+.note{font-family:var(--serif); font-size:16px; line-height:1.55; color:var(--muted); max-width:72ch}
+
+@media (max-width: 980px){
+  .stage{grid-template-columns:1fr}
+  .panel{position:static; max-height:none}
+  .timeline{grid-template-columns:1fr}
+  .controls{grid-template-columns:1fr 1fr}
+}
+@media (max-width: 640px){
+  .wrap{padding:18px 14px 48px}
+  header.top{grid-template-columns:1fr}
+  .steps{overflow-x:auto; padding-bottom:4px}
+  .step-btn{flex:0 0 108px}
+  .compare{grid-template-columns:1fr}
+  .controls{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion: reduce){ *{transition:none !important; animation:none !important} }
+
+.docbar{font-family:var(--sans); font-size:14px; display:flex; flex-wrap:wrap; align-items:center; gap:4px 10px; margin:0 0 16px; color:var(--muted)}
+.docbar a{color:var(--accent); text-decoration:none; font-weight:600}
+.docbar a:hover{text-decoration:underline}
+.docnote{font-family:var(--sans); font-size:14px; line-height:1.5; color:var(--muted); background:var(--sunk); border-radius:10px; padding:10px 14px; margin:0 0 22px}
+.prose a{color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav class="docbar" aria-label="SpectRAG links"><a href="https://aion7891.gitbook.io/spectrag/">SpectRAG documentation</a><span aria-hidden="true">·</span><a href="./">All interactive pages</a><span aria-hidden="true">·</span><a href="https://github.com/aion7891/Spect-RAG">GitHub</a><span aria-hidden="true">·</span><a href="https://pypi.org/project/spectrag/">PyPI</a></nav>
+<p class="docnote">This walkthrough runs a compact teaching implementation of the method on a 12-chunk corpus, so that every step fits on screen. Its parameter values (budget, core size, selection weights, α) are chosen for that corpus and differ from the package defaults. Each step names the package function that does the same job.</p>
+
+<header class="top">
+  <div>
+    <h1>SpectRAG, step by step</h1>
+    <p class="dek">The pipeline from the SpectRAG paper, run on a 12-chunk toy corpus. Every number below comes from an actual run of a compact teaching version of the method. Click a step, a chunk, or an edge to see what the method is doing and why.</p>
+  </div>
+  <div class="query">
+    <q id="qtext"></q>
+    <span class="need">Answering it needs two chunks: <span class="chip gold">c4</span> says who does the research, <span class="chip gold">c6</span> says where that lab is.</span>
+  </div>
+</header>
+
+<div class="timeline">
+  <div class="phase"><h3>Offline indexing, once per corpus</h3><div class="steps" id="steps-off"></div></div>
+  <div class="phase"><h3>Online retrieval, per query</h3><div class="steps" id="steps-on"></div></div>
+</div>
+
+<div class="stage">
+  <div class="canvas">
+    <div class="canvas-bar">
+      <span class="bar-step" id="barstep"></span>
+      <div class="nav">
+        <button id="prev" aria-label="Previous step">Back</button>
+        <button id="play">Play</button>
+        <button id="next" class="primary">Next step</button>
+      </div>
+    </div>
+    <svg id="svg" viewBox="0 0 640 540" role="img" aria-label="Weighted chunk graph for the current step">
+      <defs>
+        <pattern id="gridp" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" stroke="var(--grid)" stroke-width="1"/></pattern>
+      </defs>
+      <rect width="640" height="540" fill="url(#gridp)"/>
+      <g id="g-axes"></g>
+      <g id="g-blobs"></g>
+      <g id="g-edges"></g>
+      <g id="g-doclabels"></g>
+      <g id="g-nodes"></g>
+    </svg>
+    <div class="canvas-foot" id="legend"></div>
+  </div>
+  <aside class="panel" aria-live="polite">
+    <p class="step-of" id="stepof"></p>
+    <h2 id="ptitle"></h2>
+    <div id="pbody"></div>
+    <div class="inspect" id="inspect"></div>
+    <p class="fn" id="pfn"></p>
+  </aside>
+</div>
+
+
+<section class="block">
+  <h2>Same budget, two different contexts</h2>
+  <div class="prose"><p>Dense top-k fills the token budget in similarity order. SpectRAG fills it with the set-level utility from Eq. 21. Move the sliders to see how each term changes what reaches the generator.</p></div>
+  <div class="controls">
+    <div><label for="r-budget">Token budget <output id="o-budget"></output></label><div class="hint">B in Eq. 19</div><input id="r-budget" type="range" min="30" max="140" step="1"></div>
+    <div><label for="r-alpha">Graph re-scoring α <output id="o-alpha"></output></label><div class="hint">(1−α)·relevance + α·proximity</div><input id="r-alpha" type="range" min="0" max="1" step="0.05"></div>
+    <div><label for="r-lam">Redundancy penalty λ <output id="o-lam"></output></label><div class="hint">max cosine to chunks already chosen</div><input id="r-lam" type="range" min="0" max="1.2" step="0.05"></div>
+    <div><label for="r-c">Cluster gain c <output id="o-c"></output></label><div class="hint">reward for an unseen spectral community</div><input id="r-c" type="range" min="0" max="0.6" step="0.05"></div>
+  </div>
+  <div class="compare">
+    <div class="col" id="col-dense"></div>
+    <div class="col" id="col-spec"></div>
+  </div>
+</section>
+
+<section class="block">
+  <h2>Which part does the work?</h2>
+  <div class="prose"><p>An ablation on this query, computed live in your browser with the same selector, at the default budget of 70 tokens.</p></div>
+  <div class="abl"><div class="tbl-wrap"><table id="abl"></table></div></div>
+  <p class="note" id="ablnote"></p>
+</section>
+
+<section class="block">
+  <h2>Run it yourself</h2>
+  <div class="prose"><p>The pip package runs the same stages; each step above names the function that does it. Its chunker keeps headings in the chunk text, and its entity rules and default settings differ from the teaching version, so on this toy corpus it picks different chunks. Start from the <a href="https://aion7891.gitbook.io/spectrag/getting-started/quick-start">quick start</a>.</p></div>
+<pre class="code"><span class="k">from</span> spectrag <span class="k">import</span> SpectRAGIngestion, SpectRAGRetrieval
+
+SpectRAGIngestion("my_index").ingest("docs/")             <span class="c"># Table 1: chunk, embed, graph, spectral</span>
+
+search = SpectRAGRetrieval("my_index")
+result = search.search(QUESTION, token_budget=4000)        <span class="c"># Table 2: seeds, expand, re-score, select</span>
+print(result["prompt"])
+
+<span class="c"># plug in any LLM for the last stage: a function prompt -> text</span>
+out = search.answer(QUESTION, llm_fn=my_llm, token_budget=4000)
+print(out["answer"])</pre>
+</section>
+
+</div>
+
+<script>
+const D = {"weights":{"semantic":0.3,"section":0.25,"entity":0.2,"adjacency":0.084,"utility":0.083,"citation":0.083},"tau":0.05,"knn":3,"eigvals":[0.0,0.2303,0.3045,0.9291,1.1132,1.1682,1.2237,1.2719,1.2876,1.3196,1.4228,1.7292],"chunks":[{"id":0,"doc":"orion","title":"Project Orion","section":"Project Orion > Overview","text":"Project Orion is a battery research program for electric city buses, launched in 2021.","tokens":16,"entities":["2021","Project Orion"],"questions":["What is Project Orion?","What about battery research program?"],"cited":[],"cluster":0,"z":[-0.2108,0.1045]},{"id":1,"doc":"orion","title":"Project Orion","section":"Project Orion > Goals > Cost","text":"Project Orion research targets cheaper batteries for city buses.","tokens":10,"entities":["Project Orion"],"questions":["What is Project Orion?","What about research targets cheaper?"],"cited":[],"cluster":0,"z":[-0.1986,0.1294]},{"id":2,"doc":"orion","title":"Project Orion","section":"Project Orion > Goals > Safety","text":"Project Orion research targets safer batteries for city buses.","tokens":10,"entities":["Project Orion"],"questions":["What is Project Orion?","What about research targets safer?"],"cited":[],"cluster":1,"z":[-0.2036,0.1204]},{"id":3,"doc":"orion","title":"Project Orion","section":"Project Orion > Goals > Charging","text":"Project Orion research targets faster charging for city buses.","tokens":10,"entities":["Project Orion"],"questions":["What is Project Orion?","What about research targets faster?"],"cited":[],"cluster":1,"z":[-0.1803,0.1571]},{"id":4,"doc":"orion","title":"Project Orion","section":"Project Orion > Team","text":"The research work for Project Orion is carried out by Helix Labs. The lab team is led by director Maya Chen.","tokens":23,"entities":["Helix Labs","Maya Chen","Project Orion"],"questions":["What is Helix Labs?","What is Maya Chen?","What is Project Orion?","What about research work carried?"],"cited":[],"cluster":1,"z":[0.1364,0.109]},{"id":5,"doc":"helix","title":"Helix Labs","section":"Helix Labs > Profile","text":"Helix Labs is a private materials laboratory founded by Maya Chen in 2015. It employs around two hundred scientists and engineers.","tokens":23,"entities":["2015","Helix Labs","Maya Chen"],"questions":["What is Helix Labs?","What is Maya Chen?","What about private materials laboratory?"],"cited":[],"cluster":4,"z":[0.4786,-0.014]},{"id":6,"doc":"helix","title":"Helix Labs","section":"Helix Labs > Location","text":"Helix Labs is headquartered in Pune. It also runs a smaller office in Bengaluru.","tokens":16,"entities":["Bengaluru","Helix Labs","Pune"],"questions":["What is Bengaluru?","What is Helix Labs?","What is Pune?","What about headquartered runs smaller?"],"cited":[],"cluster":4,"z":[0.5118,-0.0239]},{"id":7,"doc":"helix","title":"Helix Labs","section":"Helix Labs > Facilities","text":"The Helix Labs campus has clean rooms, a pilot production line and a battery testing hall.","tokens":18,"entities":["Helix Labs"],"questions":["What is Helix Labs?","What about campus clean rooms?"],"cited":[],"cluster":4,"z":[0.5126,-0.0617]},{"id":8,"doc":"nova","title":"Nova Motors","section":"Nova Motors > Company","text":"Nova Motors is headquartered in Delhi and builds electric buses for city transport operators.","tokens":15,"entities":["Delhi","Nova Motors"],"questions":["What is Delhi?","What is Nova Motors?","What about headquartered builds electric?"],"cited":[],"cluster":2,"z":[-0.1266,-0.6742]},{"id":9,"doc":"nova","title":"Nova Motors","section":"Nova Motors > Research","text":"Nova Motors opened its own battery research lab in 2019 to test cell safety for its buses.","tokens":18,"entities":["2019","Nova Motors"],"questions":["What is Nova Motors?","What about opened battery research?"],"cited":[],"cluster":2,"z":[-0.0979,-0.6651]},{"id":10,"doc":"report","title":"Regional Transport Report","section":"Regional Transport Report > Summary","text":"This report compares electric buses, charging networks and battery costs across Indian cities.","tokens":15,"entities":["Indian"],"questions":["What is Indian?","What about report compares electric?"],"cited":[],"cluster":3,"z":[-0.1151,-0.0663]},{"id":11,"doc":"report","title":"Regional Transport Report","section":"Regional Transport Report > Appendix","text":"Battery research programs funded by the transport ministry are reviewed here. See Project Orion for the largest program.","tokens":20,"entities":["Project Orion"],"questions":["What is Project Orion?","What about battery research programs?"],"cited":["orion"],"cluster":0,"z":[-0.1759,0.1241]}],"edges":[{"i":0,"j":1,"w":0.6096,"comps":{"semantic":0.1801,"adjacency":0.084,"section":0.0625,"entity":0.2,"utility":0.083},"raw":{"semantic":0.6,"adjacency":1.0,"section":0.25,"entity":1.0,"utility":1.0},"kept":true},{"i":0,"j":2,"w":0.5173,"comps":{"semantic":0.1718,"section":0.0625,"entity":0.2,"utility":0.083},"raw":{"semantic":0.573,"section":0.25,"entity":1.0,"utility":1.0},"kept":true},{"i":0,"j":3,"w":0.4873,"comps":{"semantic":0.1418,"section":0.0625,"entity":0.2,"utility":0.083},"raw":{"semantic":0.473,"section":0.25,"entity":1.0,"utility":1.0},"kept":true},{"i":0,"j":4,"w":0.2455,"comps":{"section":0.0625,"entity":0.1,"utility":0.083},"raw":{"section":0.25,"entity":0.5,"utility":1.0},"kept":true},{"i":0,"j":8,"w":0.0739,"comps":{"semantic":0.0739},"raw":{"semantic":0.246},"kept":true},{"i":0,"j":9,"w":0.0,"comps":{"utility":0.0474},"raw":{"utility":0.572},"kept":false},{"i":0,"j":10,"w":0.0952,"comps":{"semantic":0.0952},"raw":{"semantic":0.317},"kept":true},{"i":0,"j":11,"w":0.5039,"comps":{"semantic":0.1379,"entity":0.2,"utility":0.083,"citation":0.083},"raw":{"semantic":0.46,"entity":1.0,"utility":1.0,"citation":1.0},"kept":true},{"i":1,"j":2,"w":0.7327,"comps":{"semantic":0.2407,"adjacency":0.084,"section":0.125,"entity":0.2,"utility":0.083},"raw":{"semantic":0.802,"adjacency":1.0,"section":0.5,"entity":1.0,"utility":1.0},"kept":true},{"i":1,"j":3,"w":0.6091,"comps":{"semantic":0.2011,"section":0.125,"entity":0.2,"utility":0.083},"raw":{"semantic":0.67,"section":0.5,"entity":1.0,"utility":1.0},"kept":true},{"i":1,"j":4,"w":0.4237,"comps":{"semantic":0.0782,"section":0.0625,"entity":0.2,"utility":0.083},"raw":{"semantic":0.261,"section":0.25,"entity":1.0,"utility":1.0},"kept":true},{"i":1,"j":9,"w":0.0737,"comps":{"semantic":0.0737},"raw":{"semantic":0.246},"kept":true},{"i":1,"j":11,"w":0.3865,"comps":{"semantic":0.1035,"entity":0.2,"utility":0.083},"raw":{"semantic":0.345,"entity":1.0,"utility":1.0},"kept":true},{"i":2,"j":3,"w":0.6989,"comps":{"semantic":0.2069,"adjacency":0.084,"section":0.125,"entity":0.2,"utility":0.083},"raw":{"semantic":0.69,"adjacency":1.0,"section":0.5,"entity":1.0,"utility":1.0},"kept":true},{"i":2,"j":4,"w":0.4262,"comps":{"semantic":0.0807,"section":0.0625,"entity":0.2,"utility":0.083},"raw":{"semantic":0.269,"section":0.25,"entity":1.0,"utility":1.0},"kept":true},{"i":2,"j":9,"w":0.0844,"comps":{"semantic":0.0844},"raw":{"semantic":0.281},"kept":true},{"i":2,"j":10,"w":0.0735,"comps":{"semantic":0.0735},"raw":{"semantic":0.245},"kept":true},{"i":2,"j":11,"w":0.3879,"comps":{"semantic":0.1049,"entity":0.2,"utility":0.083},"raw":{"semantic":0.35,"entity":1.0,"utility":1.0},"kept":true},{"i":3,"j":4,"w":0.5093,"comps":{"semantic":0.0798,"adjacency":0.084,"section":0.0625,"entity":0.2,"utility":0.083},"raw":{"semantic":0.266,"adjacency":1.0,"section":0.25,"entity":1.0,"utility":1.0},"kept":true},{"i":3,"j":10,"w":0.0824,"comps":{"semantic":0.0824},"raw":{"semantic":0.275},"kept":true},{"i":3,"j":11,"w":0.283,"comps":{"entity":0.2,"utility":0.083},"raw":{"entity":1.0,"utility":1.0},"kept":true},{"i":4,"j":5,"w":0.2937,"comps":{"semantic":0.0773,"entity":0.1333,"utility":0.083},"raw":{"semantic":0.258,"entity":0.667,"utility":1.0},"kept":true},{"i":4,"j":6,"w":0.219,"comps":{"semantic":0.0694,"entity":0.0667,"utility":0.083},"raw":{"semantic":0.231,"entity":0.333,"utility":1.0},"kept":true},{"i":4,"j":7,"w":0.3314,"comps":{"semantic":0.0484,"entity":0.2,"utility":0.083},"raw":{"semantic":0.161,"entity":1.0,"utility":1.0},"kept":true},{"i":4,"j":11,"w":0.283,"comps":{"entity":0.2,"utility":0.083},"raw":{"entity":1.0,"utility":1.0},"kept":true},{"i":5,"j":6,"w":0.3494,"comps":{"semantic":0.0532,"adjacency":0.084,"section":0.0625,"entity":0.0667,"utility":0.083},"raw":{"semantic":0.177,"adjacency":1.0,"section":0.25,"entity":0.333,"utility":1.0},"kept":true},{"i":5,"j":7,"w":0.386,"comps":{"semantic":0.0405,"section":0.0625,"entity":0.2,"utility":0.083},"raw":{"semantic":0.135,"section":0.25,"entity":1.0,"utility":1.0},"kept":true},{"i":6,"j":7,"w":0.4884,"comps":{"semantic":0.0589,"adjacency":0.084,"section":0.0625,"entity":0.2,"utility":0.083},"raw":{"semantic":0.196,"adjacency":1.0,"section":0.25,"entity":1.0,"utility":1.0},"kept":true},{"i":7,"j":9,"w":0.065,"comps":{"semantic":0.065},"raw":{"semantic":0.217},"kept":true},{"i":8,"j":9,"w":0.4291,"comps":{"semantic":0.0996,"adjacency":0.084,"section":0.0625,"entity":0.1,"utility":0.083},"raw":{"semantic":0.332,"adjacency":1.0,"section":0.25,"entity":0.5,"utility":1.0},"kept":true},{"i":8,"j":10,"w":0.0718,"comps":{"semantic":0.0718},"raw":{"semantic":0.239},"kept":true},{"i":9,"j":11,"w":0.0,"comps":{"utility":0.0474},"raw":{"utility":0.572},"kept":false},{"i":10,"j":11,"w":0.1465,"comps":{"adjacency":0.084,"section":0.0625},"raw":{"adjacency":1.0,"section":0.25},"kept":true}],"query":"Which city is the headquarters of the lab that does the research for Project Orion?","gold":[4,6],"dense":[0.4434,0.5067,0.5364,0.5168,0.4703,0.1379,0.3439,0.1382,0.2999,0.1955,0.1029,0.2735],"bm25":[2.6964,2.954,2.954,2.954,2.8041,0.7242,2.8184,0.8452,2.4014,1.3857,0.6811,1.7559],"utility":[0.5479,0.5479,0.5479,0.5479,0.5479,0.2559,0.3367,0.2559,0.3416,0.2022,0.0,0.5479],"rrf":[0.0467,0.0481,0.0481,0.0474,0.0474,0.0427,0.0455,0.0429,0.0448,0.0431,0.0417,0.0446],"ranks":{"dense":[5,3,1,2,4,11,6,10,7,9,12,8],"bm25":[6,1,2,3,5,11,4,10,7,9,12,8],"utility":[2,3,4,5,1,9,8,10,7,11,12,6]},"seeds":[2,1,4,3,0,6],"relevance":[0.836,0.9657,1.0,0.9774,0.8907,0.0498,0.7482,0.0768,0.6056,0.2618,0.0,0.4332],"candidates":[0,1,2,3,4,6,5,7,8,9,10,11],"hop":{"2":0,"1":0,"4":0,"3":0,"0":0,"6":0,"11":1,"9":1,"10":1,"7":1,"5":1,"8":1},"spectral_close":[0.836,0.9657,1.0,0.9774,0.8907,0.7482,0.7356,0.7413,0.0,0.0,0.1718,0.7224],"ppr":[0.8662,0.9822,1.0,0.971,0.8803,0.4533,0.2053,0.245,0.0,0.0301,0.0918,0.4727],"prox":[0.8511,0.974,1.0,0.9742,0.8855,0.6007,0.4704,0.4931,0.0,0.015,0.1318,0.5975],"s2":[0.8435,0.9698,1.0,0.9758,0.8881,0.6744,0.2601,0.285,0.3028,0.1384,0.0659,0.5154],"steps":[{"chunk":2,"reason":"protected core","tokens_after":10,"parts":null},{"chunk":3,"reason":"protected core","tokens_after":20,"parts":null},{"chunk":6,"reason":"greedy U(c|C)","tokens_after":36,"parts":{"relevance":0.674,"proximity":0.18,"cluster_gain":0.3,"doc_gain":0.2,"redundancy":-0.025,"U":1.33}},{"chunk":4,"reason":"greedy U(c|C)","tokens_after":59,"parts":{"relevance":0.888,"proximity":0.266,"cluster_gain":0.1,"doc_gain":0.067,"redundancy":-0.161,"U":1.159}},{"chunk":1,"reason":"greedy U(c|C)","tokens_after":69,"parts":{"relevance":0.97,"proximity":0.292,"cluster_gain":0.3,"doc_gain":0.05,"redundancy":-0.481,"U":1.131}}],"used":69,"budget":70,"alpha":0.5,"selected":[2,3,6,4,1],"dense_selected":[2,3,1,4,0],"dense_order":[2,3,1,4,0,6,8,11,9,7,5,10],"cos":[[1.0,0.6003,0.5726,0.4727,0.2457,0.0446,0.0204,0.0839,0.2464,0.2145,0.3174,0.4596],[0.6003,1.0,0.8023,0.6703,0.2607,0.0283,0.0239,0.0955,0.1663,0.2455,0.2419,0.3451],[0.5726,0.8023,1.0,0.6896,0.2689,0.0328,0.041,0.1038,0.1851,0.2813,0.245,0.3495],[0.4727,0.6703,0.6896,1.0,0.2661,0.0316,0.0141,0.0226,0.1641,0.158,0.2745,0.2743],[0.2457,0.2607,0.2689,0.2661,1.0,0.2578,0.2312,0.1613,0.0786,0.1543,0.0546,0.1913],[0.0446,0.0283,0.0328,0.0316,0.2578,1.0,0.1774,0.1349,0.1003,0.0708,0.0744,0.0547],[0.0204,0.0239,0.041,0.0141,0.2312,0.1774,1.0,0.1965,0.1754,0.1016,0.0426,0.0157],[0.0839,0.0955,0.1038,0.0226,0.1613,0.1349,0.1965,1.0,0.115,0.2166,0.0691,0.125],[0.2464,0.1663,0.1851,0.1641,0.0786,0.1003,0.1754,0.115,1.0,0.3319,0.2393,0.1389],[0.2145,0.2455,0.2813,0.158,0.1543,0.0708,0.1016,0.2166,0.3319,1.0,0.1671,0.2139],[0.3174,0.2419,0.245,0.2745,0.0546,0.0744,0.0426,0.0691,0.2393,0.1671,1.0,0.1112],[0.4596,0.3451,0.3495,0.2743,0.1913,0.0547,0.0157,0.125,0.1389,0.2139,0.1112,1.0]],"heat":[0.8066,0.8695,0.8802,0.8436,0.7779,0.3566,0.4,0.4056,0.3873,0.4006,0.299,0.6763],"prompt":"Answer the question using ONLY the context. Connect facts across sources when needed, cite chunk ids like [c3], and say \"I don't know\" if the context is insufficient.\n\n### Source: Project Orion\n[c1] (Project Orion > Goals > Cost) Project Orion research targets cheaper batteries for city buses.\n[c2] (Project Orion > Goals > Safety) Project Orion research targets safer batteries for city buses.\n[c3] (Project Orion > Goals > Charging) Project Orion research targets faster charging for city buses.\n[c4] (Project Orion > Team) The research work for Project Orion is carried out by Helix Labs. The lab team is led by director Maya Chen.\n\n### Source: Helix Labs\n[c6] (Helix Labs > Location) Helix Labs is headquartered in Pune. It also runs a smaller office in Bengaluru.\n\nQuestion: Which city is the headquarters of the lab that does the research for Project Orion?\nAnswer:","layout":{"0":[-0.1503,-0.3351],"1":[0.0012,-0.0516],"2":[-0.1654,-0.125],"3":[-0.3334,0.0287],"4":[-0.0769,0.3338],"5":[0.2656,0.987],"6":[-0.0168,1.0],"7":[0.2777,0.6857],"8":[0.4646,-0.9763],"9":[0.5851,-0.5176],"10":[-0.4074,-0.817],"11":[-0.4441,-0.2125]}};
+const N = D.chunks.length;
+const SIG = ["semantic","section","entity","adjacency","utility","citation"];
+const SIG_LABEL = {semantic:"Semantic", adjacency:"Adjacency", section:"Section", entity:"Entities", utility:"Utility questions", citation:"Citations"};
+const GOLD = new Set(D.gold);
+const CI = {}; D.candidates.forEach((c,k)=>CI[c]=k);
+const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const W = 640, H = 540;
+const $ = s => document.querySelector(s);
+const svgNS = "http://www.w3.org/2000/svg";
+const f2 = x => (+x).toFixed(2);
+const m2 = x => (x < 0 ? "−" + Math.abs(x).toFixed(2) : (+x).toFixed(2));
+const cl = i => `c${i}`;
+const sigOn = Object.fromEntries(SIG.map(s=>[s,true]));
+document.getElementById("qtext").textContent = D.query;
+
+/* ---------- positions ---------- */
+function fitPoints(pts, pad){
+  const xs = pts.map(p=>p[0]), ys = pts.map(p=>p[1]);
+  const x0=Math.min(...xs), x1=Math.max(...xs), y0=Math.min(...ys), y1=Math.max(...ys);
+  const sx = (W-2*pad)/(x1-x0||1), sy = (H-2*pad)/(y1-y0||1);
+  return pts.map(p=>[pad + sx*(p[0]-x0), pad + sy*(y1-p[1])]);
+}
+function relax(P, minD, iters){
+  P = P.map(p=>p.slice());
+  for(let t=0;t<iters;t++){
+    for(let i=0;i<P.length;i++) for(let j=i+1;j<P.length;j++){
+      let dx=P[j][0]-P[i][0], dy=P[j][1]-P[i][1], d=Math.hypot(dx,dy);
+      if(d<1e-6){dx=Math.cos(i+j); dy=Math.sin(i+j); d=1}
+      if(d<minD){const m=(minD-d)/2; dx/=d; dy/=d; P[i][0]-=dx*m; P[i][1]-=dy*m; P[j][0]+=dx*m; P[j][1]+=dy*m}
+    }
+  }
+  return P;
+}
+const POS_GRAPH = fitPoints(D.chunks.map(c=>D.layout[c.id]), 58);
+const POS_SPEC = relax(fitPoints(D.chunks.map(c=>c.z), 70), 38, 160);
+let cur = POS_GRAPH.map(p=>p.slice());
+
+/* ---------- build svg ---------- */
+const gE = $("#g-edges"), gN = $("#g-nodes"), gB = $("#g-blobs"), gD = $("#g-doclabels"), gA = $("#g-axes");
+const edgeEls = D.edges.map((e,k)=>{
+  const g = document.createElementNS(svgNS,"g");
+  const l = document.createElementNS(svgNS,"line"); l.setAttribute("class","edge");
+  const h = document.createElementNS(svgNS,"line"); h.setAttribute("class","edge-hit");
+  h.addEventListener("click", ()=>inspectEdge(e));
+  h.addEventListener("mouseenter", ()=>inspectEdge(e, true));
+  g.append(l,h); gE.append(g);
+  return {e, g, l, h};
+});
+const DOC_SHORT = {orion:"Orion", helix:"Helix", nova:"Nova", report:"Report"};
+const nodeEls = D.chunks.map(c=>{
+  const g = document.createElementNS(svgNS,"g");
+  g.setAttribute("class","node"); g.setAttribute("tabindex","0"); g.setAttribute("role","button");
+  g.setAttribute("aria-label", `Chunk c${c.id}: ${c.text}`);
+  const ring = document.createElementNS(svgNS,"circle"); ring.setAttribute("class","ring"); ring.setAttribute("r","20");
+  const hop = document.createElementNS(svgNS,"circle"); hop.setAttribute("class","hopring"); hop.setAttribute("r","20");
+  const body = document.createElementNS(svgNS,"circle"); body.setAttribute("class","body"); body.setAttribute("r","14");
+  const t = document.createElementNS(svgNS,"text"); t.textContent = `c${c.id}`;
+  const gm = document.createElementNS(svgNS,"rect"); gm.setAttribute("class","goldmark"); gm.setAttribute("width","8"); gm.setAttribute("height","8"); gm.setAttribute("rx","1.5");
+  const tag = document.createElementNS(svgNS,"text"); tag.setAttribute("class","doctag"); tag.textContent = DOC_SHORT[c.doc];
+  g.append(ring, hop, body, t, gm, tag); gN.append(g);
+  const pin = ()=>inspectNode(c.id);
+  g.addEventListener("click", pin);
+  g.addEventListener("mouseenter", ()=>inspectNode(c.id, true));
+  g.addEventListener("keydown", ev=>{ if(ev.key==="Enter"||ev.key===" "){ev.preventDefault(); pin()} });
+  return {c, g, body, ring, hop, t, gm, tag, r:14};
+});
+const DOCS = [...new Set(D.chunks.map(c=>c.doc))].map(id=>({id, title:D.chunks.find(c=>c.doc===id).title}));
+
+function place(){
+  nodeEls.forEach((n,i)=>{
+    const [x,y]=cur[i];
+    n.g.setAttribute("transform",`translate(${x.toFixed(1)},${y.toFixed(1)})`);
+    n.body.setAttribute("r", n.r); n.ring.setAttribute("r", n.r+6); n.hop.setAttribute("r", n.r+6); n.tag.setAttribute("y", n.r+14);
+    n.gm.setAttribute("x", n.r*0.55); n.gm.setAttribute("y", -n.r*1.15); n.gm.setAttribute("transform",`rotate(45 ${n.r*0.55+4} ${-n.r*1.15+4})`);
+  });
+  edgeEls.forEach(({e,l,h})=>{
+    const a=cur[e.i], b=cur[e.j];
+    for(const el of [l,h]){el.setAttribute("x1",a[0]); el.setAttribute("y1",a[1]); el.setAttribute("x2",b[0]); el.setAttribute("y2",b[1]);}
+  });
+  blobs.forEach(b=>{ b.el.setAttribute("cx", cur[b.i][0]); b.el.setAttribute("cy", cur[b.i][1]); });
+}
+let anim = null;
+function moveTo(target, ms=900){
+  if(anim) cancelAnimationFrame(anim);
+  const from = cur.map(p=>p.slice());
+  const same = from.every((p,i)=>Math.abs(p[0]-target[i][0])<.5 && Math.abs(p[1]-target[i][1])<.5);
+  if(REDUCED || same){ cur = target.map(p=>p.slice()); place(); return; }
+  const t0 = performance.now();
+  const step = now=>{
+    let t = Math.min(1,(now-t0)/ms); t = t<.5 ? 4*t*t*t : 1-Math.pow(-2*t+2,3)/2;
+    cur = from.map((p,i)=>[p[0]+(target[i][0]-p[0])*t, p[1]+(target[i][1]-p[1])*t]);
+    place();
+    if(t<1) anim = requestAnimationFrame(step);
+  };
+  anim = requestAnimationFrame(step);
+}
+
+/* cluster blobs: one group per community, opaque circles inside a translucent group = a merged blob */
+const blobs = [];
+const nClusters = Math.max(...D.chunks.map(c=>c.cluster))+1;
+for(let k=0;k<nClusters;k++){
+  const g = document.createElementNS(svgNS,"g"); g.setAttribute("opacity","0"); g.style.transition="opacity .6s";
+  D.chunks.filter(c=>c.cluster===k).forEach(c=>{
+    const el = document.createElementNS(svgNS,"circle"); el.setAttribute("r","30"); el.setAttribute("fill",`var(--k${k})`);
+    g.append(el); blobs.push({i:c.id, el});
+  });
+  g.dataset.k = k; gB.append(g);
+}
+function showBlobs(on){ [...gB.children].forEach(g=>g.setAttribute("opacity", on ? ".16" : "0")); }
+
+function docLabels(on){
+  gN.classList.toggle("tags", on);
+  return;
+  DOCS.forEach(d=>{
+    const ids = D.chunks.filter(c=>c.doc===d.id).map(c=>c.id);
+    const xs = ids.map(i=>POS_GRAPH[i][0]), ys = ids.map(i=>POS_GRAPH[i][1]);
+    const cx = xs.reduce((a,b)=>a+b)/xs.length, top = Math.min(...ys);
+    const t = document.createElementNS(svgNS,"text"); t.setAttribute("class","doclabel");
+    t.setAttribute("x", Math.max(70, Math.min(W-70, cx))); t.setAttribute("y", Math.max(18, top-28)); t.setAttribute("text-anchor","middle");
+    t.textContent = d.title; gD.append(t);
+  });
+}
+function axes(on){
+  gA.innerHTML = "";
+  if(!on) return;
+  const mk=(tag,attrs,txt)=>{const el=document.createElementNS(svgNS,tag); for(const k in attrs) el.setAttribute(k,attrs[k]); if(txt) el.textContent=txt; gA.append(el);};
+  mk("line",{x1:30,y1:H-30,x2:W-24,y2:H-30,class:"axis"}); mk("line",{x1:30,y1:H-30,x2:30,y2:24,class:"axis"});
+  mk("text",{x:W-28,y:H-12,"text-anchor":"end",class:"axislabel"},"u₂ (first non-trivial eigenvector)");
+  mk("text",{x:40,y:36,class:"axislabel"},"u₃");
+}
+
+/* ---------- edge styling ---------- */
+function dominant(e, enabledOnly){
+  let best=null, bv=-1;
+  for(const s in e.comps){ if(enabledOnly && !sigOn[s]) continue; if(e.comps[s]>bv){bv=e.comps[s]; best=s;} }
+  return best;
+}
+let edgeMode = "none";
+function styleEdges(){
+  const wmax = Math.max(...D.edges.map(e=>e.w));
+  edgeEls.forEach(({e,g,l})=>{
+    let show=false, color="var(--faint)", width=1.4, op=.9, dash="";
+    if(edgeMode==="semantic"){ show = !!e.raw.semantic; color="var(--s-semantic)"; width = 1 + 4*(e.raw.semantic||0); }
+    else if(edgeMode==="signals"){ const d=dominant(e,true); show=!!d; color=`var(--s-${d})`; width=2; }
+    else if(edgeMode==="fused"){ const d=dominant(e,true); show=!!d; color=`var(--s-${d})`; width = e.kept ? 1 + 7*e.w/wmax : 1.2; if(!e.kept){dash="3 4"; op=.55;} }
+    else if(edgeMode==="faint"){ show=e.kept; color="var(--faint)"; width=1 + 3*e.w/wmax; op=.35; }
+    else if(edgeMode==="query"){ show=e.kept; color="var(--faint)"; width=1 + 4*e.w/wmax; op=.45; }
+    g.style.display = show ? "" : "none";
+    l.setAttribute("stroke", color); l.setAttribute("stroke-width", width.toFixed(2)); l.setAttribute("opacity", op); l.setAttribute("stroke-dasharray", dash);
+  });
+}
+
+/* ---------- legend ---------- */
+function legend(kind){
+  const el = $("#legend"); el.innerHTML = "";
+  if(kind==="signals"){
+    SIG.forEach(s=>{
+      const b = document.createElement("button"); b.className="legend-btn"; b.setAttribute("aria-pressed", sigOn[s]);
+      b.innerHTML = `<span class="sw" style="background:var(--s-${s})"></span>${SIG_LABEL[s]}`;
+      b.title = "Show or hide this signal";
+      b.onclick = ()=>{ sigOn[s]=!sigOn[s]; b.setAttribute("aria-pressed", sigOn[s]); styleEdges(); };
+      el.append(b);
+    });
+  } else if(kind==="semantic"){
+    el.innerHTML = `<span class="legend-static"><span class="sw" style="display:inline-block;width:16px;height:3px;background:var(--s-semantic);border-radius:2px"></span>Semantic edge, thicker = higher cosine (k<sub>g</sub> = ${D.knn} neighbours per chunk)</span>`;
+  } else if(kind==="clusters"){
+    for(let k=0;k<nClusters;k++){
+      const ids = D.chunks.filter(c=>c.cluster===k).map(c=>"c"+c.id).join(", ");
+      el.insertAdjacentHTML("beforeend", `<span class="legend-static"><span class="dot" style="border-color:var(--k${k});background:var(--k${k});opacity:.7"></span>Community ${k+1}: ${ids}</span>`);
+    }
+  } else if(kind==="query"){
+    el.innerHTML = `<span class="legend-static"><span class="dot" style="background:var(--accent);border-color:var(--accent)"></span>Seed (S₀)</span>
+      <span class="legend-static"><span class="dot" style="border-style:dashed;border-color:var(--accent)"></span>Reached through the graph</span>
+      <span class="legend-static"><span class="dot" style="border-color:var(--good);border-width:3px"></span>Selected for the context</span>
+      <span class="legend-static"><span style="display:inline-block;width:8px;height:8px;background:var(--gold);transform:rotate(45deg);border-radius:1px;margin:0 3px"></span>Needed to answer</span>`;
+  } else if(kind==="docs"){
+    el.innerHTML = `<span class="legend-static">Each circle is one chunk, tagged with its source document. Hover or tap a chunk for its text.</span>`;
+  }
+}
+
+/* ---------- inspect ---------- */
+let pinned = null;
+function inspectNode(id, hover){
+  if(hover && pinned!==null) return;
+  if(!hover) pinned = {node:id};
+  const c = D.chunks[id];
+  const k = CI[id];
+  let extra = "";
+  if(stageIdx>=5){
+    extra = `<div class="meta">dense ${f2(D.dense[id])}, BM25 ${f2(D.bm25[id])}, utility ${f2(D.utility[id])}, RRF rank ${rrfRank[id]}` +
+      (k!==undefined && stageIdx>=7 ? `, s₂ ${f2(D.s2[k])}` : "") + `</div>`;
+  }
+  $("#inspect").innerHTML = `<strong>c${id}</strong> <span class="meta">${c.section}, ${c.tokens} tokens, community ${c.cluster+1}</span>
+    <div class="t">${c.text}</div>
+    <div class="meta">Entities: ${c.entities.length? c.entities.join(", ") : "none"}</div>
+    <div class="meta">Utility questions: ${c.questions.join(" ")}</div>${extra}`;
+}
+function inspectEdge(e, hover){
+  if(hover && pinned!==null) return;
+  if(!hover) pinned = {edge:e};
+  const rows = Object.keys(e.comps).sort((a,b)=>e.comps[b]-e.comps[a]).map(s=>
+    `<tr><td><span style="display:inline-block;width:10px;height:3px;background:var(--s-${s});margin-right:6px;vertical-align:3px"></span>${SIG_LABEL[s]}</td><td>${f2(e.raw[s])}</td><td>× ${D.weights[s].toFixed(3)}</td><td>${e.comps[s].toFixed(3)}</td></tr>`).join("");
+  $("#inspect").innerHTML = `<strong>Edge c${e.i} – c${e.j}</strong> <span class="meta">${e.kept ? "kept" : "dropped, below τ = "+D.tau}</span>
+    <div class="tbl-wrap"><table><tr><th>Signal</th><th>raw</th><th>α</th><th>weighted</th></tr>${rows}
+    <tr><td><b>Fused w<sub>ij</sub></b></td><td></td><td></td><td><b>${Object.values(e.comps).reduce((a,b)=>a+b,0).toFixed(3)}</b></td></tr></table></div>`;
+}
+document.addEventListener("keydown", ev=>{ if(ev.key==="Escape"){ pinned=null; $("#inspect").innerHTML=""; } });
+
+/* ---------- derived numbers ---------- */
+const rrfOrder = [...Array(N).keys()].sort((a,b)=>D.rrf[b]-D.rrf[a]);
+const rrfRank = {}; rrfOrder.forEach((id,r)=>rrfRank[id]=r+1);
+const denseRank = {}; D.dense_order.forEach((id,r)=>denseRank[id]=r+1);
+const SEEDS = new Set(D.seeds);
+const sigCounts = Object.fromEntries(SIG.map(s=>[s, D.edges.filter(e=>e.raw[s]).length]));
+const e46 = D.edges.find(e=>e.i===4 && e.j===6);
+const dropped = D.edges.filter(e=>!e.kept);
+const s2Sorted = [...D.candidates].sort((a,b)=>D.s2[CI[b]]-D.s2[CI[a]]);
+const UC = {relevance:"var(--ink)", proximity:"var(--s-semantic)", cluster_gain:"var(--s-utility)", doc_gain:"var(--s-section)", redundancy:"var(--bad)"};
+const UL = {relevance:"a·s₂", proximity:"b·Prox", cluster_gain:"c·ClusterGain", doc_gain:"d·DocGain", redundancy:"−λ·Red"};
+
+/* ---------- stages ---------- */
+function nodeState({seeds=false, reached=false, selected=null, dim=null, gold=false, sizeBy=null}={}){
+  nodeEls.forEach(n=>{
+    const id=n.c.id, cls=["node"];
+    if(seeds && SEEDS.has(id)) cls.push("seed");
+    if(reached && D.hop[id]>0) cls.push("reached");
+    if(selected && selected.has(id)) cls.push("selected");
+    if(dim && !dim.has(id)) cls.push("dim");
+    if(gold && GOLD.has(id)) cls.push("showgold");
+    n.g.setAttribute("class", cls.join(" "));
+    n.r = sizeBy ? 11 + 10*sizeBy(id) : 14;
+  });
+  place();
+}
+
+let timers = [];
+function clearTimers(){ timers.forEach(clearTimeout); timers=[]; }
+function later(fn, ms){ timers.push(setTimeout(fn, REDUCED?0:ms)); }
+
+const STAGES = [
+ {phase:0, short:"Chunk", title:"Split documents into chunks",
+  fn:"spectrag.utils.chunker.chunk_documents()",
+  view(){ moveTo(POS_GRAPH); edgeMode="none"; styleEdges(); showBlobs(false); docLabels(true); axes(false); nodeState(); legend("docs"); },
+  body(){
+    const rows = DOCS.map(d=>{ const cs=D.chunks.filter(c=>c.doc===d.id); return `<tr><td>${d.title}</td><td>${cs.map(c=>"c"+c.id).join(", ")}</td><td>${cs.reduce((a,c)=>a+c.tokens,0)}</td></tr>`;}).join("");
+    return `<div class="prose"><p>Each document is cut into chunks measured in tokens, never in the middle of a sentence. Every chunk remembers its section path, such as <em>Project Orion › Goals › Safety</em>, which a later signal uses.</p>
+    <p>The paper uses 1,200-token chunks with 100 tokens of overlap. This run uses 30-token chunks and no overlap so that a dozen nodes fit on the screen.</p></div>
+    <div class="tbl-wrap"><table><tr><th>Document</th><th style="text-align:left">Chunks</th><th>Tokens</th></tr>${rows}</table></div>`;
+  }},
+ {phase:0, short:"Embed", title:"Embed every chunk",
+  fn:"spectrag.utils.embedder.make_embedder()",
+  view(){ moveTo(POS_GRAPH); edgeMode="semantic"; styleEdges(); showBlobs(false); docLabels(true); axes(false); nodeState(); legend("semantic"); },
+  body(){
+    return `<div class="prose"><p>Each chunk becomes a dense vector e<sub>i</sub>. The paper uses nomic-embed-text (768 dimensions) in an exact FAISS flat index. The toy uses a hashed bag of words and character n-grams, and searches it exactly with a matrix product.</p>
+    <p>The semantic signal keeps only each chunk’s ${D.knn} nearest neighbours. Look at c1, c2 and c3: three near-identical goal statements, tightly connected. That clique is the redundancy problem from Section 1.2 of the paper.</p></div>
+    <div class="eq">w<sup>sem</sup><sub>ij</sub> = max(0, cos(e<sub>i</sub>, e<sub>j</sub>))<span class="n">Eq. 3</span></div>`;
+  }},
+ {phase:0, short:"Signals", title:"Extract six kinds of edges",
+  fn:"spectrag.utils.entities.add_entities(), spectrag.utils.edges.build_edge_signals()",
+  view(){ moveTo(POS_GRAPH); edgeMode="signals"; styleEdges(); showBlobs(false); docLabels(true); axes(false); nodeState(); legend("signals"); },
+  body(){
+    const rows = SIG.map(s=>`<tr><td><span style="display:inline-block;width:12px;height:3px;background:var(--s-${s});margin-right:7px;vertical-align:3px"></span>${SIG_LABEL[s]}</td><td>${sigCounts[s]}</td></tr>`).join("");
+    return `<div class="prose"><p>Similarity alone treats chunks as independent. SpectRAG adds five structural signals, each scaled to [0, 1]: adjacency inside a document, shared section path, shared entities, similar utility questions (questions a chunk can answer), and explicit “See …” references.</p>
+    <p>This is what links the two hops. c4 and c6 share the entity <em>Helix Labs</em> and the utility question “What is Helix Labs?”, so an edge exists even though their text barely overlaps. Each edge is coloured by its strongest signal; toggle signals below the graph.</p></div>
+    <div class="tbl-wrap"><table><tr><th>Signal</th><th>Edges</th></tr>${rows}</table></div>`;
+  }},
+ {phase:0, short:"Fuse", title:"Fuse the signals into one weight",
+  fn:"spectrag.utils.graph_build.build_graph()",
+  view(){ moveTo(POS_GRAPH); edgeMode="fused"; styleEdges(); showBlobs(false); docLabels(true); axes(false); nodeState(); legend("signals"); inspectEdge(e46); pinned={edge:e46}; },
+  body(){
+    const rows = SIG.map(s=>`<tr><td>${SIG_LABEL[s]}</td><td>${D.weights[s].toFixed(3)}</td></tr>`).join("");
+    return `<div class="prose"><p>The six signals are summed with fixed weights (the paper’s configuration 1 is used here) and edges lighter than τ = ${D.tau} are dropped to keep the graph sparse. Thickness now shows the fused weight; ${dropped.length} weak edges, shown dashed, are discarded.</p></div>
+    <div class="eq">w<sub>ij</sub> = Σ<sub>r</sub> α<sub>r</sub> · w<sup>r</sup><sub>ij</sub>, keep if w<sub>ij</sub> ≥ τ<span class="n">Eq. 10</span></div>
+    <div class="tbl-wrap"><table><tr><th>Signal</th><th>Weight α</th></tr>${rows}</table></div>
+    <div class="prose"><p>Below is the bridge edge c4 – c6, broken down. Click any other edge to compare.</p></div>`;
+  }},
+ {phase:0, short:"Spectrum", title:"Laplacian and spectral coordinates",
+  fn:"spectrag.utils.graph_build.build_spectral()",
+  view(){ moveTo(POS_SPEC, 1200); edgeMode="faint"; styleEdges(); showBlobs(true); docLabels(false); axes(true); nodeState(); legend("clusters"); },
+  body(){
+    const ev = D.eigvals.slice(0,8), mx = Math.max(...ev);
+    const bars = ev.map((v,i)=>`<div style="display:flex;align-items:center;gap:8px;font-size:12.5px;font-variant-numeric:tabular-nums"><span style="width:26px;color:var(--muted)">λ${i+1}</span><span style="height:8px;border-radius:3px;background:${i===0?"var(--faint)":i<=4?"var(--accent)":"var(--rule)"};width:${Math.max(2,140*v/mx)}px"></span>${v.toFixed(3)}</div>`).join("");
+    return `<div class="prose"><p>From the weight matrix W the method builds the normalised Laplacian and takes its smallest non-trivial eigenvectors. Each chunk’s row in those eigenvectors is its spectral coordinate z<sub>i</sub>: a position in the graph’s community structure rather than a description of its words.</p></div>
+    <div class="eq">L<sub>sym</sub> = I − D<sup>−½</sup> W D<sup>−½</sup>,&nbsp; z<sub>i</sub> = [u<sub>2</sub>(i), …, u<sub>m+1</sub>(i)]<span class="n">Eq. 11, 13</span></div>
+    <div style="display:grid;gap:3px;margin:4px 0 12px">${bars}</div>
+    <div class="prose"><p>The graph now shows each chunk at (u<sub>2</sub>, u<sub>3</sub>). Helix Labs and Nova Motors separate cleanly, and c4, the Orion team chunk, sits between Orion and Helix: it is the bridge. k-means on all ${D.chunks[0].z.length > 0 ? "four" : ""} coordinates finds ${nClusters} communities; two Orion communities overlap in this two-dimensional slice. The paper uses m = 32; this run uses m = 4.</p></div>`;
+  }},
+ {phase:1, short:"Seeds", title:"Hybrid seed retrieval",
+  fn:"spectrag.utils.seeding.find_seeds()",
+  view(){ moveTo(POS_GRAPH); edgeMode="query"; styleEdges(); showBlobs(false); docLabels(false); axes(false); nodeState({seeds:true, gold:true, dim:SEEDS}); legend("query"); },
+  body(){
+    const rows = rrfOrder.map(id=>`<tr class="${SEEDS.has(id)?"hl":""} ${GOLD.has(id)?"gold":""}"><td>c${id}</td><td>${D.ranks.dense[id]}</td><td>${D.ranks.bm25[id]}</td><td>${D.ranks.utility[id]}</td><td>${(D.rrf[id]*1000).toFixed(2)}</td></tr>`).join("");
+    return `<div class="prose"><p>The query is scored three ways: dense cosine, BM25 keywords, and similarity to each chunk’s stored utility questions. Reciprocal rank fusion combines the three rankings, and the top ${D.seeds.length} become the seed set S₀ (the paper uses 20).</p></div>
+    <div class="eq">RRF(c) = Σ<sub>lists</sub> 1 / (60 + rank(c))<span class="n">Table 2</span></div>
+    <div class="tbl-wrap"><table><tr><th>Chunk</th><th>Dense</th><th>BM25</th><th>Utility</th><th>RRF ×1000</th></tr>${rows}</table></div>
+    <div class="prose"><p>c6 makes the seed set, but dense similarity ranks it ${denseRank[6]}th of ${N}. A plain top-k retriever with a 70-token budget only fits its first five chunks, so c6 never reaches the generator.</p></div>`;
+  }},
+ {phase:1, short:"Expand", title:"Expand through the graph",
+  fn:"spectrag.utils.expansion.expand_graph()",
+  view(){
+    moveTo(POS_GRAPH); edgeMode="query"; styleEdges(); showBlobs(false); docLabels(false); axes(false);
+    nodeState({seeds:true, gold:true, dim:SEEDS}); legend("query");
+    later(()=>nodeState({seeds:true, reached:true, gold:true}), 500);
+  },
+  body(){
+    const added = D.candidates.filter(c=>D.hop[c]>0);
+    return `<div class="prose"><p>A breadth-first search from S₀ follows the weighted edges up to two hops (the paper does this in Neo4j, capped at 200 candidates). Here ${added.length} chunks join the candidate pool S₁, all one hop away: ${added.map(cl).join(", ")}.</p>
+    <p>In a corpus of thousands of chunks this is the step that lets a bridge chunk in even if it never matched the query. Expansion can only reach what is connected to the seeds, so recall at S₀ caps recall for the whole pipeline.</p></div>`;
+  }},
+ {phase:1, short:"Re-score", title:"Re-score with graph proximity",
+  fn:"spectrag.utils.diffusion.score_candidates()",
+  view(){ moveTo(POS_GRAPH); edgeMode="query"; styleEdges(); showBlobs(false); docLabels(false); axes(false);
+    nodeState({seeds:true, reached:true, gold:true, sizeBy:id=>D.s2[CI[id]]}); legend("query"); },
+  body(){
+    const rows = s2Sorted.map(id=>{const k=CI[id]; return `<tr class="${GOLD.has(id)?"gold":""} ${id===8?"hl":""}"><td>c${id}</td><td>${f2(D.relevance[id])}</td><td>${f2(D.spectral_close[k])}</td><td>${f2(D.ppr[k])}</td><td><b>${f2(D.s2[k])}</b></td></tr>`;}).join("");
+    return `<div class="prose"><p>Every candidate gets a proximity score: how close it is to the seeds in spectral space, averaged with a personalised PageRank that diffuses seed relevance over the subgraph. Node size now shows the blended score s₂.</p></div>
+    <div class="eq">s₂ = (1 − α)·r + α·½(spectral + PPR),&nbsp; α = ${D.alpha}<span class="n">Algorithm 1, line 7</span></div>
+    <div class="tbl-wrap"><table><tr><th>Chunk</th><th>Relevance r</th><th>Spectral</th><th>PPR</th><th>s₂</th></tr>${rows}</table></div>
+    <div class="prose"><p>A seed’s nearest seed is itself, so for seeds the spectral column equals their relevance.</p>
+    <p>Two effects show up. The Delhi distractor c8 drops from ${f2(D.relevance[8])} to ${f2(D.s2[CI[8]])}: it sits in a different spectral community from every seed and its one weak link to them carries almost no PageRank mass. That is the precision side of the graph. But proximity also rewards whatever community dominates the seeds, so the duplicate goal chunks rise to the top. Re-scoring alone does not rescue c6; the selector does.</p></div>`;
+  }},
+ {phase:1, short:"Select", title:"Fill the token budget",
+  fn:"spectrag.utils.selectors.select()",
+  view(){ moveTo(POS_GRAPH); edgeMode="query"; styleEdges(); showBlobs(false); docLabels(false); axes(false);
+    nodeState({seeds:true, gold:true}); legend("query"); playPicks(); },
+  body(){
+    return `<div class="prose"><p>Chunks are added greedily under a ${D.budget}-token budget. The two highest-scoring chunks form a protected core; after that each candidate is scored by how much it would add to the chunks already chosen.</p></div>
+    <div class="eq">U(c | C) = a·s₂ + b·Prox + c·ClusterGain + d·DocGain − λ·Red<span class="n">Eq. 21</span></div>
+    <div class="budget"><div class="bar" id="bbar"></div><div class="cap"><span id="bused">0 tokens</span><span>${D.budget} token budget</span></div></div>
+    <div class="ulegend">${Object.keys(UL).map(k=>`<span><i style="background:${UC[k]}"></i>${UL[k]}</span>`).join("")}</div>
+    <div id="picks"></div>
+    <div class="prose" id="pickNote" style="margin-top:10px"></div>`;
+  }},
+ {phase:1, short:"Generate", title:"Hand the context to the generator",
+  fn:"spectrag.utils.prompt.build_prompt(), SpectRAGRetrieval.answer(question, llm_fn)",
+  view(){ moveTo(POS_GRAPH); edgeMode="query"; styleEdges(); showBlobs(false); docLabels(false); axes(false);
+    const sel=new Set(D.selected); nodeState({selected:sel, dim:sel, gold:true}); legend("query"); },
+  body(){
+    return `<div class="prose"><p>The selected chunks are grouped by source document and sent to the generator with a grounded, synthesis-oriented prompt (the paper uses gpt-4o-mini at temperature 0). Both hops are now present: c4 says Helix Labs does the research, c6 says Helix Labs is headquartered in Pune.</p></div>
+    <pre class="prompt">${D.prompt.replace(/&/g,"&amp;").replace(/</g,"&lt;")}</pre>
+    <div class="prose"><p>The dense baseline’s prompt contains c4 but not c6, so a faithful model could only answer that the location is not in the context.</p></div>`;
+  }},
+];
+
+/* selection animation */
+function playPicks(){
+  const picks = $("#picks"), bar=$("#bbar"), used=$("#bused"), note=$("#pickNote");
+  if(!picks) return;
+  picks.innerHTML=""; bar.innerHTML=""; note.innerHTML="";
+  const chosen = new Set();
+  const maxU = Math.max(...D.steps.filter(s=>s.parts).map(s=>Object.entries(s.parts).filter(([k])=>k!=="U"&&k!=="redundancy").reduce((a,[,v])=>a+v,0)));
+  D.steps.forEach((s,i)=>{
+    later(()=>{
+      chosen.add(s.chunk);
+      nodeState({seeds:true, gold:true, selected:chosen});
+      const seg=document.createElement("div"); seg.className="seg";
+      seg.style.background = GOLD.has(s.chunk) ? "var(--gold)" : "var(--accent)"; seg.style.width="0";
+      seg.title = `c${s.chunk}: ${D.chunks[s.chunk].tokens} tokens`; bar.append(seg);
+      requestAnimationFrame(()=>seg.style.width = (100*D.chunks[s.chunk].tokens/D.budget)+"%");
+      used.textContent = `${s.tokens_after} tokens used`;
+      let ub = "";
+      if(s.parts){
+        const sc = v => (100*v/(maxU*1.05)).toFixed(1);
+        const P = ["relevance","proximity","cluster_gain","doc_gain"].reduce((a,k)=>a+s.parts[k],0), R = Math.abs(s.parts.redundancy);
+        const pos = ["relevance","proximity","cluster_gain","doc_gain"].map(k=>`<span style="width:${sc(s.parts[k])}%;background:${UC[k]}" title="${UL[k]} = ${m2(s.parts[k])}"></span>`).join("");
+        const neg = `<span style="position:absolute;top:0;left:${sc(P-R)}%;width:${sc(R)}%;background:repeating-linear-gradient(135deg,var(--bad) 0 3px,transparent 3px 6px);opacity:.95" title="−λ·Red = ${m2(s.parts.redundancy)}"></span>`;
+        ub = `<div class="ubar">${pos}${neg}</div><div class="why" style="grid-column:2">U = ${s.parts.U.toFixed(2)}: relevance ${m2(s.parts.relevance)}, proximity ${m2(s.parts.proximity)}, cluster +${m2(s.parts.cluster_gain)}, document +${m2(s.parts.doc_gain)}, redundancy ${m2(s.parts.redundancy)} (hatched)</div>`;
+      }
+      const reason = s.reason==="protected core" ? "Protected core, highest s₂" : s.reason==="backfill" ? "Backfill with leftover budget" : `Greedy pick ${i-1}`;
+      picks.insertAdjacentHTML("beforeend", `<div class="pick"><span class="id" style="${GOLD.has(s.chunk)?"color:var(--gold)":""}">c${s.chunk}</span><span class="why">${reason}, ${D.chunks[s.chunk].tokens} tokens</span>${ub}</div>`);
+      if(i===D.steps.length-1){
+        const s6 = D.steps.find(x=>x.chunk===6), s1 = D.steps.find(x=>x.chunk===1);
+        note.innerHTML = `<p>c6 wins the first greedy pick with U = ${s6.parts.U.toFixed(2)}, even though its relevance is lower than the goal chunks’: it opens a new spectral community (+${m2(s6.parts.cluster_gain)}) and a new document (+${m2(s6.parts.doc_gain)}) and repeats almost nothing (${m2(s6.parts.redundancy)}).` +
+          (s1 ? ` The third goal chunk c1 pays ${m2(s1.parts.redundancy)} for repeating c2 and c3 and only gets in at the end, with budget to spare.` : "") + `</p>`;
+      }
+    }, 450 + i*900);
+  });
+}
+
+/* ---------- step navigation ---------- */
+let stageIdx = 0, playing = null;
+function buildSteps(){
+  const off=$("#steps-off"), on=$("#steps-on");
+  STAGES.forEach((s,i)=>{
+    const b=document.createElement("button"); b.className="step-btn";
+    b.innerHTML=`<span class="num">${i+1}</span><span class="lbl">${s.short}</span>`;
+    b.setAttribute("aria-label", `Step ${i+1}: ${s.title}`);
+    b.onclick=()=>{ stopPlay(); go(i); };
+    (s.phase===0?off:on).append(b);
+  });
+}
+function go(i){
+  clearTimers();
+  stageIdx = Math.max(0, Math.min(STAGES.length-1, i));
+  const s = STAGES[stageIdx];
+  document.querySelectorAll(".step-btn").forEach((b,k)=>{ b.toggleAttribute("aria-current", false); if(k===stageIdx) b.setAttribute("aria-current","step"); b.classList.toggle("done", k<stageIdx); });
+  $("#stepof").textContent = `Step ${stageIdx+1} of ${STAGES.length}, ${s.phase===0 ? "offline indexing" : "online retrieval"}`;
+  $("#barstep").textContent = `Step ${stageIdx+1} of ${STAGES.length}: ${s.short}`;
+  $("#ptitle").textContent = s.title;
+  pinned = null; $("#inspect").innerHTML = "";
+  $("#pbody").innerHTML = s.body();
+  $("#pfn").innerHTML = `In the package: <b>${s.fn}</b>`;
+  s.view();
+  $("#prev").disabled = stageIdx===0;
+  $("#next").textContent = stageIdx===STAGES.length-1 ? "Start over" : "Next step";
+}
+function stopPlay(){ if(playing){ clearInterval(playing); playing=null; $("#play").textContent="Play"; } }
+$("#prev").onclick = ()=>{ stopPlay(); go(stageIdx-1); };
+$("#next").onclick = ()=>{ stopPlay(); go(stageIdx===STAGES.length-1 ? 0 : stageIdx+1); };
+$("#play").onclick = ()=>{
+  if(playing){ stopPlay(); return; }
+  $("#play").textContent="Pause";
+  if(stageIdx===STAGES.length-1) go(0);
+  playing = setInterval(()=>{ if(stageIdx>=STAGES.length-1){ stopPlay(); return; } go(stageIdx+1); }, 6500);
+};
+document.addEventListener("keydown", ev=>{
+  if(ev.target.matches("input")) return;
+  if(ev.key==="ArrowRight"){ stopPlay(); go(stageIdx+1); }
+  if(ev.key==="ArrowLeft"){ stopPlay(); go(stageIdx-1); }
+});
+
+/* ---------- live selector (same logic as SpectRAG.select) ---------- */
+function selectJS({alpha=D.alpha, budget=D.budget, lam=0.6, c=0.3, d=0.2, a=1.0, b=0.3, core=2, floor=0.35}={}){
+  const cand = D.candidates, s2={}, px={};
+  cand.forEach((id,k)=>{ px[id]=D.prox[k]; s2[id]=(1-alpha)*D.relevance[id] + alpha*D.prox[k]; });
+  const order = [...cand].sort((x,y)=>s2[y]-s2[x]);
+  const L = id=>D.chunks[id].tokens;
+  const chosen=[]; let used=0;
+  const add = id=>{ chosen.push(id); used+=L(id); };
+  for(const id of order.slice(0,core)) if(used+L(id)<=budget) add(id);
+  const fl = floor*Math.max(...cand.map(i=>s2[i]));
+  while(true){
+    let best=null, bv=-1e9;
+    for(const id of cand){
+      if(chosen.includes(id) || used+L(id)>budget || s2[id]<fl) continue;
+      const nc = chosen.filter(j=>D.chunks[j].cluster===D.chunks[id].cluster).length;
+      const nd = chosen.filter(j=>D.chunks[j].doc===D.chunks[id].doc).length;
+      const red = chosen.length ? Math.max(...chosen.map(j=>D.cos[id][j])) : 0;
+      const v = a*s2[id] + b*px[id] + c/(1+nc) + d/(1+nd) - lam*red;
+      if(v>bv){ bv=v; best=id; }
+    }
+    if(best===null) break;
+    add(best);
+  }
+  for(const id of order) if(!chosen.includes(id) && used+L(id)<=budget) add(id);
+  return {chosen, used};
+}
+function denseJS(budget){
+  const chosen=[]; let used=0;
+  for(const id of D.dense_order){ const t=D.chunks[id].tokens; if(used+t<=budget){chosen.push(id); used+=t;} }
+  return {chosen, used};
+}
+const recall = sel => D.gold.filter(g=>sel.includes(g)).length / D.gold.length;
+function colHTML(title, sub, res, budget){
+  const r = recall(res.chosen);
+  const cards = res.chosen.map(id=>`<div class="card ${GOLD.has(id)?"isgold":""}"><span class="cid">c${id}</span><span class="ctext">${D.chunks[id].text}</span><span class="ctok">${D.chunks[id].tokens}</span></div>`).join("");
+  const miss = D.gold.filter(g=>!res.chosen.includes(g));
+  return `<h3>${title}</h3><div class="score">${sub}. Gold recall <b>${r.toFixed(2)}</b>, ${res.used} of ${budget} tokens</div>${cards}` +
+    (miss.length ? `<div class="missing">Missing ${miss.map(cl).join(", ")}, so the answer cannot be grounded.</div>` : "");
+}
+const ctl = {budget:$("#r-budget"), alpha:$("#r-alpha"), lam:$("#r-lam"), c:$("#r-c")};
+ctl.budget.value=D.budget; ctl.alpha.value=D.alpha; ctl.lam.value=0.6; ctl.c.value=0.3;
+function updateCompare(){
+  const p = {budget:+ctl.budget.value, alpha:+ctl.alpha.value, lam:+ctl.lam.value, c:+ctl.c.value};
+  $("#o-budget").textContent = p.budget; $("#o-alpha").textContent = p.alpha.toFixed(2);
+  $("#o-lam").textContent = p.lam.toFixed(2); $("#o-c").textContent = p.c.toFixed(2);
+  $("#col-dense").innerHTML = colHTML("Dense top-k", "Similarity order until the budget is full", denseJS(p.budget), p.budget);
+  $("#col-spec").innerHTML = colHTML("SpectRAG", "Protected core, greedy U(c | C), backfill", selectJS(p), p.budget);
+}
+Object.values(ctl).forEach(el=>el.addEventListener("input", updateCompare));
+
+function ablation(){
+  const rows = [
+    ["Full SpectRAG", {}],
+    ["No graph re-scoring (α = 0)", {alpha:0}],
+    ["No spectral cluster gain (c = 0)", {c:0}],
+    ["No document gain (d = 0)", {d:0}],
+    ["No redundancy penalty (λ = 0)", {lam:0}],
+    ["No diversity terms (c = d = λ = 0)", {c:0, d:0, lam:0}],
+  ];
+  const dn = denseJS(D.budget);
+  let html = `<tr><th>Variant</th><th style="text-align:left">Context</th><th>Gold recall</th></tr>`;
+  html += `<tr><td>Dense top-k</td><td>${dn.chosen.map(cl).join(", ")}</td><td class="${recall(dn.chosen)===1?"okk":"nok"}">${recall(dn.chosen).toFixed(2)}</td></tr>`;
+  rows.forEach(([name,p])=>{ const r=selectJS(p); const rc=recall(r.chosen); html += `<tr><td>${name}</td><td>${r.chosen.map(cl).join(", ")}</td><td class="${rc===1?"okk":"nok"}">${rc.toFixed(2)}</td></tr>`; });
+  $("#abl").innerHTML = html;
+  $("#ablnote").textContent = "On this query, any one of the three diversity terms is enough to bring c6 in, and removing all three falls back to the dense result. Graph re-scoring decides the order inside the context and pushes the Delhi distractor down, but it is not what recovers the second hop. That matches the paper’s strongest measured effect, answer diversity, more than its bridge-evidence framing.";
+}
+
+/* init */
+buildSteps(); place(); go(0); updateCompare(); ablation();
+</script>
+</body>
+</html>

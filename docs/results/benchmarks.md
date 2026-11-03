@@ -104,7 +104,7 @@ evidence recall without any tuning.
 
 !!! warning
 
-    Version 0.1.0 keeps the paper-based defaults. Better defaults are planned for a later version.
+    Versions 0.1.x keep the paper-based defaults. Better defaults are planned for a later version.
     Until then, use `selector = "protected_mmr"` or [tune on your own questions](../guides/tuning.md).
 
 ## Smaller experiments

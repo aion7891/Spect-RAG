@@ -169,7 +169,7 @@ Stages 1–4 without formatting, for inspection and evaluation. Returns `(seeds,
 | Name | Meaning |
 |---|---|
 | `enable_logging(level="INFO")` | print SpectRAG's messages to stderr: one timed line per pipeline step; `"DEBUG"` adds one line per question |
-| `__version__` | the package version, e.g. `"0.1.0"` |
+| `__version__` | the package version, e.g. `"0.1.1"` |
 | `INDEX_FORMAT` | the index format this version writes and reads (2) |
 
 ## Utilities

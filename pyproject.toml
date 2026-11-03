@@ -41,6 +41,7 @@ spectrag = "spectrag.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/aion7891/Spect-RAG"
+Documentation = "https://aion7891.gitbook.io/spectrag/"
 Repository = "https://github.com/aion7891/Spect-RAG"
 Issues = "https://github.com/aion7891/Spect-RAG/issues"
 Paper = "https://arxiv.org/abs/2610.36991"

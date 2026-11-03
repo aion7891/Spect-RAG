@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SpectRAG interactive pages</title>
+<meta name="description" content="Interactive explainers for SpectRAG, spectral graph-augmented retrieval for multi-hop RAG.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;600;700&family=Newsreader:opsz,wght@6..72,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F3F5F9; --surface:#FFFFFF; --ink:#17213A; --muted:#5A6680; --rule:#D6DCE8; --accent:#2944C9;
+  --sans:"Instrument Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --serif:"Newsreader", Georgia, serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){ --bg:#0F1524; --surface:#161E31; --ink:#E5EAF4; --muted:#9AA6BF; --rule:#2A3552; --accent:#8197FF; color-scheme: dark; }
+}
+:root[data-theme="dark"]{ --bg:#0F1524; --surface:#161E31; --ink:#E5EAF4; --muted:#9AA6BF; --rule:#2A3552; --accent:#8197FF; color-scheme: dark; }
+*{box-sizing:border-box}
+body{margin:0; background:var(--bg); color:var(--ink); font-family:var(--sans); line-height:1.5}
+main{max-width:960px; margin:0 auto; padding:40px 16px 64px}
+h1{font-size:clamp(28px,4vw,40px); letter-spacing:-.02em; margin:0 0 8px; font-weight:600}
+.dek{font-family:var(--serif); font-size:19px; color:var(--muted); margin:0 0 28px; max-width:60ch}
+.grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:16px}
+a.card{display:block; background:var(--surface); border:1px solid var(--rule); border-radius:14px; padding:18px 20px; color:inherit; text-decoration:none}
+a.card:hover{border-color:var(--accent)}
+a.card:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+.card h2{font-size:18px; margin:0 0 6px; font-weight:600}
+.card p{margin:0; color:var(--muted); font-size:15px}
+.card .go{display:inline-block; margin-top:12px; color:var(--accent); font-weight:600; font-size:14px}
+footer{margin-top:32px; color:var(--muted); font-size:14px}
+footer a{color:var(--accent)}
+</style>
+</head>
+<body>
+<main>
+  <h1>SpectRAG interactive pages</h1>
+  <p class="dek">Explainers that run in your browser, part of the <a href="https://aion7891.gitbook.io/spectrag/" style="color:var(--accent)">SpectRAG documentation</a>.</p>
+  <div class="grid">
+    <a class="card" href="step-by-step.html">
+      <h2>SpectRAG, step by step</h2>
+      <p>The ten stages of the pipeline on a 12-chunk corpus: chunks, edge signals, spectral coordinates, seeds, graph expansion, re-scoring and token-budget selection.</p>
+      <span class="go">Open the walkthrough →</span>
+    </a>
+    <a class="card" href="spectral.html">
+      <h2>The spectral part, explained visually</h2>
+      <p>Why the eigenvectors of the graph Laplacian find communities, and how the same matrix spreads relevance. Two live figures and the code behind them.</p>
+      <span class="go">Open the explainer →</span>
+    </a>
+    <a class="card" href="graph-view.html">
+      <h2>Graph view example</h2>
+      <p>The output of <code>spectrag graph</code> on the 14-document example set, with one question's retrieval path highlighted.</p>
+      <span class="go">Open the graph view →</span>
+    </a>
+  </div>
+  <footer><a href="https://github.com/aion7891/Spect-RAG">GitHub</a> · <a href="https://pypi.org/project/spectrag/">PyPI</a> · <a href="https://arxiv.org/abs/2610.36991">Paper (arXiv:2610.36991)</a></footer>
+</main>
+</body>
+</html>

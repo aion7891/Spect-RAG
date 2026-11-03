@@ -103,7 +103,7 @@ largest on inference questions (0.802 vs 0.757). Full tables, charts and method:
 | Item | Status | Detail |
 |---|---|---|
 | Default settings are not tuned | **by design for 0.1.0** | The defaults follow the paper, and they score below hybrid retrieval on MultiHopRAG (0.803 vs 0.832). The tuned settings (0.846) are listed in the benchmark report. Tuned defaults are planned for the next version. |
-| Benchmark ran in quick mode | documented | Quick mode uses the hash embedder for the semantic graph edges and `nomic-embed-text` for retrieval. Full mode (`SPECTRAG_BENCH_FULL=1`) was not run because it takes many hours on this machine. |
+| Benchmark ran in quick mode | documented | Quick mode uses the hash embedder only to find semantic-chunking breaks (sentence distances); chunks and questions are embedded with `nomic-embed-text`. Full mode (`SPECTRAG_BENCH_FULL=1`) was not run because it takes many hours on this machine. |
 | LightRAG comparison | inconclusive | The local LLM took about 225 s per article, so LightRAG ran on a 4-article subset only. On that subset every method scores 1.0. No claim is made against LightRAG. |
 | numpy 2.2 on macOS warnings | harmless, not hidden | Some matrix products print a spurious `RuntimeWarning: divide by zero / overflow encountered in matmul`. The results were checked and are correct (section 2). |
 | Python 3.15 | blocked upstream | Only an alpha of Python 3.15 exists, and numpy does not load on it yet. The CI job may fail and does not block a release. |

@@ -1,0 +1,603 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The spectral part of SpectRAG, explained visually</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400;1,6..72,500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F3F5F9; --surface:#FFFFFF; --sunk:#EAEEF5; --ink:#17213A; --muted:#5A6680; --faint:#8E98AE; --rule:#D6DCE8;
+  --accent:#2944C9; --accent-soft:#DCE3FB; --gold:#C98A00; --gold-soft:#FBEFD2; --good:#1A8A64; --bad:#C63D5E;
+  --k0:#3E6FE0; --k1:#1C9C8A; --k2:#D8962A; --k3:#9A5BD8; --k4:#E0577A;
+  --c-kw:#7A3FC4; --c-str:#1E7F55; --c-com:#8E98AE; --c-num:#B26A00; --c-fn:#2944C9; --c-bi:#0F7C8C; --c-self:#B23A6B;
+  --sans:"Instrument Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --serif:"Newsreader", Georgia, "Times New Roman", serif;
+  --mono:"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color-scheme: light;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F1524; --surface:#161E31; --sunk:#1C263D; --ink:#E5EAF4; --muted:#9AA6BF; --faint:#6C7894; --rule:#2A3552;
+    --accent:#8197FF; --accent-soft:#25305A; --gold:#F2B630; --gold-soft:#3A3220; --good:#3CC293; --bad:#F0708F;
+    --k0:#6E93F5; --k1:#3CC2AE; --k2:#F0B24E; --k3:#B98AF2; --k4:#F27E9C;
+    --c-kw:#C39BFF; --c-str:#7FD6A6; --c-com:#6C7894; --c-num:#F2B630; --c-fn:#8FA6FF; --c-bi:#62D2DE; --c-self:#F28CB6;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F1524; --surface:#161E31; --sunk:#1C263D; --ink:#E5EAF4; --muted:#9AA6BF; --faint:#6C7894; --rule:#2A3552;
+  --accent:#8197FF; --accent-soft:#25305A; --gold:#F2B630; --gold-soft:#3A3220; --good:#3CC293; --bad:#F0708F;
+  --k0:#6E93F5; --k1:#3CC2AE; --k2:#F0B24E; --k3:#B98AF2; --k4:#F27E9C;
+  --c-kw:#C39BFF; --c-str:#7FD6A6; --c-com:#6C7894; --c-num:#F2B630; --c-fn:#8FA6FF; --c-bi:#62D2DE; --c-self:#F28CB6;
+  color-scheme: dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg); color:var(--ink); font-family:var(--serif); font-size:18px; line-height:1.6; -webkit-font-smoothing:antialiased}
+button, input, .ui{font-family:var(--sans)}
+button{font:inherit; font-family:var(--sans); color:inherit}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:6px}
+.page{max-width:1120px; margin:0 auto; padding:32px 22px 80px}
+.col{max-width:720px}
+header h1{font-family:var(--sans); font-size:clamp(30px,4vw,46px); line-height:1.05; letter-spacing:-.02em; font-weight:600; margin:0 0 12px}
+.dek{font-size:21px; line-height:1.5; color:var(--muted); margin:0 0 20px; max-width:62ch}
+.toc{font-family:var(--sans); font-size:14px; display:flex; flex-wrap:wrap; gap:6px 8px; margin:0 0 8px}
+.toc a{color:var(--ink); text-decoration:none; border:1px solid var(--rule); background:var(--surface); border-radius:999px; padding:4px 12px}
+.toc a:hover{border-color:var(--accent)}
+.toc a b{color:var(--muted); font-weight:700; margin-right:4px; font-variant-numeric:tabular-nums}
+h2{font-family:var(--sans); font-size:28px; letter-spacing:-.015em; line-height:1.15; font-weight:600; margin:56px 0 12px}
+h2 .n{color:var(--faint); font-variant-numeric:tabular-nums; margin-right:10px}
+h3{font-family:var(--sans); font-size:18px; font-weight:600; margin:28px 0 6px}
+p{margin:0 0 14px}
+a{color:var(--accent)}
+em{font-style:italic}
+code{font-family:var(--mono); font-size:.8em; background:var(--sunk); padding:.08em .35em; border-radius:4px}
+.eq{font-family:var(--serif); font-style:italic; font-size:21px; line-height:1.5; background:var(--surface); border:1px solid var(--rule); border-radius:12px; padding:14px 18px; margin:6px 0 18px; overflow-x:auto; display:flex; align-items:center; gap:16px; justify-content:space-between}
+.eq .f{white-space:nowrap}
+.eq .tag{font-family:var(--sans); font-style:normal; font-size:13px; color:var(--muted); white-space:nowrap}
+.eq .r{font-style:normal}
+.frac{display:inline-flex; flex-direction:column; vertical-align:middle; text-align:center; font-size:.9em; margin:0 .15em}
+.frac > span:first-child{border-bottom:1px solid currentColor; padding:0 .2em}
+.frac > span:last-child{padding:0 .2em}
+.big{font-size:1.35em; font-style:normal; vertical-align:-.12em}
+.lim{display:inline-flex; flex-direction:column; align-items:center; vertical-align:middle; line-height:1; margin:0 .1em}
+.lim small{font-size:.5em}
+.where{font-family:var(--sans); font-size:15px; color:var(--muted); margin:-8px 0 18px; line-height:1.55}
+.where b{color:var(--ink); font-weight:600}
+.key{border-left:3px solid var(--gold); background:var(--gold-soft); border-radius:0 10px 10px 0; padding:12px 16px; margin:8px 0 18px}
+.key p:last-child{margin:0}
+
+/* figures */
+figure{margin:22px 0 26px; background:var(--surface); border:1px solid var(--rule); border-radius:16px; padding:16px 18px 18px}
+figcaption{font-family:var(--sans); font-size:14px; color:var(--muted); line-height:1.5; margin-top:10px}
+figcaption b{color:var(--ink)}
+.fig-title{font-family:var(--sans); font-size:16px; font-weight:600; margin:0 0 10px; display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap}
+.fig-title > .nt{font-weight:400; color:var(--muted); font-size:14px}
+.wide{max-width:1076px}
+.wide > p, .wide > h2, .wide > h3, .wide > ol{max-width:720px}
+.ctrl{font-family:var(--sans); display:flex; flex-wrap:wrap; align-items:center; gap:8px 10px; margin:0 0 12px; font-size:14px}
+.ctrl .lbl{color:var(--muted)}
+.seg{display:inline-flex; border:1px solid var(--rule); border-radius:9px; overflow:hidden}
+.seg button{border:0; background:transparent; padding:6px 11px; cursor:pointer; font-size:14px; border-right:1px solid var(--rule)}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--accent); color:#fff}
+:root[data-theme="dark"] .seg button[aria-pressed="true"]{color:#0F1524}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .seg button[aria-pressed="true"]{color:#0F1524} }
+.btn{border:1px solid var(--rule); background:var(--surface); border-radius:9px; padding:6px 14px; cursor:pointer; font-weight:600; font-size:14px}
+.spacer{flex:1}
+input[type=range]{accent-color:var(--accent); flex:1; min-width:140px}
+.out{font-variant-numeric:tabular-nums; font-weight:600; min-width:38px}
+.figgrid{display:grid; grid-template-columns:minmax(0,1.55fr) minmax(0,1fr); gap:16px; align-items:start}
+.figgrid svg{width:100%; height:auto; display:block}
+.side{font-family:var(--sans); font-size:14px}
+.side h4{font-size:14px; margin:0 0 6px; font-weight:600}
+.side .note{color:var(--muted); font-size:13px; margin:0 0 8px; line-height:1.45}
+.readout{font-family:var(--serif); font-size:17px; line-height:1.5; background:var(--sunk); border-radius:10px; padding:10px 12px; margin:0 0 12px; min-height:76px}
+.ec{display:grid; grid-template-columns:64px minmax(0,1fr) 54px; gap:3px 8px; align-items:center; font-variant-numeric:tabular-nums; font-size:13px}
+.ec .tr{height:9px; background:var(--sunk); border-radius:4px; overflow:hidden}
+.ec .tr i{display:block; height:100%; border-radius:4px; background:var(--accent); transition:width .25s}
+.ec .tr i.br{background:var(--gold)}
+.ec .v{text-align:right; color:var(--muted)}
+.ecsum{display:flex; justify-content:space-between; border-top:1px solid var(--rule); margin-top:6px; padding-top:6px; font-weight:600; font-variant-numeric:tabular-nums}
+.eigs{display:grid; grid-template-columns:repeat(7,1fr); gap:6px; align-items:end; height:80px; margin:6px 0 0}
+.eigs div{display:flex; flex-direction:column; justify-content:flex-end; align-items:center; gap:2px; height:100%; font-size:11px; color:var(--muted); font-variant-numeric:tabular-nums}
+.eigs .b{width:100%; border-radius:3px 3px 0 0; background:var(--rule); transition:height .25s}
+.eigs .b.on{background:var(--accent)}
+.legend{font-family:var(--sans); display:flex; flex-wrap:wrap; gap:6px 16px; font-size:13px; color:var(--muted); margin:8px 0 0}
+.legend i{display:inline-block; width:11px; height:11px; border-radius:50%; margin-right:5px; vertical-align:-1px}
+.grp{display:grid; grid-template-columns:92px minmax(0,1fr) 44px; gap:6px 8px; align-items:center; font-size:13.5px; margin-bottom:4px}
+.grp .tr{height:11px; background:var(--sunk); border-radius:5px; overflow:hidden}
+.grp .tr i{display:block; height:100%; background:#EF9F27; border-radius:5px}
+.grp .v{text-align:right; font-weight:600; font-variant-numeric:tabular-nums}
+.modes{display:grid; grid-template-columns:repeat(7,1fr); gap:6px; align-items:end; height:86px}
+.modes div{display:flex; flex-direction:column; justify-content:flex-end; align-items:center; gap:2px; height:100%; font-size:11px; color:var(--muted); font-variant-numeric:tabular-nums}
+.modes .b{width:100%; border-radius:3px 3px 0 0; background:var(--accent)}
+.nodes text{font-family:var(--sans)}
+.nd{cursor:pointer}
+.tbl{width:100%; border-collapse:collapse; font-family:var(--sans); font-size:14px; font-variant-numeric:tabular-nums; margin:6px 0 16px}
+.tbl th,.tbl td{padding:6px 10px; border-bottom:1px solid var(--rule); text-align:left}
+.tbl th{color:var(--muted); font-weight:600; font-size:13px}
+
+/* code */
+.code{background:var(--surface); border:1px solid var(--rule); border-radius:12px; margin:8px 0 20px; overflow:hidden}
+.codeh{font-family:var(--sans); font-size:13px; color:var(--muted); padding:8px 14px; border-bottom:1px solid var(--rule); display:flex; justify-content:space-between; gap:10px}
+.codeh b{font-family:var(--mono); font-weight:500; color:var(--ink); font-size:12.5px}
+.code pre{margin:0; padding:12px 14px 14px; overflow-x:auto; font-family:var(--mono); font-size:13px; line-height:1.6}
+.k,.kn,.kd,.kc,.ow,.kr{color:var(--c-kw)} .s,.s1,.s2,.sa,.sd,.se,.sh,.sb,.sr{color:var(--c-str)} .si{color:var(--c-kw)} .sd{font-style:italic}
+.c,.c1,.cm,.ch{color:var(--c-com); font-style:italic} .mi,.mf,.m{color:var(--c-num)} .nf,.fm,.nc{color:var(--c-fn)} .nb,.ne,.nx{color:inherit} .bp{color:var(--c-self)}
+.steps{counter-reset:s; list-style:none; padding:0; margin:8px 0 0}
+.steps li{counter-increment:s; position:relative; padding:0 0 14px 44px}
+.steps li::before{content:counter(s); position:absolute; left:0; top:2px; width:28px; height:28px; border-radius:50%; background:var(--accent); color:#fff; font-family:var(--sans); font-weight:700; font-size:14px; display:flex; align-items:center; justify-content:center}
+:root[data-theme="dark"] .steps li::before{color:#0F1524}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .steps li::before{color:#0F1524} }
+.steps b{font-family:var(--sans); font-size:16px}
+.say{font-style:italic; color:var(--muted)}
+@media (max-width: 860px){
+  .figgrid{grid-template-columns:1fr}
+  body{font-size:17px}
+  .eq{font-size:18px}
+}
+@media (prefers-reduced-motion: reduce){ *{transition:none !important; animation:none !important} }
+
+.docbar{font-family:var(--sans); font-size:14px; display:flex; flex-wrap:wrap; align-items:center; gap:4px 10px; margin:0 0 16px; color:var(--muted)}
+.docbar a{color:var(--accent); text-decoration:none; font-weight:600}
+.docbar a:hover{text-decoration:underline}
+.docnote{font-family:var(--sans); font-size:14px; line-height:1.5; color:var(--muted); background:var(--sunk); border-radius:10px; padding:10px 14px; margin:0 0 22px}
+.prose a{color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="page">
+<nav class="docbar" aria-label="SpectRAG links"><a href="https://aion7891.gitbook.io/spectrag/">SpectRAG documentation</a><span aria-hidden="true">·</span><a href="./">All interactive pages</a><span aria-hidden="true">·</span><a href="https://github.com/aion7891/Spect-RAG">GitHub</a><span aria-hidden="true">·</span><a href="https://pypi.org/project/spectrag/">PyPI</a></nav>
+<p class="docnote">Figures 1 and 2 use a seven-chunk toy graph and run in your browser. Section 6 and the end of Section 7 show what the pip package computes.</p>
+<header>
+  <h1>The spectral part of SpectRAG, explained visually</h1>
+  <p class="dek">How a graph’s Laplacian finds communities, why its eigenvectors make good “map coordinates” for chunks, and how the same matrix spreads relevance. With every formula, two live visuals you can drive while you explain, and the exact code behind them.</p>
+  <nav class="toc" aria-label="Sections">
+    <a href="#idea"><b>1</b>The question</a><a href="#laplacian"><b>2</b>Springs and the Laplacian</a><a href="#patterns"><b>3</b>Wobble patterns</a><a href="#coords"><b>4</b>Spectral coordinates</a><a href="#heat"><b>5</b>Spreading relevance</a><a href="#spectrag"><b>6</b>Inside SpectRAG</a><a href="#build"><b>7</b>How the visuals work</a><a href="#present"><b>8</b>Presenting it</a>
+  </nav>
+</header>
+
+<section class="col">
+<h2 id="idea"><span class="n">1</span>The question the spectral part answers</h2>
+<p>Dense embeddings tell you what a chunk <em>says</em>. SpectRAG also wants to know where a chunk <em>sits</em>: which chunks belong to the same neighbourhood of the corpus, even when they share few words. The spectral part answers that from the chunk graph alone, with linear algebra instead of hand-written rules.</p>
+<p>Throughout this page we use a seven-chunk graph that mirrors the main SpectRAG demo. Chunks c1–c3 are about Project Orion, c4 is the Orion team chunk (“the research is carried out by Helix Labs”), and c5–c7 are about Helix Labs. Inside each group the links are strong. Between the groups there is one weak link, c4–c6, the bridge a multi-hop question needs.</p>
+<table class="tbl" aria-label="Edges of the example graph">
+<tr><th>Edges</th><th>Weight W<sub>ij</sub></th><th>Meaning</th></tr>
+<tr><td>c1–c2, c2–c3, c1–c3</td><td>1.0</td><td>Orion chunks, tightly linked</td></tr>
+<tr><td>c4–c2, c4–c3</td><td>0.8</td><td>The team chunk belongs with Orion</td></tr>
+<tr><td>c4–c6</td><td>0.3 (adjustable)</td><td>The bridge: shared entity “Helix Labs”</td></tr>
+<tr><td>c5–c6, c6–c7, c5–c7</td><td>1.0</td><td>Helix chunks, tightly linked</td></tr>
+</table>
+
+<h2 id="laplacian"><span class="n">2</span>Springs and the Laplacian</h2>
+<p>Picture every chunk as a ball and every edge as a spring whose stiffness is its weight. Each chunk’s <em>degree</em> is the total stiffness attached to it:</p>
+<div class="eq"><span class="f">d<sub>i</sub> = <span class="big">Σ</span><sub>j</sub> W<sub>ij</sub>,&nbsp;&nbsp; D = diag(d<sub>1</sub>, …, d<sub>n</sub>)</span><span class="tag">degree</span></div>
+<p>The Laplacian packages the whole spring system into one matrix. SpectRAG uses the symmetric normalised version, which divides each spring by the degrees at both ends so that heavily connected chunks don’t dominate:</p>
+<div class="eq"><span class="f">L = D − W,&nbsp;&nbsp;&nbsp; L<sub>sym</sub> = I − D<sup>−½</sup> W D<sup>−½</sup></span><span class="tag">paper Eq. 4, 5, 11</span></div>
+<p>Why this matrix? Give every chunk a number x<sub>i</sub> (think: how far that ball is displaced). The Laplacian measures how much those numbers <em>disagree across springs</em>:</p>
+<div class="eq"><span class="f">x<sup>⊤</sup> L<sub>sym</sub> x = <span class="big">Σ</span><sub>(i,j) ∈ E</sub> W<sub>ij</sub> <span class="big" style="font-size:1.6em">(</span> <span class="frac"><span>x<sub>i</sub></span><span>√d<sub>i</sub></span></span> − <span class="frac"><span>x<sub>j</sub></span><span>√d<sub>j</sub></span></span> <span class="big" style="font-size:1.6em">)</span><sup>2</sup></span><span class="tag">spring energy</span></div>
+<p class="where">Each term is <b>stiffness × stretch²</b>. Giving very different numbers to chunks joined by a stiff spring is expensive; giving different numbers across a weak spring is cheap.</p>
+<div class="key"><p>So the cheapest ways to assign numbers keep strongly linked chunks equal and put all the disagreement on weak links. Weak links are exactly the boundaries between communities. That is the entire trick.</p></div>
+
+<h2 id="patterns"><span class="n">3</span>Wobble patterns are eigenvectors</h2>
+<p>The “cheapest ways to assign numbers” are the eigenvectors of L<sub>sym</sub>, ordered by their eigenvalues:</p>
+<div class="eq"><span class="f">L<sub>sym</sub> u<sub>k</sub> = λ<sub>k</sub> u<sub>k</sub>,&nbsp;&nbsp; 0 = λ<sub>1</sub> ≤ λ<sub>2</sub> ≤ … ≤ λ<sub>n</sub> ≤ 2</span><span class="tag">paper Eq. 12</span></div>
+<div class="eq"><span class="f">λ<sub>k</sub> = u<sub>k</sub><sup>⊤</sup> L<sub>sym</sub> u<sub>k</sub> = <span class="lim"><span>min</span><small>‖x‖ = 1, x ⟂ u<sub>1</sub>…u<sub>k−1</sub></small></span> x<sup>⊤</sup> L<sub>sym</sub> x</span><span class="tag">Rayleigh quotient</span></div>
+<p class="where">Each eigenvector u<sub>k</sub> gives <b>one number per chunk</b>: how far that chunk moves in pattern k. Its eigenvalue λ<sub>k</sub> is that pattern’s <b>spring energy</b>, so a small λ means a cheap pattern that only stretches weak springs. Physically, each pattern is a vibration mode, and low-energy modes are the slow, lazy wobbles.</p>
+<p>The first pattern is always trivial. It moves everything together in proportion to √degree, so nothing is stretched and λ<sub>1</sub> = 0:</p>
+<div class="eq"><span class="f">u<sub>1</sub>(i) = <span class="frac"><span>√d<sub>i</sub></span><span>√(Σ<sub>j</sub> d<sub>j</sub>)</span></span>,&nbsp;&nbsp; λ<sub>1</sub> = 0</span><span class="tag">trivial pattern</span></div>
+<p>The second pattern, u<sub>2</sub> (the <em>Fiedler vector</em>), is the cheapest way to make chunks disagree at all. It is the relaxed solution of the normalised-cut problem: split the graph in two while cutting as little spring stiffness as possible. Try it below.</p>
+</section>
+
+<figure id="fig-wobble">
+  <div class="fig-title"><span>Figure 1. Each pattern is one eigenvector of L<sub>sym</sub></span><span class="nt">Animated: nodes move by A · u<sub>k</sub>(i) · sin(ω<sub>k</sub> t)</span></div>
+  <div class="ctrl">
+    <span class="lbl">Pattern</span>
+    <div class="seg" id="w-modes" role="group" aria-label="Choose eigenvector"></div>
+    <span class="spacer"></span>
+    <div class="seg" role="group" aria-label="View"><button id="w-vg" aria-pressed="true">Graph</button><button id="w-vm" aria-pressed="false">Spectral map</button></div>
+  </div>
+  <div class="figgrid">
+    <div>
+      <svg id="w-svg" viewBox="0 0 680 340" role="img" aria-label="Seven-chunk graph wobbling according to the selected eigenvector"><g id="w-axes"></g><g id="w-edges"></g><g id="w-ghosts"></g><g id="w-nodes" class="nodes"></g><g id="w-glab"></g></svg>
+      <div class="legend"><span><i style="background:#F0997B"></i>Positive: moves one way</span><span><i style="background:#5DCAA5"></i>Negative: moves the other way</span><span>Number under a chunk = u<sub>k</sub>(i)</span></div>
+      <div class="ctrl" style="margin:12px 0 0"><label class="lbl" for="w-br">Strength of the c4–c6 bridge</label><input id="w-br" type="range" min="0.05" max="1" step="0.05" value="0.3"><span class="out" id="w-brv">0.30</span></div>
+    </div>
+    <div class="side">
+      <div class="readout" id="w-read"></div>
+      <h4>Where this pattern’s energy comes from</h4>
+      <p class="note">Each bar is W<sub>ij</sub>(u<sub>i</sub>/√d<sub>i</sub> − u<sub>j</sub>/√d<sub>j</sub>)² for one edge. The bars add up to λ exactly. The gold bar is the bridge.</p>
+      <div class="ec" id="w-ec"></div>
+      <div class="ecsum"><span>Sum of edge costs</span><span id="w-sum"></span></div>
+      <h4 style="margin-top:14px">All seven eigenvalues</h4>
+      <div class="eigs" id="w-eigs"></div>
+    </div>
+  </div>
+  <figcaption><b>Try this while presenting:</b> start on pattern 1 (everything moves together, energy 0), switch to pattern 2 and point at the gold bar carrying most of the energy, then drag the bridge slider toward 0.05 and watch λ<sub>2</sub> shrink. Finally press “Spectral map”.</figcaption>
+</figure>
+
+<section class="col">
+<p>With the default bridge of 0.3, λ<sub>2</sub> = 0.066 and about four fifths of that energy sits on the single c4–c6 spring: u<sub>2</sub> keeps each group internally calm and does all its stretching on the weak link. Weaken the bridge and λ<sub>2</sub> heads toward zero, the signature of two nearly separate communities. Strengthen it and λ<sub>2</sub> grows while c4’s value drifts toward zero, because c4 is now pulled by both sides.</p>
+<p>Higher patterns cost much more (λ<sub>3</sub> ≈ 1 here). They can no longer hide their stretch on the weak link, so they make chunks disagree <em>inside</em> groups. That is finer detail, useful but less about communities.</p>
+<div class="key"><p><b>Rule of thumb, the eigengap:</b> the number of eigenvalues close to zero before a big jump is roughly the number of well-separated communities. Here λ<sub>1</sub>, λ<sub>2</sub> ≈ 0 and then λ<sub>3</sub> ≈ 1: two communities.</p></div>
+
+<h2 id="coords"><span class="n">4</span>From patterns to spectral coordinates</h2>
+<p>Stack the first few non-trivial eigenvectors as columns, and read the table row by row. Each chunk’s row is its <em>spectral coordinate</em>:</p>
+<div class="eq"><span class="f">U = [u<sub>2</sub>, u<sub>3</sub>, …, u<sub>m+1</sub>] ∈ ℝ<sup>n×m</sup>,&nbsp;&nbsp; z<sub>i</sub> = [u<sub>2</sub>(i), u<sub>3</sub>(i), …, u<sub>m+1</sub>(i)] ∈ ℝ<sup>m</sup></span><span class="tag">paper Eq. 13</span></div>
+<p class="where">SpectRAG keeps <b>m = 32</b> coordinates per chunk (the demo uses 4; the figure above shows 2). Pressing “Spectral map” in Figure 1 places each chunk at (u<sub>2</sub>(i), u<sub>3</sub>(i)): the Orion chunks land on one side, the Helix chunks on the other, and c4 sits toward the middle.</p>
+<p>Because strongly linked chunks get similar numbers in every cheap pattern, their rows are similar, so they land close together. Communities become clusters of points. SpectRAG normalises each row and runs k-means to label the communities:</p>
+<div class="eq"><span class="f">ẑ<sub>i</sub> = <span class="frac"><span>z<sub>i</sub></span><span>‖z<sub>i</sub>‖</span></span>,&nbsp;&nbsp; community(i) = k-means(ẑ<sub>1</sub>, …, ẑ<sub>n</sub>)</span><span class="tag">spectral clustering</span></div>
+<div class="key"><p>The coordinates come from the graph, not the text. Two chunks with no words in common, like “research is done by Helix Labs” and “Helix Labs is headquartered in Pune”, can still sit close together because the graph ties them.</p></div>
+
+<h2 id="heat"><span class="n">5</span>The same matrix spreads relevance</h2>
+<p>The Laplacian also describes how heat flows through the springs. Put relevance on one chunk and let it diffuse for time t (paper Eq. 17). Writing the start vector in the eigenvector basis shows why it stays inside communities:</p>
+<div class="eq"><span class="f">s(t) = e<sup>−t L<sub>sym</sub></sup> s(0) = <span class="big">Σ</span><sub>k</sub> e<sup>−t λ<sub>k</sub></sup> (u<sub>k</sub><sup>⊤</sup> s(0)) u<sub>k</sub></span><span class="tag">paper Eq. 17</span></div>
+<p class="where">Each pattern fades at its own rate <b>e<sup>−tλ<sub>k</sub></sup></b>. Expensive, high-λ patterns, the ones that distinguish chunks inside a group, vanish almost immediately, so relevance evens out within the group. Cheap patterns such as u<sub>2</sub> fade slowly, so the difference <em>between</em> groups persists. The weaker the bridge, the smaller λ<sub>2</sub> and the longer the groups stay separate.</p>
+</section>
+
+<figure id="fig-heat">
+  <div class="fig-title"><span>Figure 2. Relevance diffusing over the graph</span><span class="nt">Click a chunk to place the relevance there</span></div>
+  <div class="ctrl">
+    <button class="btn" id="h-play">Play</button>
+    <label class="lbl" for="h-t">Time t</label><input id="h-t" type="range" min="0" max="20" step="0.5" value="0"><span class="out" id="h-tv">0.0</span>
+  </div>
+  <div class="figgrid">
+    <div>
+      <svg id="h-svg" viewBox="0 0 680 320" role="img" aria-label="Seven-chunk graph coloured by how much relevance each chunk holds"><g id="h-edges"></g><g id="h-nodes" class="nodes"></g><g id="h-glab"></g></svg>
+      <div class="ctrl" style="margin:12px 0 0"><label class="lbl" for="h-br">Strength of the c4–c6 bridge</label><input id="h-br" type="range" min="0.05" max="1" step="0.05" value="0.3"><span class="out" id="h-brv">0.30</span></div>
+    </div>
+    <div class="side">
+      <div class="readout" id="h-read"></div>
+      <h4>Where the relevance is</h4>
+      <div class="grp"><span>Orion side</span><span class="tr"><i id="h-g0"></i></span><span class="v" id="h-p0"></span></div>
+      <div class="grp"><span>Bridge c4</span><span class="tr"><i id="h-g1"></i></span><span class="v" id="h-p1"></span></div>
+      <div class="grp"><span>Helix side</span><span class="tr"><i id="h-g2"></i></span><span class="v" id="h-p2"></span></div>
+      <h4 style="margin-top:14px">How much of each pattern is left</h4>
+      <p class="note">|e<sup>−tλ<sub>k</sub></sup> · u<sub>k</sub>(source)| for k = 1…7. Watch the high patterns die first.</p>
+      <div class="modes" id="h-modes"></div>
+    </div>
+  </div>
+  <figcaption><b>Try this while presenting:</b> keep the source on c2 and press Play. Relevance floods c1–c3 and c4 within a moment, then barely leaks to Helix. Drag the bridge to 1.0 and replay: far more crosses. Then move the source to c4 and show that the bridge chunk feeds both sides.</figcaption>
+</figure>
+
+<section class="col">
+<p>Exact heat diffusion needs every eigenvector, which is too expensive for a large corpus. The paper approximates it with a personalised-PageRank-style iteration over the candidate subgraph, which is what the package runs by default:</p>
+<div class="eq"><span class="f">s<sup>(r+1)</sup> = β s + (1 − β) Ã s<sup>(r)</sup>,&nbsp;&nbsp; Ã = D<sup>−½</sup> W D<sup>−½</sup> = I − L<sub>sym</sub></span><span class="tag">paper Eq. 18</span></div>
+<p class="where">β is the restart weight: each round, a share β of the relevance jumps back to the seeds, so it never drifts too far from what matched the query. The package's default, <code>proximity_mode="hybrid"</code>, averages this with the spectral closeness of Section 6; <code>"heat"</code> evaluates Eq. 17 from the stored eigenpairs instead.</p>
+
+<h2 id="spectrag"><span class="n">6</span>How SpectRAG uses all of this</h2>
+<p>The spectral machinery shows up in three places in the online pipeline.</p>
+<h3>Closeness during re-scoring</h3>
+<p>A candidate gets a proximity bonus for sitting close to the seeds in spectral space, averaged with the PageRank diffusion above, and blended into its score. Each coordinate is first damped by e<sup>−tλ</sup>, as in the heat kernel, so the smooth community-level directions count most:</p>
+<div class="eq"><span class="f">z̃<sub>c</sub> = z<sub>c</sub> ⊙ e<sup>−tλ</sup>,&nbsp;&nbsp; spectral(c) = ½ <span class="big">(</span>1 + cos(z̃<sub>c</sub>, <span class="big">Σ</span><sub>s ∈ S<sub>0</sub></sub> ρ<sub>s</sub> z̃<sub>s</sub>)<span class="big">)</span></span><span class="tag">spectral closeness</span></div>
+<div class="eq"><span class="f">s<sub>2</sub>(c) = (1 − α) r(c) + α · ½ (spectral(c) + PPR(c))</span><span class="tag">re-scoring</span></div>
+<p class="where"><b>ρ<sub>s</sub></b> is each seed's share of the relevance (the PageRank restart vector), <b>t</b> is <code>diffusion_t</code> (1.0), PPR is scaled to 0…1, and <b>α</b> is <code>alpha</code> (0.3 by default). This is the package's default, <code>proximity_mode="hybrid"</code>. The step-by-step explainer's teaching version scores closeness to the best single seed instead of the seeds' weighted centre.</p>
+<h3>Community coverage during selection</h3>
+<p>When packing the token budget, a chunk from a community that is not yet represented earns a bonus. This is what let the Helix chunk beat three near-duplicate Orion chunks in the main demo:</p>
+<div class="eq"><span class="f">ClusterGain(c | C) = <span class="frac"><span>c</span><span>1 + |{ j ∈ C : community(j) = community(c) }|</span></span></span><span class="tag">part of paper Eq. 21</span></div>
+<h3>Spreading relevance to bridges</h3>
+<p>The diffusion of Section 5 lets a chunk that doesn’t match the query gain relevance from a strongly connected chunk that does, which is how bridge evidence gets noticed.</p>
+</section>
+
+<figure id="fig-real">
+  <div class="fig-title"><span>Figure 3. The real 12-chunk SpectRAG demo, placed at (u<sub>2</sub>, u<sub>3</sub>)</span><span class="nt">Hover a chunk for its text</span></div>
+  <svg id="r-svg" viewBox="0 0 1000 420" role="img" aria-label="Spectral coordinates of the twelve demo chunks with their communities" style="width:100%;height:auto;display:block"></svg>
+  <div class="legend" id="r-leg"></div>
+  <figcaption>Same idea on a graph built from all six signals, the one used by the <a href="step-by-step.html">step-by-step explainer</a>. Helix (c5–c7) and Nova (c8–c9) form their own communities, and the Orion team chunk c4 sits between Orion and Helix, exactly like the toy graph. Eigenvalues: <span id="r-eig"></span></figcaption>
+</figure>
+
+<section class="col wide">
+<h2 id="build"><span class="n">7</span>How the visuals are implemented</h2>
+<p>Both figures run entirely in your browser with plain JavaScript and SVG: no libraries. The functions below are the exact code this page runs; the page shows the same text it executes. Each step mirrors a line of the Python implementation.</p>
+<h3>Step 1: build the normalised Laplacian</h3>
+<p>Fill W from the edge list, sum each row to get the degrees, and apply L<sub>sym</sub> = I − D<sup>−½</sup>WD<sup>−½</sup> entry by entry.</p>
+<div class="code"><div class="codeh"><span>JavaScript, exactly as this page runs it</span><b>buildLsym()</b></div><pre><span class="kd">function</span><span class="w"> </span><span class="nx">buildLsym</span><span class="p">(</span><span class="nx">edges</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="nx">W</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">Array</span><span class="p">.</span><span class="kr">from</span><span class="p">(</span><span class="p">{</span><span class="w"> </span><span class="nx">length</span><span class="o">:</span><span class="w"> </span><span class="nx">n</span><span class="w"> </span><span class="p">}</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nb">Array</span><span class="p">(</span><span class="nx">n</span><span class="p">)</span><span class="p">.</span><span class="nx">fill</span><span class="p">(</span><span class="mf">0</span><span class="p">)</span><span class="p">)</span><span class="p">;</span>
+<span class="w">  </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kd">const</span><span class="w"> </span><span class="p">[</span><span class="nx">i</span><span class="p">,</span><span class="w"> </span><span class="nx">j</span><span class="p">,</span><span class="w"> </span><span class="nx">w</span><span class="p">]</span><span class="w"> </span><span class="k">of</span><span class="w"> </span><span class="nx">edges</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">W</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span><span class="p">[</span><span class="nx">j</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">w</span><span class="p">;</span><span class="w"> </span><span class="nx">W</span><span class="p">[</span><span class="nx">j</span><span class="p">]</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">w</span><span class="p">;</span><span class="w"> </span><span class="p">}</span><span class="w">      </span><span class="c1">// symmetric weights</span>
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="nx">d</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">W</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="nx">row</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">row</span><span class="p">.</span><span class="nx">reduce</span><span class="p">(</span><span class="p">(</span><span class="nx">a</span><span class="p">,</span><span class="w"> </span><span class="nx">b</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">a</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nx">b</span><span class="p">,</span><span class="w"> </span><span class="mf">0</span><span class="p">)</span><span class="p">)</span><span class="p">;</span><span class="w">          </span><span class="c1">// degree d_i = Σ_j W_ij</span>
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="nx">L</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">W</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="p">(</span><span class="nx">row</span><span class="p">,</span><span class="w"> </span><span class="nx">i</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">row</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="p">(</span><span class="nx">w</span><span class="p">,</span><span class="w"> </span><span class="nx">j</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span>
+<span class="w">    </span><span class="p">(</span><span class="nx">i</span><span class="w"> </span><span class="o">===</span><span class="w"> </span><span class="nx">j</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="mf">1</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="mf">0</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nx">w</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nb">Math</span><span class="p">.</span><span class="nx">sqrt</span><span class="p">(</span><span class="nx">d</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nx">d</span><span class="p">[</span><span class="nx">j</span><span class="p">]</span><span class="p">)</span><span class="p">)</span><span class="p">)</span><span class="p">;</span><span class="w">               </span><span class="c1">// L_sym = I − D^−½ W D^−½</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">W</span><span class="p">,</span><span class="w"> </span><span class="nx">d</span><span class="p">,</span><span class="w"> </span><span class="nx">L</span><span class="w"> </span><span class="p">}</span><span class="p">;</span>
+<span class="p">}</span></pre></div>
+<h3>Step 2: find eigenvalues and eigenvectors (Jacobi rotations)</h3>
+<p>For a small symmetric matrix, the classic Jacobi method is short and exact enough. It repeatedly picks an off-diagonal entry and applies a 2 × 2 rotation that zeroes it. The matrix converges to a diagonal of eigenvalues, and the product of all rotations, V, holds the eigenvectors as columns. In Python this whole step is one call, <code>np.linalg.eigh</code>.</p>
+<div class="code"><div class="codeh"><span>JavaScript, exactly as this page runs it</span><b>jacobiEigen()</b></div><pre><span class="kd">function</span><span class="w"> </span><span class="nx">jacobiEigen</span><span class="p">(</span><span class="nx">M</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="nx">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">M</span><span class="p">.</span><span class="nx">length</span><span class="p">,</span><span class="w"> </span><span class="nx">A</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">M</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="nx">r</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">r</span><span class="p">.</span><span class="nx">slice</span><span class="p">(</span><span class="p">)</span><span class="p">)</span><span class="p">;</span>
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="nx">V</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">A</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="p">(</span><span class="nx">_</span><span class="p">,</span><span class="w"> </span><span class="nx">i</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">A</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="p">(</span><span class="nx">_</span><span class="p">,</span><span class="w"> </span><span class="nx">j</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">(</span><span class="nx">i</span><span class="w"> </span><span class="o">===</span><span class="w"> </span><span class="nx">j</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="mf">1</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="mf">0</span><span class="p">)</span><span class="p">)</span><span class="p">)</span><span class="p">;</span><span class="w">    </span><span class="c1">// accumulates the rotations</span>
+<span class="w">  </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kd">let</span><span class="w"> </span><span class="nx">sweep</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0</span><span class="p">;</span><span class="w"> </span><span class="nx">sweep</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mf">100</span><span class="p">;</span><span class="w"> </span><span class="nx">sweep</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="nx">off</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0</span><span class="p">;</span><span class="w">                                                    </span><span class="c1">// size of what is left off the diagonal</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kd">let</span><span class="w"> </span><span class="nx">p</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0</span><span class="p">;</span><span class="w"> </span><span class="nx">p</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="nx">n</span><span class="p">;</span><span class="w"> </span><span class="nx">p</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kd">let</span><span class="w"> </span><span class="nx">q</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">p</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mf">1</span><span class="p">;</span><span class="w"> </span><span class="nx">q</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="nx">n</span><span class="p">;</span><span class="w"> </span><span class="nx">q</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="nx">off</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="nx">A</span><span class="p">[</span><span class="nx">p</span><span class="p">]</span><span class="p">[</span><span class="nx">q</span><span class="p">]</span><span class="w"> </span><span class="o">**</span><span class="w"> </span><span class="mf">2</span><span class="p">;</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">off</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mf">1e-20</span><span class="p">)</span><span class="w"> </span><span class="k">break</span><span class="p">;</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kd">let</span><span class="w"> </span><span class="nx">p</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0</span><span class="p">;</span><span class="w"> </span><span class="nx">p</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="nx">n</span><span class="p">;</span><span class="w"> </span><span class="nx">p</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kd">let</span><span class="w"> </span><span class="nx">q</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">p</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mf">1</span><span class="p">;</span><span class="w"> </span><span class="nx">q</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="nx">n</span><span class="p">;</span><span class="w"> </span><span class="nx">q</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">Math</span><span class="p">.</span><span class="nx">abs</span><span class="p">(</span><span class="nx">A</span><span class="p">[</span><span class="nx">p</span><span class="p">]</span><span class="p">[</span><span class="nx">q</span><span class="p">]</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mf">1e-16</span><span class="p">)</span><span class="w"> </span><span class="k">continue</span><span class="p">;</span>
+<span class="w">      </span><span class="kd">const</span><span class="w"> </span><span class="nx">theta</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="nx">A</span><span class="p">[</span><span class="nx">q</span><span class="p">]</span><span class="p">[</span><span class="nx">q</span><span class="p">]</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nx">A</span><span class="p">[</span><span class="nx">p</span><span class="p">]</span><span class="p">[</span><span class="nx">p</span><span class="p">]</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="p">(</span><span class="mf">2</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nx">A</span><span class="p">[</span><span class="nx">p</span><span class="p">]</span><span class="p">[</span><span class="nx">q</span><span class="p">]</span><span class="p">)</span><span class="p">;</span><span class="w">            </span><span class="c1">// rotation angle that zeroes A[p][q]</span>
+<span class="w">      </span><span class="kd">const</span><span class="w"> </span><span class="nx">t</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">Math</span><span class="p">.</span><span class="nx">sign</span><span class="p">(</span><span class="nx">theta</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="mf">1</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="p">(</span><span class="nb">Math</span><span class="p">.</span><span class="nx">abs</span><span class="p">(</span><span class="nx">theta</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nb">Math</span><span class="p">.</span><span class="nx">sqrt</span><span class="p">(</span><span class="nx">theta</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nx">theta</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mf">1</span><span class="p">)</span><span class="p">)</span><span class="p">;</span>
+<span class="w">      </span><span class="kd">const</span><span class="w"> </span><span class="nx">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nb">Math</span><span class="p">.</span><span class="nx">sqrt</span><span class="p">(</span><span class="nx">t</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nx">t</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mf">1</span><span class="p">)</span><span class="p">,</span><span class="w"> </span><span class="nx">s</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">t</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nx">c</span><span class="p">;</span>
+<span class="w">      </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kd">let</span><span class="w"> </span><span class="nx">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0</span><span class="p">;</span><span class="w"> </span><span class="nx">k</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="nx">n</span><span class="p">;</span><span class="w"> </span><span class="nx">k</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="kd">const</span><span class="w"> </span><span class="nx">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">A</span><span class="p">[</span><span class="nx">k</span><span class="p">]</span><span class="p">[</span><span class="nx">p</span><span class="p">]</span><span class="p">,</span><span class="w"> </span><span class="nx">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">A</span><span class="p">[</span><span class="nx">k</span><span class="p">]</span><span class="p">[</span><span class="nx">q</span><span class="p">]</span><span class="p">;</span><span class="w"> </span><span class="nx">A</span><span class="p">[</span><span class="nx">k</span><span class="p">]</span><span class="p">[</span><span class="nx">p</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">c</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nx">a</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nx">s</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nx">b</span><span class="p">;</span><span class="w"> </span><span class="nx">A</span><span class="p">[</span><span class="nx">k</span><span class="p">]</span><span class="p">[</span><span class="nx">q</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">s</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nx">a</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nx">c</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nx">b</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<span class="w">      </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kd">let</span><span class="w"> </span><span class="nx">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0</span><span class="p">;</span><span class="w"> </span><span class="nx">k</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="nx">n</span><span class="p">;</span><span class="w"> </span><span class="nx">k</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="kd">const</span><span class="w"> </span><span class="nx">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">A</span><span class="p">[</span><span class="nx">p</span><span class="p">]</span><span class="p">[</span><span class="nx">k</span><span class="p">]</span><span class="p">,</span><span class="w"> </span><span class="nx">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">A</span><span class="p">[</span><span class="nx">q</span><span class="p">]</span><span class="p">[</span><span class="nx">k</span><span class="p">]</span><span class="p">;</span><span class="w"> </span><span class="nx">A</span><span class="p">[</span><span class="nx">p</span><span class="p">]</span><span class="p">[</span><span class="nx">k</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">c</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nx">a</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nx">s</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nx">b</span><span class="p">;</span><span class="w"> </span><span class="nx">A</span><span class="p">[</span><span class="nx">q</span><span class="p">]</span><span class="p">[</span><span class="nx">k</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">s</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nx">a</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nx">c</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nx">b</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<span class="w">      </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kd">let</span><span class="w"> </span><span class="nx">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0</span><span class="p">;</span><span class="w"> </span><span class="nx">k</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="nx">n</span><span class="p">;</span><span class="w"> </span><span class="nx">k</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="kd">const</span><span class="w"> </span><span class="nx">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">V</span><span class="p">[</span><span class="nx">k</span><span class="p">]</span><span class="p">[</span><span class="nx">p</span><span class="p">]</span><span class="p">,</span><span class="w"> </span><span class="nx">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">V</span><span class="p">[</span><span class="nx">k</span><span class="p">]</span><span class="p">[</span><span class="nx">q</span><span class="p">]</span><span class="p">;</span><span class="w"> </span><span class="nx">V</span><span class="p">[</span><span class="nx">k</span><span class="p">]</span><span class="p">[</span><span class="nx">p</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">c</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nx">a</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nx">s</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nx">b</span><span class="p">;</span><span class="w"> </span><span class="nx">V</span><span class="p">[</span><span class="nx">k</span><span class="p">]</span><span class="p">[</span><span class="nx">q</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">s</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nx">a</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nx">c</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nx">b</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="nx">order</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">A</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="p">(</span><span class="nx">_</span><span class="p">,</span><span class="w"> </span><span class="nx">i</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">i</span><span class="p">)</span><span class="p">.</span><span class="nx">sort</span><span class="p">(</span><span class="p">(</span><span class="nx">a</span><span class="p">,</span><span class="w"> </span><span class="nx">b</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">A</span><span class="p">[</span><span class="nx">a</span><span class="p">]</span><span class="p">[</span><span class="nx">a</span><span class="p">]</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nx">A</span><span class="p">[</span><span class="nx">b</span><span class="p">]</span><span class="p">[</span><span class="nx">b</span><span class="p">]</span><span class="p">)</span><span class="p">;</span><span class="w">   </span><span class="c1">// ascending eigenvalues</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">values</span><span class="o">:</span><span class="w"> </span><span class="nx">order</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="nx">i</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nb">Math</span><span class="p">.</span><span class="nx">max</span><span class="p">(</span><span class="mf">0</span><span class="p">,</span><span class="w"> </span><span class="nx">A</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span><span class="p">)</span><span class="p">)</span><span class="p">,</span><span class="w">              </span><span class="c1">// λ_1 … λ_n</span>
+<span class="w">           </span><span class="nx">vectors</span><span class="o">:</span><span class="w"> </span><span class="nx">order</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="nx">i</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">V</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="nx">row</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">row</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span><span class="p">)</span><span class="p">)</span><span class="w"> </span><span class="p">}</span><span class="p">;</span><span class="w">           </span><span class="c1">// u_k = column k of V</span>
+<span class="p">}</span></pre></div>
+<h3>Step 3: fix each eigenvector’s sign</h3>
+<p>An eigenvector is only defined up to sign: u and −u are equally valid. Without a convention, colours and positions would flip randomly as you move the slider, so each vector is flipped to make its largest entry positive.</p>
+<div class="code"><div class="codeh"><span>JavaScript, exactly as this page runs it</span><b>fixSign()</b></div><pre><span class="kd">function</span><span class="w"> </span><span class="nx">fixSign</span><span class="p">(</span><span class="nx">v</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kd">let</span><span class="w"> </span><span class="nx">big</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0</span><span class="p">;</span>
+<span class="w">  </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kd">const</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="k">of</span><span class="w"> </span><span class="nx">v</span><span class="p">)</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">Math</span><span class="p">.</span><span class="nx">abs</span><span class="p">(</span><span class="nx">x</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="nb">Math</span><span class="p">.</span><span class="nx">abs</span><span class="p">(</span><span class="nx">big</span><span class="p">)</span><span class="p">)</span><span class="w"> </span><span class="nx">big</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">x</span><span class="p">;</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="nx">big</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mf">0</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="nx">v</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="nx">x</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="o">-</span><span class="nx">x</span><span class="p">)</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="nx">v</span><span class="p">;</span><span class="w">                              </span><span class="c1">// largest entry positive</span>
+<span class="p">}</span></pre></div>
+<h3>Step 4: the spring-energy bars</h3>
+<p>Each bar in Figure 1 is one term of the energy formula. Because the eigenvectors have length 1, the bars add up to λ<sub>k</sub>, which is a live check that the decomposition is right.</p>
+<div class="code"><div class="codeh"><span>JavaScript, exactly as this page runs it</span><b>edgeCosts()</b></div><pre><span class="kd">function</span><span class="w"> </span><span class="nx">edgeCosts</span><span class="p">(</span><span class="nx">edges</span><span class="p">,</span><span class="w"> </span><span class="nx">d</span><span class="p">,</span><span class="w"> </span><span class="nx">u</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="c1">// one term of xᵀ L_sym x per edge: stiffness × stretch²</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="nx">edges</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="p">(</span><span class="p">[</span><span class="nx">i</span><span class="p">,</span><span class="w"> </span><span class="nx">j</span><span class="p">,</span><span class="w"> </span><span class="nx">w</span><span class="p">]</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">w</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="nx">u</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nb">Math</span><span class="p">.</span><span class="nx">sqrt</span><span class="p">(</span><span class="nx">d</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nx">u</span><span class="p">[</span><span class="nx">j</span><span class="p">]</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nb">Math</span><span class="p">.</span><span class="nx">sqrt</span><span class="p">(</span><span class="nx">d</span><span class="p">[</span><span class="nx">j</span><span class="p">]</span><span class="p">)</span><span class="p">)</span><span class="w"> </span><span class="o">**</span><span class="w"> </span><span class="mf">2</span><span class="p">)</span><span class="p">;</span>
+<span class="p">}</span></pre></div>
+<h3>Step 5: the wobble and the map</h3>
+<p>Every frame, each node is displaced vertically by its eigenvector value times a sine wave. Cheaper patterns wobble more slowly, a visual stand-in for low frequency. In map view the node simply moves to (u<sub>2</sub>(i), u<sub>3</sub>(i)), scaled to the canvas, and glides there by easing a little of the remaining distance each frame.</p>
+<div class="code"><div class="codeh"><span>JavaScript, exactly as this page runs it</span><b>wobbleY()</b></div><pre><span class="kd">function</span><span class="w"> </span><span class="nx">wobbleY</span><span class="p">(</span><span class="nx">restY</span><span class="p">,</span><span class="w"> </span><span class="nx">u</span><span class="p">,</span><span class="w"> </span><span class="nx">i</span><span class="p">,</span><span class="w"> </span><span class="nx">lambda</span><span class="p">,</span><span class="w"> </span><span class="nx">time</span><span class="p">,</span><span class="w"> </span><span class="nx">amplitude</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="nx">omega</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1.4</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mf">3</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nx">lambda</span><span class="p">;</span><span class="w">                                   </span><span class="c1">// cheaper pattern, slower wobble</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="nx">restY</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nx">amplitude</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nx">u</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nb">Math</span><span class="p">.</span><span class="nx">sin</span><span class="p">(</span><span class="nx">omega</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nx">time</span><span class="p">)</span><span class="p">;</span>
+<span class="p">}</span></pre></div>
+<div class="code"><div class="codeh"><span>JavaScript, exactly as this page runs it</span><b>mapXY()</b></div><pre><span class="kd">function</span><span class="w"> </span><span class="nx">mapXY</span><span class="p">(</span><span class="nx">u2</span><span class="p">,</span><span class="w"> </span><span class="nx">u3</span><span class="p">,</span><span class="w"> </span><span class="nx">i</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="p">[</span><span class="mf">340</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mf">520</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nx">u2</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span><span class="p">,</span><span class="w"> </span><span class="mf">170</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mf">165</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nx">u3</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span><span class="p">]</span><span class="p">;</span><span class="w">                    </span><span class="c1">// (u₂(i), u₃(i)) on the 680 × 340 canvas</span>
+<span class="p">}</span></pre></div>
+<h3>Step 6: heat diffusion</h3>
+<p>Figure 2 evaluates the eigenvector form of Eq. 17 directly. The source is a single chunk, so u<sub>k</sub><sup>⊤</sup>s(0) is just u<sub>k</sub>(source). Shares are the clipped values divided by their total.</p>
+<div class="code"><div class="codeh"><span>JavaScript, exactly as this page runs it</span><b>heat()</b></div><pre><span class="kd">function</span><span class="w"> </span><span class="nx">heat</span><span class="p">(</span><span class="nx">values</span><span class="p">,</span><span class="w"> </span><span class="nx">vectors</span><span class="p">,</span><span class="w"> </span><span class="nx">src</span><span class="p">,</span><span class="w"> </span><span class="nx">t</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="c1">// s(t) = Σ_k e^(−t λ_k) · (u_kᵀ s(0)) · u_k, with s(0) = 1 on the source chunk</span>
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="nx">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">vectors</span><span class="p">.</span><span class="nx">length</span><span class="p">,</span><span class="w"> </span><span class="nx">h</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">Array</span><span class="p">(</span><span class="nx">n</span><span class="p">)</span><span class="p">.</span><span class="nx">fill</span><span class="p">(</span><span class="mf">0</span><span class="p">)</span><span class="p">;</span>
+<span class="w">  </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kd">let</span><span class="w"> </span><span class="nx">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0</span><span class="p">;</span><span class="w"> </span><span class="nx">k</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="nx">n</span><span class="p">;</span><span class="w"> </span><span class="nx">k</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">const</span><span class="w"> </span><span class="nx">coef</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">Math</span><span class="p">.</span><span class="nx">exp</span><span class="p">(</span><span class="o">-</span><span class="nx">t</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nx">values</span><span class="p">[</span><span class="nx">k</span><span class="p">]</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nx">vectors</span><span class="p">[</span><span class="nx">k</span><span class="p">]</span><span class="p">[</span><span class="nx">src</span><span class="p">]</span><span class="p">;</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kd">let</span><span class="w"> </span><span class="nx">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0</span><span class="p">;</span><span class="w"> </span><span class="nx">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="nx">n</span><span class="p">;</span><span class="w"> </span><span class="nx">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="nx">h</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="nx">coef</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nx">vectors</span><span class="p">[</span><span class="nx">k</span><span class="p">]</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="nx">h</span><span class="p">;</span>
+<span class="p">}</span></pre></div>
+<h3>The same thing in Python</h3>
+<p>Everything above fits in a few lines of numpy. This prints λ<sub>2</sub> = 0.066 and the same diffusion numbers as Figure 2.</p>
+<div class="code"><div class="codeh"><span>Python with numpy</span><b>spectral_toy.py</b></div><pre><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="n">edges</span> <span class="o">=</span> <span class="p">[</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span><span class="p">,</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mf">.8</span><span class="p">)</span><span class="p">,</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mf">.8</span><span class="p">)</span><span class="p">,</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mf">.3</span><span class="p">)</span><span class="p">,</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span><span class="p">,</span> <span class="p">(</span><span class="mi">5</span><span class="p">,</span><span class="mi">6</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span><span class="p">,</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span><span class="mi">6</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span><span class="p">]</span>
+<span class="n">W</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="mi">7</span><span class="p">)</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">edges</span><span class="p">:</span> <span class="n">W</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">W</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">w</span>
+<span class="n">d</span> <span class="o">=</span> <span class="n">W</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>                                   <span class="c1"># degrees</span>
+<span class="n">L_sym</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">7</span><span class="p">)</span> <span class="o">-</span> <span class="n">W</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">outer</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">d</span><span class="p">)</span><span class="p">)</span>  <span class="c1"># I − D^−½ W D^−½</span>
+<span class="n">lam</span><span class="p">,</span> <span class="n">U</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">eigh</span><span class="p">(</span><span class="n">L_sym</span><span class="p">)</span>                 <span class="c1"># λ ascending; U[:, k] is u_(k+1)</span>
+<span class="n">z</span> <span class="o">=</span> <span class="n">U</span><span class="p">[</span><span class="p">:</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span>                                  <span class="c1"># spectral coordinates (u₂, u₃) per chunk</span>
+<span class="n">s0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">7</span><span class="p">)</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>                              <span class="c1"># all relevance on c2</span>
+<span class="n">heat</span> <span class="o">=</span> <span class="n">U</span> <span class="o">@</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mf">2.0</span> <span class="o">*</span> <span class="n">lam</span><span class="p">)</span><span class="p">)</span> <span class="o">@</span> <span class="n">U</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">s0</span>   <span class="c1"># Eq. 17 at t = 2</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">lam</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="p">)</span>                            <span class="c1"># [0. 0.066 0.986 1.357 1.454 1.5 1.637]</span></pre></div>
+<p>And this is how the package does it. The spectral coordinates are computed once, at ingestion (above 2,000 chunks a sparse solver from the <code>scale</code> extra gives the same eigenvectors); the proximity scores are computed for every question.</p>
+<div class="code"><div class="codeh"><span>src/spectrag/utils/spectral.py, lines 21–36</span><b>normalized_laplacian(), spectral_coords()</b></div><pre><span class="k">def</span><span class="w"> </span><span class="nf">normalized_laplacian</span><span class="p">(</span><span class="n">matrix</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""L_sym = I - D^-1/2 W D^-1/2 (paper Eq. 11)."""</span>
+    <span class="n">scale</span> <span class="o">=</span> <span class="n">inverse_sqrt</span><span class="p">(</span><span class="n">matrix</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">matrix</span><span class="p">))</span> <span class="o">-</span> <span class="n">scale</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="n">matrix</span> <span class="o">*</span> <span class="n">scale</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">spectral_coords</span><span class="p">(</span><span class="n">laplacian</span><span class="p">,</span> <span class="n">dims</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Eigenvectors 2 .. dims+1 of L_sym (the first one is trivial), one row per chunk.</span>
+
+<span class="sd">    Returns (coords, eigenvalues). Small graphs give fewer than 'dims' columns.</span>
+<span class="sd">    """</span>
+    <span class="n">values</span><span class="p">,</span> <span class="n">vectors</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">eigh</span><span class="p">(</span><span class="n">laplacian</span><span class="p">)</span>  <span class="c1"># sorted from smallest to largest</span>
+    <span class="n">used</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">dims</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">used</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">),</span> <span class="mi">0</span><span class="p">)),</span> <span class="n">values</span><span class="p">[:</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">vectors</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">:</span><span class="n">used</span> <span class="o">+</span> <span class="mi">1</span><span class="p">],</span> <span class="n">values</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="n">used</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span></pre></div>
+<div class="code"><div class="codeh"><span>src/spectrag/utils/diffusion.py, lines 34–56</span><b>personalized_pagerank(), spectral_closeness()</b></div><pre><span class="k">def</span><span class="w"> </span><span class="nf">personalized_pagerank</span><span class="p">(</span><span class="n">matrix</span><span class="p">,</span> <span class="n">restart</span><span class="p">,</span> <span class="n">beta</span><span class="o">=</span><span class="mf">0.15</span><span class="p">,</span> <span class="n">steps</span><span class="o">=</span><span class="mi">30</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Eq. 18: s &lt;- beta * restart + (1 - beta) * A_tilde @ s, with A_tilde = D^-1/2 A D^-1/2."""</span>
+    <span class="n">scale</span> <span class="o">=</span> <span class="n">inverse_sqrt</span><span class="p">(</span><span class="n">matrix</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+    <span class="n">a_tilde</span> <span class="o">=</span> <span class="n">scale</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="n">matrix</span> <span class="o">*</span> <span class="n">scale</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>
+    <span class="n">scores</span> <span class="o">=</span> <span class="n">restart</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">steps</span><span class="p">):</span>
+        <span class="n">scores</span> <span class="o">=</span> <span class="n">beta</span> <span class="o">*</span> <span class="n">restart</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">beta</span><span class="p">)</span> <span class="o">*</span> <span class="n">a_tilde</span> <span class="o">@</span> <span class="n">scores</span>
+    <span class="k">return</span> <span class="n">scores</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">spectral_closeness</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">eigenvalues</span><span class="p">,</span> <span class="n">candidates</span><span class="p">,</span> <span class="n">restart</span><span class="p">,</span> <span class="n">t</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Cosine (mapped to 0..1) between each candidate and the seeds' weighted centre.</span>
+
+<span class="sd">    Each spectral coordinate is scaled by exp(-t * eigenvalue), as in the heat kernel</span>
+<span class="sd">    exp(-t L) of Eq. 17, so smooth community-level directions count most.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">coords</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">candidates</span><span class="p">),</span> <span class="mf">0.5</span><span class="p">)</span>
+    <span class="n">points</span> <span class="o">=</span> <span class="n">coords</span><span class="p">[</span><span class="n">candidates</span><span class="p">]</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">t</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">eigenvalues</span><span class="p">))[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>
+    <span class="n">centre</span> <span class="o">=</span> <span class="n">restart</span> <span class="o">@</span> <span class="n">points</span>  <span class="c1"># seeds weighted by relevance (restart is 0 for non-seeds)</span>
+    <span class="n">norms</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">centre</span><span class="p">)</span>
+    <span class="n">cosine</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">divide</span><span class="p">(</span><span class="n">points</span> <span class="o">@</span> <span class="n">centre</span><span class="p">,</span> <span class="n">norms</span><span class="p">,</span> <span class="n">out</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">candidates</span><span class="p">)),</span> <span class="n">where</span><span class="o">=</span><span class="n">norms</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">cosine</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span></pre></div>
+
+<h2 id="present"><span class="n">8</span>Explaining it to others in five minutes</h2>
+<ol class="steps">
+<li><b>Start with the problem.</b> <span class="say">“Embeddings tell us what a chunk says. We also want to know which chunks belong together, even when they use different words.”</span> Show the edge table in Section 1.</li>
+<li><b>Springs.</b> <span class="say">“Every link is a spring; stronger link, stiffer spring.”</span> Show the energy formula and say it in words: stiffness times stretch squared.</li>
+<li><b>Pattern 1 in Figure 1.</b> <span class="say">“Everything moves together, nothing stretches, energy zero. It tells us nothing, so SpectRAG skips it.”</span></li>
+<li><b>Pattern 2.</b> <span class="say">“The cheapest way to make chunks disagree: the two groups swing opposite.”</span> Point at the gold bar: most of the energy is on the weak bridge, so that is where the split falls.</li>
+<li><b>Drag the bridge slider.</b> <span class="say">“Weaker link, smaller λ₂, cleaner split.”</span> Mention the eigengap rule.</li>
+<li><b>Spectral map.</b> <span class="say">“Use each chunk’s numbers in the cheap patterns as coordinates. Groups become clusters; the bridge sits between them.”</span> Then show Figure 3 on the real corpus.</li>
+<li><b>Heat in Figure 2.</b> Press Play from c2. <span class="say">“Relevance spreads fast inside a group and slowly across weak links. High patterns die first.”</span></li>
+<li><b>Tie it back.</b> Section 6: the coordinates give closeness and communities for selection; the diffusion spreads relevance to bridge chunks.</li>
+</ol>
+</section>
+</div>
+
+<script>
+function buildLsym(edges, n) {
+  const W = Array.from({ length: n }, () => Array(n).fill(0));
+  for (const [i, j, w] of edges) { W[i][j] = w; W[j][i] = w; }      // symmetric weights
+  const d = W.map(row => row.reduce((a, b) => a + b, 0));          // degree d_i = Σ_j W_ij
+  const L = W.map((row, i) => row.map((w, j) =>
+    (i === j ? 1 : 0) - w / Math.sqrt(d[i] * d[j])));               // L_sym = I − D^−½ W D^−½
+  return { W, d, L };
+}
+function jacobiEigen(M) {
+  const n = M.length, A = M.map(r => r.slice());
+  const V = A.map((_, i) => A.map((_, j) => (i === j ? 1 : 0)));    // accumulates the rotations
+  for (let sweep = 0; sweep < 100; sweep++) {
+    let off = 0;                                                    // size of what is left off the diagonal
+    for (let p = 0; p < n; p++) for (let q = p + 1; q < n; q++) off += A[p][q] ** 2;
+    if (off < 1e-20) break;
+    for (let p = 0; p < n; p++) for (let q = p + 1; q < n; q++) {
+      if (Math.abs(A[p][q]) < 1e-16) continue;
+      const theta = (A[q][q] - A[p][p]) / (2 * A[p][q]);            // rotation angle that zeroes A[p][q]
+      const t = Math.sign(theta || 1) / (Math.abs(theta) + Math.sqrt(theta * theta + 1));
+      const c = 1 / Math.sqrt(t * t + 1), s = t * c;
+      for (let k = 0; k < n; k++) { const a = A[k][p], b = A[k][q]; A[k][p] = c * a - s * b; A[k][q] = s * a + c * b; }
+      for (let k = 0; k < n; k++) { const a = A[p][k], b = A[q][k]; A[p][k] = c * a - s * b; A[q][k] = s * a + c * b; }
+      for (let k = 0; k < n; k++) { const a = V[k][p], b = V[k][q]; V[k][p] = c * a - s * b; V[k][q] = s * a + c * b; }
+    }
+  }
+  const order = A.map((_, i) => i).sort((a, b) => A[a][a] - A[b][b]);   // ascending eigenvalues
+  return { values: order.map(i => Math.max(0, A[i][i])),              // λ_1 … λ_n
+           vectors: order.map(i => V.map(row => row[i])) };           // u_k = column k of V
+}
+function fixSign(v) {
+  let big = 0;
+  for (const x of v) if (Math.abs(x) > Math.abs(big)) big = x;
+  return big < 0 ? v.map(x => -x) : v;                              // largest entry positive
+}
+function edgeCosts(edges, d, u) {
+  // one term of xᵀ L_sym x per edge: stiffness × stretch²
+  return edges.map(([i, j, w]) => w * (u[i] / Math.sqrt(d[i]) - u[j] / Math.sqrt(d[j])) ** 2);
+}
+function wobbleY(restY, u, i, lambda, time, amplitude) {
+  const omega = 1.4 + 3 * lambda;                                   // cheaper pattern, slower wobble
+  return restY - amplitude * u[i] * Math.sin(omega * time);
+}
+function mapXY(u2, u3, i) {
+  return [340 + 520 * u2[i], 170 - 165 * u3[i]];                    // (u₂(i), u₃(i)) on the 680 × 340 canvas
+}
+function heat(values, vectors, src, t) {
+  // s(t) = Σ_k e^(−t λ_k) · (u_kᵀ s(0)) · u_k, with s(0) = 1 on the source chunk
+  const n = vectors.length, h = Array(n).fill(0);
+  for (let k = 0; k < n; k++) {
+    const coef = Math.exp(-t * values[k]) * vectors[k][src];
+    for (let i = 0; i < n; i++) h[i] += coef * vectors[k][i];
+  }
+  return h;
+}
+const REAL = {"chunks":[{"id":0,"text":"Project Orion is a battery research program for electric city buses, launched in 2021.","cluster":0,"z":[-0.211,0.105]},{"id":1,"text":"Project Orion research targets cheaper batteries for city buses.","cluster":0,"z":[-0.199,0.129]},{"id":2,"text":"Project Orion research targets safer batteries for city buses.","cluster":1,"z":[-0.204,0.12]},{"id":3,"text":"Project Orion research targets faster charging for city buses.","cluster":1,"z":[-0.18,0.157]},{"id":4,"text":"The research work for Project Orion is carried out by Helix Labs. The lab team is led by director Maya Chen.","cluster":1,"z":[0.136,0.109]},{"id":5,"text":"Helix Labs is a private materials laboratory founded by Maya Chen in 2015. It employs around two hundred scientists and engineers.","cluster":4,"z":[0.479,-0.014]},{"id":6,"text":"Helix Labs is headquartered in Pune. It also runs a smaller office in Bengaluru.","cluster":4,"z":[0.512,-0.024]},{"id":7,"text":"The Helix Labs campus has clean rooms, a pilot production line and a battery testing hall.","cluster":4,"z":[0.513,-0.062]},{"id":8,"text":"Nova Motors is headquartered in Delhi and builds electric buses for city transport operators.","cluster":2,"z":[-0.127,-0.674]},{"id":9,"text":"Nova Motors opened its own battery research lab in 2019 to test cell safety for its buses.","cluster":2,"z":[-0.098,-0.665]},{"id":10,"text":"This report compares electric buses, charging networks and battery costs across Indian cities.","cluster":3,"z":[-0.115,-0.066]},{"id":11,"text":"Battery research programs funded by the transport ministry are reviewed here. See Project Orion for the largest program.","cluster":0,"z":[-0.176,0.124]}],"edges":[[0,1,0.6096],[0,2,0.5173],[0,3,0.4873],[0,4,0.2455],[0,8,0.0739],[0,10,0.0952],[0,11,0.5039],[1,2,0.7327],[1,3,0.6091],[1,4,0.4237],[1,9,0.0737],[1,11,0.3865],[2,3,0.6989],[2,4,0.4262],[2,9,0.0844],[2,10,0.0735],[2,11,0.3879],[3,4,0.5093],[3,10,0.0824],[3,11,0.283],[4,5,0.2937],[4,6,0.219],[4,7,0.3314],[4,11,0.283],[5,6,0.3494],[5,7,0.386],[6,7,0.4884],[7,9,0.065],[8,9,0.4291],[8,10,0.0718],[10,11,0.1465]],"eigvals":[0.0,0.23,0.305,0.929,1.113,1.168,1.224,1.272,1.288,1.32,1.423,1.729]};
+const NS = "http://www.w3.org/2000/svg";
+const NAMES = ["c1","c2","c3","c4","c5","c6","c7"];
+const EDGE_NAMES = ["c1–c2","c2–c3","c1–c3","c4–c2","c4–c3","c4–c6","c5–c6","c6–c7","c5–c7"];
+const BASE = [[90,170],[200,108],[200,232],[330,170],[565,108],[450,170],[565,232]];
+const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const sgn = x => (x < 0 ? "−" : "+") + Math.abs(x).toFixed(2);
+function edgesFor(bridge){ return [[0,1,1],[1,2,1],[0,2,1],[3,1,.8],[3,2,.8],[3,5,bridge],[4,5,1],[5,6,1],[4,6,1]]; }
+function el(tag, attrs, parent){ const e=document.createElementNS(NS, tag); for(const k in attrs) e.setAttribute(k, attrs[k]); if(parent) parent.append(e); return e; }
+function mix(a,b,t){ const p=h=>[1,3,5].map(k=>parseInt(h.substr(k,2),16)); const A=p(a),B=p(b); return "rgb("+A.map((x,k)=>Math.round(x+(B[k]-x)*t)).join(",")+")"; }
+function solve(bridge){
+  const edges = edgesFor(bridge), sys = buildLsym(edges, 7), eg = jacobiEigen(sys.L);
+  return { edges, d: sys.d, values: eg.values, vectors: eg.vectors.map(fixSign) };
+}
+
+/* ---------- Figure 1 ---------- */
+(function(){
+  let mode = 1, view = "graph", S = solve(0.3);
+  const gE=document.getElementById("w-edges"), gN=document.getElementById("w-nodes"), gG=document.getElementById("w-ghosts"), gA=document.getElementById("w-axes"), gL=document.getElementById("w-glab");
+  const lines = S.edges.map(()=>el("line",{stroke:"var(--faint)","stroke-linecap":"round","stroke-opacity":.7},gE));
+  BASE.forEach(([x,y])=>el("circle",{cx:x,cy:y,r:20,fill:"none",stroke:"var(--rule)","stroke-dasharray":"3 3"},gG));
+  const nodes = NAMES.map(nm=>{ const g=el("g",{},gN); const c=el("circle",{r:20,stroke:"var(--ink)","stroke-width":.6,"stroke-opacity":.5},g);
+    const t=el("text",{"text-anchor":"middle","dominant-baseline":"central","font-size":13,"font-weight":600},g); t.textContent=nm;
+    const v=el("text",{"text-anchor":"middle",y:37,"font-size":12,fill:"var(--muted)"},g); return {g,c,t,v}; });
+  [["Orion chunks",150],["bridge",330],["Helix chunks",510]].forEach(([s,x])=>{ const t=el("text",{x,y:330,"text-anchor":"middle","font-size":12.5,fill:"var(--muted)","font-family":"var(--sans)"},gL); t.textContent=s; });
+  el("path",{d:"M30 170H650",stroke:"var(--rule)","stroke-dasharray":"4 4",fill:"none"},gA); el("path",{d:"M340 20V310",stroke:"var(--rule)","stroke-dasharray":"4 4",fill:"none"},gA);
+  [["u₂ →",646,160,"end"],["u₃ ↑",350,30,"start"]].forEach(([s,x,y,a])=>{ const t=el("text",{x,y,"text-anchor":a,"font-size":13,fill:"var(--muted)","font-style":"italic","font-family":"var(--serif)"},gA); t.textContent=s; });
+  const segM = document.getElementById("w-modes");
+  for(let k=0;k<7;k++){ const b=document.createElement("button"); b.textContent=`u${"₁₂₃₄₅₆₇"[k]}`; b.setAttribute("aria-label",`Pattern ${k+1}`); b.onclick=()=>{mode=k; refresh();}; segM.append(b); }
+  let cur = BASE.map(p=>p.slice());
+  function target(i){ return view==="graph" ? BASE[i] : mapXY(S.vectors[1], S.vectors[2], i); }
+  function refresh(){
+    const u = S.vectors[mode], lam = S.values[mode], mx = Math.max(...u.map(Math.abs));
+    [...segM.children].forEach((b,k)=>b.setAttribute("aria-pressed", k===mode));
+    document.getElementById("w-vg").setAttribute("aria-pressed", view==="graph"); document.getElementById("w-vm").setAttribute("aria-pressed", view==="map");
+    nodes.forEach((n,i)=>{ const s=Math.min(1,Math.abs(u[i])/mx); n.c.setAttribute("fill", u[i]>=0?mix("#FAECE7","#D85A30",s):mix("#E1F5EE","#1D9E75",s)); n.t.setAttribute("fill", u[i]>=0?"#4A1B0C":"#04342C"); n.v.textContent=sgn(u[i]); });
+    lines.forEach((l,k)=>l.setAttribute("stroke-width",(0.8+3.4*S.edges[k][2]).toFixed(2)));
+    const costs = edgeCosts(S.edges, S.d, u), total = costs.reduce((a,b)=>a+b,0), cmax = Math.max(...costs, 1e-9);
+    const order = costs.map((c,k)=>k).sort((a,b)=>costs[b]-costs[a]);
+    document.getElementById("w-ec").innerHTML = order.map(k=>`<span>${EDGE_NAMES[k]}</span><span class="tr"><i class="${k===5?"br":""}" style="width:${(100*costs[k]/cmax).toFixed(1)}%"></i></span><span class="v">${costs[k].toFixed(3)}</span>`).join("");
+    document.getElementById("w-sum").textContent = `${total.toFixed(3)}, and λ${"₁₂₃₄₅₆₇"[mode]} = ${lam.toFixed(3)}`;
+    document.getElementById("w-eigs").innerHTML = S.values.map((v,k)=>`<div><span>${v.toFixed(2)}</span><span class="b ${k===mode?"on":""}" style="height:${(4+50*v/2).toFixed(0)}px"></span><span>λ${"₁₂₃₄₅₆₇"[k]}</span></div>`).join("");
+    const share = total>1e-9 ? Math.round(100*costs[5]/total) : 0;
+    const txt = [
+      `<b>Pattern 1</b>, λ₁ = ${lam.toFixed(3)}. Every chunk moves in proportion to √degree, so no spring stretches and the energy is zero. It says nothing about groups, so SpectRAG skips it.`,
+      `<b>Pattern 2</b>, λ₂ = ${lam.toFixed(3)}. Orion and Helix swing opposite, and ${share}% of the energy sits on the c4–c6 bridge: the split falls on the weakest link. c4 moves least on its side (${sgn(u[3])}).`,
+    ][mode] ?? `<b>Pattern ${mode+1}</b>, λ${"₁₂₃₄₅₆₇"[mode]} = ${lam.toFixed(3)}. Too expensive to hide on the bridge (${share}% there), so it makes chunks disagree inside the groups. Finer detail, less about communities.`;
+    document.getElementById("w-read").innerHTML = txt;
+    gA.style.display = view==="map" ? "" : "none"; gG.style.display = view==="graph" ? "" : "none"; gL.style.display = view==="graph" ? "" : "none";
+  }
+  function frame(now){
+    const t = now/1000, u = S.vectors[mode];
+    const disp = cur.map((p,i)=>{ const tg=target(i); p[0]+=(tg[0]-p[0])*0.1; p[1]+=(tg[1]-p[1])*0.1;
+      return view==="graph" ? [p[0], REDUCED ? p[1]-55*u[i] : wobbleY(p[1], u, i, S.values[mode], t, 55)] : [p[0], p[1]]; });
+    nodes.forEach((n,i)=>n.g.setAttribute("transform",`translate(${disp[i][0].toFixed(1)},${disp[i][1].toFixed(1)})`));
+    lines.forEach((l,k)=>{ const [a,b]=S.edges[k]; l.setAttribute("x1",disp[a][0]); l.setAttribute("y1",disp[a][1]); l.setAttribute("x2",disp[b][0]); l.setAttribute("y2",disp[b][1]); });
+    requestAnimationFrame(frame);
+  }
+  document.getElementById("w-vg").onclick=()=>{view="graph"; refresh();};
+  document.getElementById("w-vm").onclick=()=>{view="map"; if(mode===0) mode=1; refresh();};
+  document.getElementById("w-br").oninput=e=>{ const b=+e.target.value; document.getElementById("w-brv").textContent=b.toFixed(2); S=solve(b); refresh(); };
+  refresh(); requestAnimationFrame(frame);
+})();
+
+/* ---------- Figure 2 ---------- */
+(function(){
+  let src = 1, t = 0, S = solve(0.3), anim = null;
+  const POS = BASE.map(([x,y])=>[x,y-10]);
+  const gE=document.getElementById("h-edges"), gN=document.getElementById("h-nodes"), gL=document.getElementById("h-glab");
+  const lines = S.edges.map(([a,b])=>el("line",{x1:POS[a][0],y1:POS[a][1],x2:POS[b][0],y2:POS[b][1],stroke:"var(--faint)","stroke-linecap":"round","stroke-opacity":.7},gE));
+  [["Orion chunks",150],["bridge",330],["Helix chunks",510]].forEach(([s,x])=>{ const tx=el("text",{x,y:306,"text-anchor":"middle","font-size":12.5,fill:"var(--muted)","font-family":"var(--sans)"},gL); tx.textContent=s; });
+  const nodes = NAMES.map((nm,i)=>{ const g=el("g",{class:"nd",tabindex:0,role:"button","aria-label":"Place relevance on "+nm,transform:`translate(${POS[i][0]},${POS[i][1]})`},gN);
+    const ring=el("circle",{r:27,fill:"none","stroke-width":2.5},g); const c=el("circle",{r:21,stroke:"var(--ink)","stroke-width":.6,"stroke-opacity":.5},g);
+    const tx=el("text",{"text-anchor":"middle","dominant-baseline":"central","font-size":13,"font-weight":600,fill:"#412402"},g); tx.textContent=nm;
+    const v=el("text",{"text-anchor":"middle",y:43,"font-size":12,fill:"var(--muted)"},g);
+    const pick=()=>{ src=i; stop(); t=0; document.getElementById("h-t").value=0; render(); };
+    g.addEventListener("click",pick); g.addEventListener("keydown",e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); pick(); } });
+    return {ring,c,v}; });
+  function render(){
+    const h = heat(S.values, S.vectors, src, t), c = h.map(x=>Math.max(0,x)), tot = c.reduce((a,b)=>a+b,0), sh = c.map(x=>x/tot), mx = Math.max(...sh);
+    nodes.forEach((n,i)=>{ n.c.setAttribute("fill", mix("#F1EFE8","#EF9F27", Math.sqrt(sh[i]/mx))); n.v.textContent = Math.round(100*sh[i])+"%"; n.ring.setAttribute("stroke", i===src?"var(--accent)":"transparent"); });
+    lines.forEach((l,k)=>l.setAttribute("stroke-width",(0.8+3.4*S.edges[k][2]).toFixed(2)));
+    const g = [sh[0]+sh[1]+sh[2], sh[3], sh[4]+sh[5]+sh[6]];
+    g.forEach((x,k)=>{ document.getElementById("h-g"+k).style.width=(100*x).toFixed(1)+"%"; document.getElementById("h-p"+k).textContent=Math.round(100*x)+"%"; });
+    const left = S.vectors.map((u,k)=>Math.abs(Math.exp(-t*S.values[k])*u[src])), lm = Math.max(...S.vectors.map(u=>Math.abs(u[src]))) || 1;
+    document.getElementById("h-modes").innerHTML = left.map((v,k)=>`<div><span>${v.toFixed(2)}</span><span class="b" style="height:${(2+56*v/lm).toFixed(0)}px;opacity:${(0.35+0.65*v/lm).toFixed(2)}"></span><span>u${"₁₂₃₄₅₆₇"[k]}</span></div>`).join("");
+    document.getElementById("h-tv").textContent = t.toFixed(1);
+    const side = src<3 ? 0 : src===3 ? 1 : 2;
+    document.getElementById("h-read").innerHTML = t===0 ? `All relevance starts on <b>${NAMES[src]}</b>. Press Play, drag the time slider, or click another chunk.`
+      : side===1 ? `At t = ${t.toFixed(1)}, the bridge has fed both sides: Orion ${Math.round(100*g[0])}%, Helix ${Math.round(100*g[2])}%.`
+      : `At t = ${t.toFixed(1)}, <b>${Math.round(100*g[side===0?2:0])}%</b> has crossed to the ${side===0?"Helix":"Orion"} side. λ₂ = ${S.values[1].toFixed(3)} sets how slowly the groups even out.`;
+  }
+  function stop(){ if(anim){ cancelAnimationFrame(anim); anim=null; } document.getElementById("h-play").textContent="Play"; }
+  document.getElementById("h-play").onclick=()=>{ if(anim){ stop(); return; } if(t>=20) t=0; document.getElementById("h-play").textContent="Pause";
+    let last=performance.now(); const step=now=>{ t=Math.min(20, t+(now-last)/1000*3.2); last=now; document.getElementById("h-t").value=t; render(); if(t<20) anim=requestAnimationFrame(step); else stop(); }; anim=requestAnimationFrame(step); };
+  document.getElementById("h-t").oninput=e=>{ stop(); t=+e.target.value; render(); };
+  document.getElementById("h-br").oninput=e=>{ const b=+e.target.value; document.getElementById("h-brv").textContent=b.toFixed(2); S=solve(b); render(); };
+  render();
+})();
+
+/* ---------- Figure 3: the real demo ---------- */
+(function(){
+  const svg = document.getElementById("r-svg"), pts = REAL.chunks.map(c=>c.z);
+  const xs=pts.map(p=>p[0]), ys=pts.map(p=>p[1]), x0=Math.min(...xs), x1=Math.max(...xs), y0=Math.min(...ys), y1=Math.max(...ys);
+  let P = pts.map(p=>[80+840*(p[0]-x0)/(x1-x0), 50+320*(y1-p[1])/(y1-y0)]);
+  for(let it=0; it<160; it++) for(let i=0;i<P.length;i++) for(let j=i+1;j<P.length;j++){ let dx=P[j][0]-P[i][0], dy=P[j][1]-P[i][1], d=Math.hypot(dx,dy)||1; if(d<38){ const m=(38-d)/2; dx/=d; dy/=d; P[i][0]-=dx*m; P[i][1]-=dy*m; P[j][0]+=dx*m; P[j][1]+=dy*m; } }
+  const wmax = Math.max(...REAL.edges.map(e=>e[2]));
+  REAL.edges.forEach(([i,j,w])=>el("line",{x1:P[i][0],y1:P[i][1],x2:P[j][0],y2:P[j][1],stroke:"var(--faint)","stroke-width":(0.8+2.2*w/wmax).toFixed(2),"stroke-opacity":.35},svg));
+  REAL.chunks.forEach((c,i)=>{ const g=el("g",{transform:`translate(${P[i][0].toFixed(1)},${P[i][1].toFixed(1)})`},svg);
+    el("circle",{r:30,fill:`var(--k${c.cluster})`,"fill-opacity":.16},g); el("circle",{r:15,fill:"var(--surface)",stroke:"var(--ink)","stroke-width":1.4},g);
+    const t=el("text",{"text-anchor":"middle","dominant-baseline":"central","font-size":12,"font-weight":600,fill:"var(--ink)","font-family":"var(--sans)"},g); t.textContent=`c${c.id}`;
+    const ti=el("title",{},g); ti.textContent=`c${c.id} (community ${c.cluster+1}): ${c.text}`; });
+  const k = Math.max(...REAL.chunks.map(c=>c.cluster))+1;
+  document.getElementById("r-leg").innerHTML = [...Array(k).keys()].map(j=>`<span><i style="background:var(--k${j})"></i>Community ${j+1}: ${REAL.chunks.filter(c=>c.cluster===j).map(c=>"c"+c.id).join(", ")}</span>`).join("");
+  document.getElementById("r-eig").textContent = REAL.eigvals.slice(0,6).map((v,i)=>`λ${"₁₂₃₄₅₆"[i]} = ${v.toFixed(2)}`).join(", ") + `, and ${REAL.eigvals.length - 6} more.`;
+})();
+</script>
+</body>
+</html>

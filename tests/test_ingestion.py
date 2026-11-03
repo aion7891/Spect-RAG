@@ -72,3 +72,17 @@ def test_ingest_is_deterministic(tmp_path):
 def test_empty_folder_raises(tmp_path):
     with pytest.raises(ValueError):
         SpectRAGIngestion(tmp_path / "idx").ingest(tmp_path)
+
+
+def test_semantic_embedder_is_used_only_for_chunk_breaks(tmp_path):
+    calls = []
+
+    def counting_embedder(texts):
+        calls.append(len(texts))
+        from spectrag.utils.embedder import hash_embed
+        return hash_embed(texts, 32)
+
+    SpectRAGIngestion(tmp_path, {"embedder": counting_embedder, "semantic_embedder": "hash"}).ingest(EXAMPLES)
+    index = load_index(tmp_path)
+    assert index["embeddings"].shape[1] == 32                         # chunks: the main embedder
+    assert sum(calls) == len(index["chunks"])                         # sentences went to "hash"

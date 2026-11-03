@@ -26,6 +26,10 @@ class SpectRAGIngestion:
         self.index_dir = index_dir
         self.settings = make_settings(settings)
         self.embed = make_embedder(self.settings)
+        # Semantic chunking can use a faster embedder for sentence distances (None = the same).
+        split_choice = self.settings["semantic_embedder"]
+        self.split_embed = self.embed if split_choice is None else \
+            make_embedder(dict(self.settings, embedder=split_choice))
         self.entity_fn = entity_fn        # optional: text -> list of entities
         self.question_fn = question_fn    # optional: text -> list of utility questions
 
@@ -33,7 +37,7 @@ class SpectRAGIngestion:
         """Split documents into chunks with entities, references and utility questions."""
         if not docs:
             raise ValueError("No documents with text to ingest")
-        chunks = chunk_documents(docs, self.settings, embed_fn=self.embed)
+        chunks = chunk_documents(docs, self.settings, embed_fn=self.split_embed)
         add_entities(chunks, self.entity_fn)
         add_references(chunks)
         add_utility_questions(chunks, self.question_fn)

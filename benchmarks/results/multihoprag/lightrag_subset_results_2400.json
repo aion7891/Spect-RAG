@@ -1,0 +1,29 @@
+{
+ "articles": 4,
+ "questions": 18,
+ "budget": 2400,
+ "lightrag_query_seconds_mean": 0.062222222222222213,
+ "summary": {
+  "dense": {
+   "recall": 0.8333333333333333,
+   "complete": 0.5
+  },
+  "bm25": {
+   "recall": 0.8472222222222221,
+   "complete": 0.5555555555555556
+  },
+  "hybrid": {
+   "recall": 0.898148148148148,
+   "complete": 0.7222222222222222
+  },
+  "spectrag": {
+   "recall": 0.7546296296296295,
+   "complete": 0.2777777777777778
+  },
+  "lightrag": {
+   "recall": 0.0,
+   "complete": 0.0
+  }
+ },
+ "note": "Budget 2,400 tokens for every method. LightRAG max_total_tokens=2400: its entity/relation descriptions used the whole budget and its Document Chunks section was empty."
+}

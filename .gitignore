@@ -6,3 +6,4 @@ __pycache__/
 *.egg-info/
 examples/demo_index/
 examples/eval/index/
+benchmarks/indexes/

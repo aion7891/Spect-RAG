@@ -69,7 +69,7 @@ All pass.
 | Dependencies | `numpy>=1.24` only; extras `tokens`, `pdf`, `scale`, `all` (alias `extras`), `dev` |
 | Metadata | MIT license, author Kumar Nishant (no email address), project URLs, `spectrag` console script; `twine check` passed |
 | Fresh environments | wheel installed into new Python 3.10 and 3.14 environments: `spectrag --version` gives 0.1.0; ingest, search, info and graph work; `quickstart.py` runs with no arguments |
-| CI (`.github/workflows/tests.yml`) | Linux and macOS × Python 3.10 / 3.12 / 3.14 × minimal and all extras; a build job (wheel → clean environment → CLI); an allowed-to-fail Python 3.15 pre-release job |
+| CI (`.github/workflows/tests.yml`) | Linux and macOS × Python 3.10 / 3.12 / 3.14 × minimal and all extras; a build job (wheel → clean environment → CLI); an allowed-to-fail Python 3.15 pre-release job. *Since 0.1.2: Linux keeps every combination, and macOS runs one job (Python 3.12, all extras), because hosted macOS runners can queue for half an hour* |
 | Index files | format version 2, checked when loading; saving is atomic, through a `<folder>.partial` folder that replaces the old index only when complete |
 
 ## 5. Performance (from Phases 1–3)
@@ -130,7 +130,9 @@ check → tests → build → testpypi → testpypi-check → pypi (final tags o
 
 1. **check:** the tag is on `main`, and it equals `__version__` in `src/spectrag/_version.py`
    (`v0.1.0` needs `0.1.0`);
-2. **tests:** the full CI matrix from `tests.yml` passes;
+2. **tests:** two quick Linux jobs, Python 3.10 with numpy only and Python 3.14 with all extras
+   (`pytest` and `quickstart.py`). The full matrix in `tests.yml` already ran on `main` when
+   the pull request was merged, so it is not repeated here;
 3. **build:** the wheel and sdist pass `twine check --strict`;
 4. **testpypi:** both files are uploaded to TestPyPI;
 5. **testpypi-check:** `spectrag==<version>` is installed from TestPyPI into a clean environment

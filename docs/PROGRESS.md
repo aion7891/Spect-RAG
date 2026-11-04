@@ -12,7 +12,7 @@ was actually run; the commands are listed so they can be repeated.
 | 4 | Production package: configuration, errors, logging, PyPI metadata, `quickstart.py` | ✅ Done (`8e5ee38`) |
 | 5 | Interactive graph view, README redesign, animated architecture flow | ✅ Done (`fc4b988`) |
 | 6 | Final testing and validation, production-readiness report | ✅ Done (awaiting your review) |
-| 7 | Hardening (roadmap Phase 0): 0.1 errors ✅ (0.1.1) · 0.2 embedder marker and fingerprint 🟡 in review · 0.3 safe index replace · 0.4 graph view escaping | 🟡 In progress |
+| 7 | Hardening (roadmap Phase 0): 0.1 errors ✅ (0.1.1) · 0.2 embedder marker and fingerprint ✅ (0.1.2) · 0.3 safe index replace 🟡 in review · 0.4 graph view escaping | 🟡 In progress |
 
 ## Data used for testing and benchmarks
 
@@ -439,4 +439,24 @@ message. The code is in `src/spectrag/utils/embedder_id.py`.
 
 Tests: `tests/test_embedder_id.py` (19 tests). Full suite: 391 passed, 1 skipped (all extras);
 377 passed, 15 skipped (numpy only).
+
+### 7.3 Replacing an index safely
+
+Re-ingesting into an existing index used to delete the old index (`shutil.rmtree`) and then
+rename the new one into place. A crash between the two steps left no index at all, and a
+search started in that gap failed with `IndexError_`.
+
+| Step | Before | Now |
+|---|---|---|
+| 1 | delete `<index>` | rename `<index>` to `<index>.old` |
+| 2 | rename `<index>.partial` to `<index>` | the same; if it fails, step 1 is undone |
+| 3 | — | delete `<index>.old` |
+| Program stops between 1 and 2 | no index | opening reads `<index>.old` with a warning; the next ingest renames it back |
+
+Opening an index only reads, so a search during an ingest can't undo the ingest's swap. The
+code is in `src/spectrag/utils/index_folder.py` (moved out of `ingestion.py`), and the decision
+is DESIGN.md D66. Still not safe: two ingests into the same folder at the same time.
+
+Tests: `tests/test_index_folder.py` (5 tests, one per crash point). Full suite: 396 passed,
+1 skipped (all extras); 382 passed, 15 skipped (numpy only).
 

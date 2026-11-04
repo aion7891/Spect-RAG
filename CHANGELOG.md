@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+## 0.1.3 (2026-11-04)
+
+- **Safe index replace:** re-ingesting into an existing index used to delete the old index
+  before moving the new one into place, so a crash between the two steps left no index at all.
+  The old index is now renamed to `<index>.old`, the new one is renamed into place, and only
+  then is `<index>.old` deleted. If the new index can't be moved into place, the old one is put
+  back. If the program stops between the two renames, `SpectRAGRetrieval` reads `<index>.old`
+  (with a warning) and the next ingest renames it back. Opening an index never moves or deletes
+  a folder, so searches can run while an index is replaced. Two ingests into the same folder at
+  the same time are still not supported.
+- **CI:** each pull-request push runs the tests once (8 jobs, 1 on macOS, instead of 26), and a
+  release runs two quick Linux test jobs instead of the full matrix, so releases no longer wait
+  for scarce macOS runners.
+
 ## 0.1.2 (2026-11-04)
 
 - **Custom embedders reopen:** an index built with a `functools.partial` or a callable object

@@ -6,7 +6,6 @@
 """
 
 import time
-from pathlib import Path
 
 from spectrag._version import INDEX_FORMAT
 from spectrag.config import make_settings
@@ -19,6 +18,7 @@ from spectrag.utils.embedder_id import (CUSTOM, check_embedder, is_saved_functio
                                         read_saved_settings)
 from spectrag.utils.graph import degrees, neighbors
 from spectrag.utils.graph_build import build_graph, build_spectral
+from spectrag.utils.index_folder import readable_folder
 from spectrag.utils.prompt import build_prompt, format_context
 from spectrag.utils.seeding import find_seeds
 from spectrag.utils.selectors import select
@@ -42,9 +42,9 @@ class SpectRAGRetrieval:
         rerank_fn: optional (question, texts) -> scores, e.g. a cross-encoder, used by the
                    "anchor_expand_ce" selector.
         """
-        self.index_dir = Path(index_dir)
+        self.index_dir = readable_folder(index_dir)  # '<index>.old' only after an interrupted ingest
         check_index_folder(self.index_dir)
-        self.index = load_index(index_dir, skip=("signals",))  # raw signals are loaded on demand
+        self.index = load_index(self.index_dir, skip=("signals",))  # raw signals: loaded on demand
         made_with = self.index["info"].get("format_version", 1)
         if made_with > INDEX_FORMAT:
             raise IndexError_("This index has format %d; this SpectRAG version reads up to %d. "

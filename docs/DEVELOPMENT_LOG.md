@@ -12,7 +12,7 @@ Later upgrades are tracked in [PROGRESS.md](PROGRESS.md).
 SpectRAG is a retrieval method for RAG (Retrieval-Augmented Generation). It comes from the paper
 **"SpectRAG: Weighted Chunk Graphs for Token-Budgeted Context Selection in Multi-Hop
 Retrieval-Augmented Generation"** (Sahinoglu et al., arXiv:2610.36991v2), included at
-[`docs/2610.36991v2.pdf`](2610.36991v2.pdf).
+[arXiv:2610.36991v2](https://arxiv.org/abs/2610.36991) (a copy was kept in `docs/` until 0.1.4).
 
 This repository rebuilds the method as a **lightweight, beginner-friendly Python package**:
 short files, small functions, `numpy` as the only required dependency, and tests for every phase.

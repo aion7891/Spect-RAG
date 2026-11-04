@@ -1,7 +1,5 @@
 from pathlib import Path
 
-import pytest
-
 from spectrag.config import make_settings
 from spectrag.utils.chunker import chunk_documents, merge_small_chunks, pack_units, take_overlap
 from spectrag.utils.loader import load_docs, read_file
@@ -66,9 +64,8 @@ def test_long_unit_is_cut_between_words():
     assert " ".join(chunks).split() == long_sentence.split()        # no word lost or cut
 
 
-def test_paper_pdf_chunks_respect_limit():
-    pytest.importorskip("pypdf")
-    text = read_file(Path(__file__).parent.parent / "docs" / "2610.36991v2.pdf")
+def test_paper_pdf_chunks_respect_limit(paper_pdf):  # paper_pdf: see conftest.py
+    text = read_file(paper_pdf)
     for size, overlap in [(256, 64), (60, 20)]:
         settings = make_settings({"chunk_tokens": size, "overlap_tokens": overlap})
         chunks = chunk_documents([{"doc_id": "paper", "text": text}], settings)

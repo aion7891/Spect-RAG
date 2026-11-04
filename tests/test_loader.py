@@ -40,10 +40,8 @@ def test_missing_path_raises():
         load_docs("does/not/exist")
 
 
-def test_read_pdf_paper():
-    pytest.importorskip("pypdf")  # optional dependency
-    paper = Path(__file__).parent.parent / "docs" / "2610.36991v2.pdf"
-    assert "SpectRAG" in read_file(paper)
+def test_read_pdf_paper(paper_pdf):  # paper_pdf: see conftest.py
+    assert "SpectRAG" in read_file(paper_pdf)
 
 
 def test_read_file_keeps_unicode(tmp_path):

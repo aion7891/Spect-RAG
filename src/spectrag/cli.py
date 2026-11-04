@@ -71,7 +71,7 @@ def command_graph(args):
 
 
 def build_parser():
-    parser = argparse.ArgumentParser(prog="spectrag", description="SpectRAG: spectral graph RAG")
+    parser = argparse.ArgumentParser(prog="spectrag", description="SpectRAG: spectral graph RAG. An unofficial implementation of arXiv:2610.36991 (official code: github.com/SightAndCite/SpectRAG)")
     parser.add_argument("--version", action="version", version="spectrag " + __version__)
     parser.add_argument("-v", "--verbose", action="store_true", help="print progress messages")
     commands = parser.add_subparsers(dest="command", required=True)

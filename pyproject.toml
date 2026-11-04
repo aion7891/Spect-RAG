@@ -5,10 +5,10 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "spectrag"
 dynamic = ["version"]
-description = "SpectRAG: spectral graph-augmented retrieval with token-budgeted context selection for multi-hop RAG"
+description = "Unofficial implementation of SpectRAG (Sahinoglu, Mohammed, Kazangirler and Kazangirler, arXiv:2610.36991): spectral graph-augmented retrieval for multi-hop RAG. Official code: github.com/SightAndCite/SpectRAG"
 readme = "README.md"
 license = "MIT"
-license-files = ["LICENSE"]
+license-files = ["LICENSE", "NOTICE"]
 authors = [{ name = "Kumar Nishant" }]
 requires-python = ">=3.10"
 dependencies = ["numpy>=1.24"]
@@ -45,6 +45,7 @@ Documentation = "https://aion7891.github.io/Spect-RAG/"
 Repository = "https://github.com/aion7891/Spect-RAG"
 Issues = "https://github.com/aion7891/Spect-RAG/issues"
 Paper = "https://arxiv.org/abs/2610.36991"
+"Official implementation (by the paper's authors)" = "https://github.com/SightAndCite/SpectRAG"
 
 [tool.setuptools.dynamic]
 version = { attr = "spectrag._version.__version__" }

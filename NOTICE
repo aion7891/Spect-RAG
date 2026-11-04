@@ -1,0 +1,21 @@
+spectrag: an unofficial implementation of SpectRAG
+==================================================
+
+This package is an independent, unofficial implementation of the method described in:
+
+  Zafer Sahinoglu, Abdulazeez Mohammed, Buse Yaren Kazangirler and Cahit Berkay Kazangirler.
+  SpectRAG: Weighted Chunk Graphs for Token-Budgeted Context Selection in Multi-Hop
+  Retrieval-Augmented Generation. arXiv:2610.36991, 2026. https://arxiv.org/abs/2610.36991
+
+It is not affiliated with or endorsed by the paper's authors.
+
+The official implementation by the authors is:
+
+  https://github.com/SightAndCite/SpectRAG
+  MIT License, Copyright (c) 2026 The SpectRAG Authors
+
+This package was written from the paper. It does not include code from the official
+implementation. The method, its equations, tables and default values are the work of the
+paper's authors; please cite the paper if you use the method.
+
+The code of this package is Copyright (c) 2026 Kumar Nishant, under the MIT License (see LICENSE).

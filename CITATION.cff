@@ -1,0 +1,32 @@
+cff-version: 1.2.0
+message: >-
+  This repository is an unofficial implementation of SpectRAG. If you use the method, please
+  cite the paper below. The official implementation by the authors is
+  https://github.com/SightAndCite/SpectRAG.
+title: "spectrag: an unofficial implementation of SpectRAG"
+type: software
+authors:
+  - family-names: Nishant
+    given-names: Kumar
+repository-code: "https://github.com/aion7891/Spect-RAG"
+license: MIT
+preferred-citation:
+  type: article
+  title: >-
+    SpectRAG: Weighted Chunk Graphs for Token-Budgeted Context Selection in Multi-Hop
+    Retrieval-Augmented Generation
+  authors:
+    - family-names: Sahinoglu
+      given-names: Zafer
+    - family-names: Mohammed
+      given-names: Abdulazeez
+    - family-names: Kazangirler
+      given-names: Buse Yaren
+    - family-names: Kazangirler
+      given-names: Cahit Berkay
+  journal: arXiv preprint
+  identifiers:
+    - type: other
+      value: "arXiv:2610.36991"
+  url: "https://arxiv.org/abs/2610.36991"
+  year: 2026

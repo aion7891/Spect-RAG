@@ -1,4 +1,6 @@
-"""SpectRAG: spectral graph-augmented retrieval for RAG (arXiv:2610.36991).
+"""An unofficial implementation of SpectRAG (Sahinoglu, Mohammed, Kazangirler and Kazangirler,
+arXiv:2610.36991): spectral graph-augmented retrieval for RAG. Not affiliated with the paper's
+authors; their official implementation is https://github.com/SightAndCite/SpectRAG.
 
 SpectRAGIngestion builds the index (offline, once per document set).
 SpectRAGRetrieval finds the context for a question and can answer it (online, per question).

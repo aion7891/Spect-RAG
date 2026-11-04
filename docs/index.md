@@ -1,7 +1,7 @@
 ---
 description: >-
-  Spectral graph-augmented retrieval with token-budgeted context selection for
-  multi-hop RAG. One pip install, numpy as the only required dependency.
+  An unofficial implementation of SpectRAG (Sahinoglu et al., arXiv:2610.36991):
+  spectral graph-augmented retrieval for multi-hop RAG.
 ---
 
 # SpectRAG
@@ -20,14 +20,18 @@ pip install spectrag
 **Links:** [GitHub](https://github.com/aion7891/Spect-RAG) ·
 [PyPI](https://pypi.org/project/spectrag/) ·
 [Paper (arXiv:2610.36991)](https://arxiv.org/abs/2610.36991) ·
+[Official implementation](https://github.com/SightAndCite/SpectRAG) ·
 [Interactive explainers](interactive/index.html)
 
-!!! info
+!!! warning "Unofficial implementation"
 
-    SpectRAG is an open-source implementation of the paper *SpectRAG: Weighted Chunk Graphs for
-    Token-Budgeted Context Selection in Multi-Hop Retrieval-Augmented Generation* by Zafer
-    Sahinoglu, Abdulazeez Mohammed, Buse Yaren Kazangirler and Cahit Berkay Kazangirler. If you use
-    it, please [cite the paper](help/faq.md#how-do-i-cite-spectrag).
+    This site documents `spectrag`, an **unofficial**, independent implementation of the paper
+    *SpectRAG: Weighted Chunk Graphs for Token-Budgeted Context Selection in Multi-Hop
+    Retrieval-Augmented Generation* by **Zafer Sahinoglu, Abdulazeez Mohammed, Buse Yaren
+    Kazangirler and Cahit Berkay Kazangirler** ([arXiv:2610.36991](https://arxiv.org/abs/2610.36991)).
+    It is not affiliated with or endorsed by the authors. **The official implementation by the
+    authors is [SightAndCite/SpectRAG](https://github.com/SightAndCite/SpectRAG).** The method is
+    theirs; if you use it, please [cite the paper](help/faq.md#how-do-i-cite-spectrag).
 
 <figure markdown="span">
   ![Chunks of 14 documents appear as nodes of a graph, coloured by spectral cluster; links between documents light up; then the command pip install spectrag.](assets/animations/graph-build.gif)

@@ -1,8 +1,12 @@
 # Design notes: the paper, and every decision this implementation made
 
-SpectRAG is described in Sahinoglu et al., *SpectRAG: Weighted Chunk Graphs for Token-Budgeted
-Context Selection in Multi-Hop Retrieval-Augmented Generation*, arXiv:2610.36991v2
-([PDF](2610.36991v2.pdf)). The paper leaves many details open; each place where this code had to
+SpectRAG is the method of Zafer Sahinoglu, Abdulazeez Mohammed, Buse Yaren Kazangirler and Cahit
+Berkay Kazangirler, *SpectRAG: Weighted Chunk Graphs for Token-Budgeted Context Selection in
+Multi-Hop Retrieval-Augmented Generation*, [arXiv:2610.36991v2](https://arxiv.org/abs/2610.36991).
+Their official implementation is [SightAndCite/SpectRAG](https://github.com/SightAndCite/SpectRAG);
+this package is an unofficial one, and the decisions below are this implementation's, not the
+authors'. Section 1 summarises the paper: equations, tables and section numbers refer to it, and
+text in quotation marks is quoted from it. The paper leaves many details open; each place where this code had to
 choose is listed below (D1, D2, …), with the reason. Measured results are in
 [PROGRESS.md](PROGRESS.md) and [../benchmarks/results/multihoprag/REPORT.md](../benchmarks/results/multihoprag/REPORT.md).
 
@@ -106,7 +110,7 @@ pick  argmax  U(c | C) / tokens(c)^ρ          (ρ in [0, 1] sets how much lengt
 | D13 | Isolated nodes (degree 0) make `D^-1/2` undefined | Use 0 for those entries (their row of `L_sym` is the identity row) | Keeps the Laplacian well defined |
 | D14 | Alternative selectors (`mmr`, `protected_mmr`, `anchor_expand_ce`) | Not implemented; only the default selector | Not described in enough detail |
 | D15 | Benchmarks (MultiHopRAG, UltraDomain), LLM judge | Not reproduced; we include Recall@k, MRR, EM, F1 helpers and a toy evaluation | Needs datasets and paid APIs |
-| D16 | 100-token overlap "as a suffix of the previous chunk" | Overlap only between chunks of the **same** section or semantic segment; no overlap across a heading or topic break | Overlap across sections would put one section's text under another's section path |
+| D16 | 100-token overlap "as a suffix of the previous chunk" (paper, p. 9) | Overlap only between chunks of the **same** section or semantic segment; no overlap across a heading or topic break | Overlap across sections would put one section's text under another's section path |
 | D17 | Semantic breaks use `nomic-embed-text` sentence vectors | `split_by_meaning()` accepts any `embed_fn`; without one it uses word-count cosine. Ties at the percentile count as breaks unless all distances are equal | Phase 3 comes before the embedder; word overlap often gives many distances of exactly 1.0 |
 | D18 | Chunks < 32 tokens are concatenated with the previous chunk | Merged only if the result stays within `chunk_tokens`, so a small chunk can survive when chunks are tiny (e.g. 60) | The maximum chunk size is treated as the harder limit |
 | D19 | Overlap always present | Dropped for the next chunk when overlap + the next unit would go over the limit | Keeps every chunk within `chunk_tokens` |
@@ -135,7 +139,7 @@ pick  argmax  U(c | C) / tokens(c)^ρ          (ρ in [0, 1] sets how much lengt
 | D42 | FAISS exact search for dense seeds and utility questions (Section 6.2) | `embeddings @ query` and `question_vectors @ query` in `numpy` | Exactly the same result as `IndexFlatIP` |
 | D43 | Two-hop BFS "with a cap of 200 nodes" (order inside a hop not given) | Seeds first; then each hop's new chunks, strongest link to the previous hop first, until the cap is reached | When the cap cuts a hop, the most strongly connected chunks are kept |
 | D44 | PPR "from the seeds over the real weighted subgraph" | Eq. 18 on the subgraph of the candidates only; the restart vector is the seeds' hybrid relevance, summing to 1 (equal shares if all are 0); 30 steps | Seeds that match the question better spread more relevance |
-| D45 | Proximity is "the mean of spectral eigenspace closeness and Personalized PageRank" | PPR is min-max rescaled over the candidates (spectral closeness is already 0..1), then `proximity = (ppr + spectral) / 2` | The two must be on the same scale before averaging |
+| D45 | Proximity is "the mean of spectral eigenspace closeness and Personalized PageRank" (paper, Table 2) | PPR is min-max rescaled over the candidates (spectral closeness is already 0..1), then `proximity = (ppr + spectral) / 2` | The two must be on the same scale before averaging |
 | D46 | Eq. 21 terms are named but not defined | `s_c` = the re-scored score; `Prox` = Phase 8 proximity; `ClusterGain = 1 / (1 + chunks already picked from c's cluster)`; `DocGain` = the same per document; `Red` = the largest cosine between c and any picked chunk | Each term is in [0, 1], rewards what is not yet covered, and is cheap to update after each pick |
 | D47 | Protected core | The `core_size` best-scored candidates that fit, picked in score order (the floor does not apply to them) | "Strongly relevant evidence is not removed by later diversity or budget constraints" (Section 3.8) |
 | D48 | Greedy tail | Repeatedly pick the candidate with the best `U / tokens^ρ` among candidates with `score ≥ precision_floor × best score` that fit the budget; a candidate is only picked if `U > 0` | With `U ≤ 0`, dividing by length would favour long redundant chunks |

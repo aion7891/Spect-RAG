@@ -42,6 +42,8 @@ jobs:
         if: matrix.install == 'all'
         run: pip install -e ".[all,dev]"
       - name: Unit and integration tests
+        env:
+          SPECTRAG_DOWNLOAD_PAPER: "1"  # a few tests read the paper PDF from arXiv (tests/conftest.py)
         run: pytest -q -rs
       - name: Quick start runs without arguments
         run: python quickstart.py

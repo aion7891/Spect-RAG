@@ -14,7 +14,6 @@ from spectrag import SpectRAGIngestion, SpectRAGRetrieval
 from spectrag.utils.metrics import contains
 
 ROOT = Path(__file__).parent.parent
-PAPER = ROOT / "docs" / "2610.36991v2.pdf"
 sys.path.insert(0, str(ROOT / "benchmarks"))
 from mhr_data import gold_chunks, load_docs, load_questions, split  # noqa: E402
 
@@ -39,10 +38,9 @@ def normalised(text):
 
 
 @pytest.fixture(scope="module")
-def paper_index(tmp_path_factory):
-    pytest.importorskip("pypdf")
+def paper_index(tmp_path_factory, paper_pdf):  # paper_pdf: see conftest.py
     folder = tmp_path_factory.mktemp("paper")
-    info = SpectRAGIngestion(folder, {"chunk_tokens": 256, "overlap_tokens": 64}).ingest(PAPER)
+    info = SpectRAGIngestion(folder, {"chunk_tokens": 256, "overlap_tokens": 64}).ingest(paper_pdf)
     assert info["documents"] == 1 and info["chunks"] > 50
     return folder
 
@@ -85,11 +83,10 @@ def test_multihoprag_articles_end_to_end(news, tmp_path):
 
 
 @pytest.mark.skipif(not ollama_up(), reason="Ollama is not running")
-def test_live_paper_with_nomic_and_gemma(tmp_path):
-    pytest.importorskip("pypdf")
+def test_live_paper_with_nomic_and_gemma(tmp_path, paper_pdf):
     from spectrag.utils.llm import ollama_llm
     SpectRAGIngestion(tmp_path, {"embedder": "ollama", "semantic_embedder": "hash",
-                                 "chunk_tokens": 256, "overlap_tokens": 64}).ingest(PAPER)
+                                 "chunk_tokens": 256, "overlap_tokens": 64}).ingest(paper_pdf)
     search = SpectRAGRetrieval(tmp_path)
     for question, fact in PAPER_FACTS:
         assert fact in normalised(search.search(question, token_budget=2000)["context"])

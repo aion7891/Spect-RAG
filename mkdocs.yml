@@ -2,12 +2,15 @@
 #   pip install -r .github/docs-requirements.txt
 #   mkdocs serve        # http://127.0.0.1:8000/Spect-RAG/
 site_name: SpectRAG
-site_description: Spectral graph-augmented retrieval with token-budgeted context selection for multi-hop RAG
+site_description: An unofficial implementation of SpectRAG (Sahinoglu et al., arXiv:2610.36991), spectral graph-augmented retrieval for multi-hop RAG
 site_url: https://aion7891.github.io/Spect-RAG/
 repo_url: https://github.com/aion7891/Spect-RAG
 repo_name: aion7891/Spect-RAG
 edit_uri: edit/main/docs/
-copyright: SpectRAG · MIT License · an implementation of arXiv:2610.36991 (Sahinoglu et al.)
+copyright: >-
+  Unofficial implementation of SpectRAG (Sahinoglu, Mohammed, Kazangirler and Kazangirler,
+  arXiv:2610.36991), not affiliated with the authors · official code:
+  <a href="https://github.com/SightAndCite/SpectRAG">SightAndCite/SpectRAG</a> · MIT License
 
 docs_dir: docs
 site_dir: build/site

@@ -10,6 +10,7 @@
   <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT license">
   <img src="https://img.shields.io/badge/required%20dependency-numpy-lightgrey" alt="only numpy required">
   <a href="https://arxiv.org/abs/2610.36991"><img src="https://img.shields.io/badge/paper-arXiv%3A2610.36991-b31b1b" alt="paper"></a>
+  <a href="https://github.com/SightAndCite/SpectRAG"><img src="https://img.shields.io/badge/unofficial-official%20code%3A%20SightAndCite%2FSpectRAG-orange" alt="unofficial implementation; official code: SightAndCite/SpectRAG"></a>
 </p>
 
 <p align="center">
@@ -25,9 +26,19 @@
 
 ---
 
-A readable, tested Python implementation of the paper *SpectRAG: Weighted Chunk Graphs for
-Token-Budgeted Context Selection in Multi-Hop Retrieval-Augmented Generation*
-(Sahinoglu et al., [arXiv:2610.36991](https://arxiv.org/abs/2610.36991), [PDF](docs/2610.36991v2.pdf)).
+> [!IMPORTANT]
+> **This is an unofficial implementation.** The `spectrag` package is an independent
+> re-implementation of the SpectRAG method, written from the paper. It is **not affiliated with
+> or endorsed by** the paper's authors. **The official implementation by the authors is
+> [SightAndCite/SpectRAG](https://github.com/SightAndCite/SpectRAG)** (MIT license).
+> This package contains no code from the official repository.
+
+SpectRAG, the method, is the work of **Zafer Sahinoglu, Abdulazeez Mohammed, Buse Yaren
+Kazangirler and Cahit Berkay Kazangirler**: *SpectRAG: Weighted Chunk Graphs for Token-Budgeted
+Context Selection in Multi-Hop Retrieval-Augmented Generation*,
+[arXiv:2610.36991](https://arxiv.org/abs/2610.36991) (2026). This repository is a readable,
+tested Python implementation of that paper by Kumar Nishant. If you use the method, please
+[cite the paper](#citation).
 
 > **📖 Documentation: [aion7891.github.io/Spect-RAG](https://aion7891.github.io/Spect-RAG/)** covers installation, the quick
 > start, architecture, configuration, tuning, API reference, benchmarks and FAQ, plus
@@ -515,7 +526,9 @@ More: [docs/DESIGN.md](docs/DESIGN.md) (every decision), [docs/PROGRESS.md](docs
 
 ## Citation
 
-If you use SpectRAG, please cite the paper:
+SpectRAG is the method of Sahinoglu, Mohammed, Kazangirler and Kazangirler. If you use it, please
+cite their paper. GitHub's "Cite this repository" button gives the same citation, from
+[CITATION.cff](CITATION.cff).
 
 ```bibtex
 @article{sahinoglu2026spectrag,
@@ -528,7 +541,15 @@ If you use SpectRAG, please cite the paper:
 }
 ```
 
-## License
+## Credits and license
 
-MIT, see [LICENSE](LICENSE). The MultiHopRAG data in `benchmarks/data/` is ODC-BY
+- **Method and paper:** Zafer Sahinoglu, Abdulazeez Mohammed, Buse Yaren Kazangirler and Cahit
+  Berkay Kazangirler, [arXiv:2610.36991](https://arxiv.org/abs/2610.36991). The equations,
+  tables and settings this code refers to (Eq. 10, Table 9, ...) are theirs.
+- **Official implementation:** [SightAndCite/SpectRAG](https://github.com/SightAndCite/SpectRAG),
+  by the paper's authors, MIT license.
+- **This package:** an unofficial, independent implementation by Kumar Nishant, written from the
+  paper. No code from the official implementation is included; see [NOTICE](NOTICE).
+
+The code in this repository is MIT, see [LICENSE](LICENSE). The MultiHopRAG data in `benchmarks/data/` is ODC-BY
 (see its [SOURCE.md](benchmarks/data/multihoprag/SOURCE.md)).

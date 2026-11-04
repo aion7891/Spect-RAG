@@ -100,9 +100,18 @@ meaning). If it was reached but not selected, raise the budget or try another `s
 
 ## Project
 
+### Is this the official SpectRAG?
+
+No. `spectrag` is an unofficial, independent implementation of the paper, written from the paper
+and not affiliated with or endorsed by its authors. The official implementation by the authors
+(Zafer Sahinoglu, Abdulazeez Mohammed, Buse Yaren Kazangirler and Cahit Berkay Kazangirler) is
+[SightAndCite/SpectRAG](https://github.com/SightAndCite/SpectRAG). This package contains no code
+from it. Results and choices described here (for example the defaults the paper leaves open,
+listed in the design notes) are this implementation's, not the authors'.
+
 ### How do I cite SpectRAG?
 
-Please cite the paper:
+SpectRAG is the authors' method, so please cite their paper:
 
 ```bibtex
 @article{sahinoglu2026spectrag,

@@ -23,8 +23,15 @@ edge signals are one `.npz`, and everything else is JSON.
 ## Safety
 
 * **Atomic saves.** Ingestion writes into `<folder>.partial` and moves it into place only when
-  every file is written, so a crash never leaves half an index. An existing SpectRAG index in
-  the target folder is replaced; a folder holding anything else is never overwritten.
+  every file is written, so a crash never leaves half an index. A folder holding anything other
+  than a SpectRAG index is never overwritten.
+* **Safe replace.** An existing index is replaced in three steps: it is renamed to
+  `<folder>.old`, `<folder>.partial` is renamed to `<folder>`, and `<folder>.old` is deleted.
+  The old index is never deleted before the new one is in place, so a complete index always
+  exists (since 0.1.3). If the new index can't be moved into place, the old one is put back.
+  If the program stops between the two renames, opening the index reads `<folder>.old` (with a
+  warning), and the next ingest renames it back. Opening an index never moves or deletes a
+  folder.
 * **No code on load.** Arrays are loaded with `allow_pickle=False`, so opening an index never
   runs stored code.
 * **Versioned.** `format_version` (currently 2) is checked when an index is opened. A newer
@@ -41,6 +48,8 @@ edge signals are one `.npz`, and everything else is JSON.
 * An index built with a custom embed function (a function, a `functools.partial` or a
   callable object) stores only its name in `settings.json`, as `"custom:<name>"`; pass the
   function again with `SpectRAGRetrieval(dir, embed_fn=...)`.
+* Don't run two ingests into the same folder at the same time: both write `<folder>.partial`.
+  Searches can run while an index is being replaced.
 * The files are plain numpy and JSON, so you can read them with any tool:
 
 ```python

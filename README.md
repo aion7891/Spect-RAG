@@ -493,13 +493,15 @@ flowchart LR
     classDef done fill:#d4edda,stroke:#2e7d32,color:#1b5e20
     classDef doing fill:#fff3cd,stroke:#f9a825,color:#6d4c00
     classDef todo fill:#eceff1,stroke:#90a4ae,color:#455a64
-    class errors done
-    class embedder doing
-    class replace,escape todo
+    class errors,embedder done
+    class replace doing
+    class escape todo
 ```
 
 ## Limitations
 
+- Two ingests into the same index folder at the same time are not safe (both write
+  `<folder>.partial`). Searching while an index is replaced is safe.
 - The default settings are not tuned (see the benchmark). Tuning on your own validation
   questions is recommended.
 - Entity extraction is rule-based unless you pass an `entity_fn`; utility questions need an LLM.

@@ -70,7 +70,7 @@ All pass.
 | Metadata | MIT license, author Kumar Nishant (no email address), project URLs, `spectrag` console script; `twine check` passed |
 | Fresh environments | wheel installed into new Python 3.10 and 3.14 environments: `spectrag --version` gives 0.1.0; ingest, search, info and graph work; `quickstart.py` runs with no arguments |
 | CI (`.github/workflows/tests.yml`) | Linux and macOS × Python 3.10 / 3.12 / 3.14 × minimal and all extras; a build job (wheel → clean environment → CLI); an allowed-to-fail Python 3.15 pre-release job. *Since 0.1.2: Linux keeps every combination, and macOS runs one job (Python 3.12, all extras), because hosted macOS runners can queue for half an hour* |
-| Index files | format version 2, checked when loading; saving is atomic, through a `<folder>.partial` folder that replaces the old index only when complete |
+| Index files | format version 2, checked when loading; saving is atomic, through a `<folder>.partial` folder that replaces the old index only when complete. *Since 0.1.3, the old index is renamed aside rather than deleted first, so a crash during the swap no longer leaves the folder empty (DESIGN.md D66)* |
 
 ## 5. Performance (from Phases 1–3)
 

@@ -9,9 +9,9 @@ import json
 import sys
 from pathlib import Path
 
-from spectrag import SpectRAGIngestion
-from spectrag.utils.questions import make_question_fn, ollama_llm
-from spectrag.utils.store import load_index
+from spectrafuse import SpectRAGIngestion
+from spectrafuse.utils.questions import make_question_fn, ollama_llm
+from spectrafuse.utils.store import load_index
 
 HERE = Path(__file__).parent
 

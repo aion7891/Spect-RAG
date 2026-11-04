@@ -17,14 +17,14 @@ edge signals are one `.npz`, and everything else is JSON.
 | `question_vectors.npy`, `question_owners.npy` | embeddings of the utility questions, and the chunk each belongs to |
 | `settings.json` | the settings the index was built with; your own embed function is saved by name, as `"custom:<name>"` |
 | `embedder_probe.npy` | the embedder's fingerprint: the vector of one fixed sentence, checked when the index is opened (since 0.1.2) |
-| `info.json` | the [ingestion summary](python-api.md#the-summary), including `format_version` and `spectrag_version` |
+| `info.json` | the [ingestion summary](python-api.md#the-summary), including `format_version` and `spectrafuse_version` |
 | `vectors.faiss` or `vectors.hnsw` | the approximate vector index, only with the `faiss` or `hnsw` backend |
 
 ## Safety
 
 * **Atomic saves.** Ingestion writes into `<folder>.partial` and moves it into place only when
   every file is written, so a crash never leaves half an index. A folder holding anything other
-  than a SpectRAG index is never overwritten.
+  than a SpectraFuse index is never overwritten.
 * **Safe replace.** An existing index is replaced in three steps: it is renamed to
   `<folder>.old`, `<folder>.partial` is renamed to `<folder>`, and `<folder>.old` is deleted.
   The old index is never deleted before the new one is in place, so a complete index always

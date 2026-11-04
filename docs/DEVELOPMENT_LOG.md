@@ -1,5 +1,10 @@
 # Development log
 
+> **Renamed:** this project is now **SpectraFuse** (`pip install spectrafuse`), an independent
+> implementation inspired by SpectRAG; until 0.1.4 it was published as `spectrag`. This page is a
+> historical record and keeps the old name. SpectRAG's official implementation is
+> [SightAndCite/SpectRAG](https://github.com/SightAndCite/SpectRAG).
+
 This is the original README written while SpectRAG was built in 10 beginner-friendly phases
 (kept for history). It describes the code as it was at the end of each phase; for the current
 package see the [README](../README.md), and for design decisions see [DESIGN.md](DESIGN.md).
@@ -376,7 +381,7 @@ Spect-RAG/
 └── tests/                          # 27 test files: unit tests per module + integration tests
 ```
 
-**Why `src/spectrag/utils/` rather than `src/utils/`:** a top-level package called `utils` would
+**Why `src/spectrafuse/utils/` rather than `src/utils/`:** a top-level package called `utils` would
 clash with any other `utils` module once installed. Nesting it under `spectrag` keeps everything
 inside `src/` and makes it importable as `spectrag.utils`.
 
@@ -1177,16 +1182,16 @@ flowchart LR
 | File | Function | What it does |
 |---|---|---|
 | `pyproject.toml` | — | Package metadata. `numpy` is required; `[extras]` adds `tiktoken` and `pypdf`, `[dev]` adds `pytest`. |
-| `src/spectrag/__init__.py` | — | Package entry point. Exports `DEFAULTS` and `make_settings` for now. |
-| `src/spectrag/config.py` | `DEFAULTS` | Every setting in one dict, from Section 9. |
+| `src/spectrafuse/__init__.py` | — | Package entry point. Exports `DEFAULTS` and `make_settings` for now. |
+| `src/spectrafuse/config.py` | `DEFAULTS` | Every setting in one dict, from Section 9. |
 | | `EDGE_WEIGHTS_CONFIG_1` / `_2` | The paper's two edge-weight configurations (Tables 9 and 10). |
 | | `make_settings(overrides)` | Returns a fresh copy of `DEFAULTS` with your changes. A misspelled key raises `KeyError`, so typos are caught early. |
-| `src/spectrag/utils/loader.py` | `list_files(path)` | Finds supported files in a file or folder, including subfolders, in sorted order. |
+| `src/spectrafuse/utils/loader.py` | `list_files(path)` | Finds supported files in a file or folder, including subfolders, in sorted order. |
 | | `read_file(path)` | Reads a text file as UTF-8, or hands PDFs to `read_pdf`. |
 | | `read_pdf(path)` | Extracts PDF text with `pypdf`, with a clear error if it is not installed. |
 | | `make_doc_id(file, root)` | Builds a readable id such as `sub/b.md`, relative to the folder you loaded. |
 | | `load_docs(path)` | Returns `[{"doc_id", "path", "text"}, ...]` and skips empty files. |
-| `src/spectrag/utils/tokens.py` | `get_encoder()` | Loads `tiktoken`'s `cl100k_base` once (the paper's tokenizer), or returns `None`. |
+| `src/spectrafuse/utils/tokens.py` | `get_encoder()` | Loads `tiktoken`'s `cl100k_base` once (the paper's tokenizer), or returns `None`. |
 | | `estimate_tokens(text)` | Fallback count: number of words divided by 0.75. |
 | | `count_tokens(text)` | Exact count with `tiktoken` when possible, otherwise the estimate. |
 | | `split_sentences(text)` | Splits on `.`, `!`, or `?` followed by a capital letter, digit, or quote. A blank line always ends a sentence. |

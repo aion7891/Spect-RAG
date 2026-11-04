@@ -17,11 +17,11 @@ DARK = {"surface": "#1a1a19", "ink": "#f0efec", "muted": "#c3c2b7", "grid": "#33
         "series": ["#3987e5", "#d95926", "#199e70"]}
 NAMES = {"dense": "Standard RAG (dense top-k)", "bm25": "BM25 top-k", "hybrid": "Hybrid RAG (dense + BM25, RRF)",
          "dense_mmr": "Dense + MMR", "hyde": "HyDE", "lightrag": "LightRAG (hybrid mode)",
-         "spectrag": "SpectRAG (default)", "spectrag_rho0": "SpectRAG default, length_power 0", "spectrag_tuned": "SpectRAG (tuned on validation)",
-         "spectrag_mmr": "SpectRAG, mmr selector", "spectrag_protected_mmr": "SpectRAG, protected_mmr",
-         "spectrag_anchor_expand": "SpectRAG, anchor_expand", "spectrag_topk": "SpectRAG, topk selector",
-         "spectrag_heat": "SpectRAG, heat proximity", "spectrag_no_proximity": "SpectRAG, no proximity",
-         "spectrag_no_expansion": "SpectRAG, no graph expansion"}
+         "spectrag": "SpectraFuse (default)", "spectrag_rho0": "SpectraFuse default, length_power 0", "spectrag_tuned": "SpectraFuse (tuned on validation)",
+         "spectrag_mmr": "SpectraFuse, mmr selector", "spectrag_protected_mmr": "SpectraFuse, protected_mmr",
+         "spectrag_anchor_expand": "SpectraFuse, anchor_expand", "spectrag_topk": "SpectraFuse, topk selector",
+         "spectrag_heat": "SpectraFuse, heat proximity", "spectrag_no_proximity": "SpectraFuse, no proximity",
+         "spectrag_no_expansion": "SpectraFuse, no graph expansion"}
 
 
 def load(name):

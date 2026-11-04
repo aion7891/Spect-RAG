@@ -33,9 +33,9 @@ chunk counts as evidence when it contains the string (whitespace is normalised).
 ## Run a search
 
 ```python
-from spectrag import SpectRAGIngestion, SpectRAGRetrieval
-from spectrag.utils.evaluation import load_questions
-from spectrag.utils.tuning import tune
+from spectrafuse import SpectRAGIngestion, SpectRAGRetrieval
+from spectrafuse.utils.evaluation import load_questions
+from spectrafuse.utils.tuning import tune
 
 SpectRAGIngestion("eval_index", {"embedder": "ollama"}).ingest("examples/eval/docs")
 search = SpectRAGRetrieval("eval_index")
@@ -141,11 +141,11 @@ SpectRAGIngestion("my_index", {"embedder": "ollama", **best["settings"]}).ingest
 Always measure on questions you did not tune on:
 
 ```python
-from spectrag.utils.evaluation import evaluate_retrieval
+from spectrafuse.utils.evaluation import evaluate_retrieval
 
 test = load_questions("test_questions.json")
 report = evaluate_retrieval(SpectRAGRetrieval("my_index", best["settings"]), test, budget=4000)
-print(report["summary"])    # SpectRAG against dense and hybrid top-k, same budget
+print(report["summary"])    # SpectraFuse against dense and hybrid top-k, same budget
 ```
 
 To score generated answers as well (exact match, token F1, contains),

@@ -1,4 +1,4 @@
-from spectrag.utils.entities import add_entities, clean_phrase, extract_entities
+from spectrafuse.utils.entities import add_entities, clean_phrase, extract_entities
 
 
 def test_names_products_and_years():

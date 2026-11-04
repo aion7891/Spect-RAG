@@ -7,14 +7,14 @@ Run:  python examples/edges_example.py                      (offline: hash embed
 import sys
 from pathlib import Path
 
-from spectrag import make_settings
-from spectrag.utils.chunker import chunk_documents
-from spectrag.utils.edges import SIGNALS, build_edge_signals, count_edges
-from spectrag.utils.embedder import make_embedder
-from spectrag.utils.entities import add_entities
-from spectrag.utils.loader import load_docs
-from spectrag.utils.questions import add_utility_questions, make_question_fn, ollama_llm
-from spectrag.utils.references import add_references
+from spectrafuse import make_settings
+from spectrafuse.utils.chunker import chunk_documents
+from spectrafuse.utils.edges import SIGNALS, build_edge_signals, count_edges
+from spectrafuse.utils.embedder import make_embedder
+from spectrafuse.utils.entities import add_entities
+from spectrafuse.utils.loader import load_docs
+from spectrafuse.utils.questions import add_utility_questions, make_question_fn, ollama_llm
+from spectrafuse.utils.references import add_references
 
 DOCS_FOLDER = Path(__file__).parent / "docs"
 

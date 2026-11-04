@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from spectrag import DEFAULTS
+from spectrafuse import DEFAULTS
 
 ROOT = Path(__file__).parent.parent
 SITE = ROOT / "docs"  # the MkDocs docs_dir (see mkdocs.yml)

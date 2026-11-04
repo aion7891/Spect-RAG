@@ -3,12 +3,12 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from spectrag import SpectRAGIngestion, make_settings
-from spectrag.utils.bm25 import build_bm25
-from spectrag.utils.embedder import make_embedder
-from spectrag.utils.seeding import (dense_scores, find_seeds, hybrid_relevance, min_max, ranking,
+from spectrafuse import SpectRAGIngestion, make_settings
+from spectrafuse.utils.bm25 import build_bm25
+from spectrafuse.utils.embedder import make_embedder
+from spectrafuse.utils.seeding import (dense_scores, find_seeds, hybrid_relevance, min_max, ranking,
                                     rrf_fuse, top_seeds, utility_scores)
-from spectrag.utils.store import load_index
+from spectrafuse.utils.store import load_index
 
 EXAMPLES = Path(__file__).parent.parent / "examples" / "docs"
 

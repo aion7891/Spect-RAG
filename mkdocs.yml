@@ -1,15 +1,15 @@
 # The documentation site (published by .github/workflows/docs.yml). Build it locally:
 #   pip install -r .github/docs-requirements.txt
-#   mkdocs serve        # http://127.0.0.1:8000/Spect-RAG/
-site_name: SpectRAG
-site_description: An unofficial implementation of SpectRAG (Sahinoglu et al., arXiv:2610.36991), spectral graph-augmented retrieval for multi-hop RAG
-site_url: https://aion7891.github.io/Spect-RAG/
-repo_url: https://github.com/aion7891/Spect-RAG
-repo_name: aion7891/Spect-RAG
+#   mkdocs serve        # http://127.0.0.1:8000/SpectraFuse/
+site_name: SpectraFuse
+site_description: SpectraFuse, an independent implementation inspired by SpectRAG (Sahinoglu et al., arXiv:2610.36991), for multi-hop RAG
+site_url: https://aion7891.github.io/SpectraFuse/
+repo_url: https://github.com/aion7891/SpectraFuse
+repo_name: aion7891/SpectraFuse
 edit_uri: edit/main/docs/
 copyright: >-
-  Unofficial implementation of SpectRAG (Sahinoglu, Mohammed, Kazangirler and Kazangirler,
-  arXiv:2610.36991), not affiliated with the authors · official code:
+  SpectraFuse is an independent implementation inspired by SpectRAG (Sahinoglu, Mohammed,
+  Kazangirler and Kazangirler, arXiv:2610.36991), not the official SpectRAG · official SpectRAG:
   <a href="https://github.com/SightAndCite/SpectRAG">SightAndCite/SpectRAG</a> · MIT License
 
 docs_dir: docs
@@ -61,9 +61,9 @@ extra:
   generator: false
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/aion7891/Spect-RAG
+      link: https://github.com/aion7891/SpectraFuse
     - icon: fontawesome/brands/python
-      link: https://pypi.org/project/spectrag/
+      link: https://pypi.org/project/spectrafuse/
 
 extra_css:
   - stylesheets/extra.css
@@ -110,7 +110,7 @@ nav:
   - Concepts:
       - Architecture: concepts/architecture.md
       - The spectral part: concepts/spectral.md
-      - Interactive explainers: https://aion7891.github.io/Spect-RAG/interactive/
+      - Interactive explainers: https://aion7891.github.io/SpectraFuse/interactive/
   - Guides:
       - Configuration: guides/configuration.md
       - Hyperparameter tuning: guides/tuning.md

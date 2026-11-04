@@ -1,21 +1,23 @@
-spectrag: an unofficial implementation of SpectRAG
-==================================================
+SpectraFuse: an independent implementation inspired by SpectRAG
+=================================================================
 
-This package is an independent, unofficial implementation of the method described in:
+SpectraFuse (Python package `spectrafuse`, published as `spectrag` until version 0.1.4) is an
+independent implementation inspired by SpectRAG, the method described in:
 
   Zafer Sahinoglu, Abdulazeez Mohammed, Buse Yaren Kazangirler and Cahit Berkay Kazangirler.
   SpectRAG: Weighted Chunk Graphs for Token-Budgeted Context Selection in Multi-Hop
   Retrieval-Augmented Generation. arXiv:2610.36991, 2026. https://arxiv.org/abs/2610.36991
 
-It is not affiliated with or endorsed by the paper's authors.
+SpectraFuse is not SpectRAG and not an official release. It is not affiliated with or endorsed
+by the paper's authors, and differences in its behaviour or results are its own.
 
-The official implementation by the authors is:
+SpectRAG's official implementation and releases are maintained by the authors at:
 
   https://github.com/SightAndCite/SpectRAG
   MIT License, Copyright (c) 2026 The SpectRAG Authors
 
-This package was written from the paper. It does not include code from the official
+SpectraFuse was written from the paper. It does not include code from the official
 implementation. The method, its equations, tables and default values are the work of the
 paper's authors; please cite the paper if you use the method.
 
-The code of this package is Copyright (c) 2026 Kumar Nishant, under the MIT License (see LICENSE).
+The code of SpectraFuse is Copyright (c) 2026 Kumar Nishant, under the MIT License (see LICENSE).

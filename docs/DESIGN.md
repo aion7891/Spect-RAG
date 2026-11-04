@@ -4,8 +4,8 @@ SpectRAG is the method of Zafer Sahinoglu, Abdulazeez Mohammed, Buse Yaren Kazan
 Berkay Kazangirler, *SpectRAG: Weighted Chunk Graphs for Token-Budgeted Context Selection in
 Multi-Hop Retrieval-Augmented Generation*, [arXiv:2610.36991v2](https://arxiv.org/abs/2610.36991).
 Their official implementation is [SightAndCite/SpectRAG](https://github.com/SightAndCite/SpectRAG);
-this package is an unofficial one, and the decisions below are this implementation's, not the
-authors'. Section 1 summarises the paper: equations, tables and section numbers refer to it, and
+SpectraFuse (published as `spectrag` until 0.1.4) is an independent implementation inspired by
+SpectRAG, and the decisions below are SpectraFuse's, not the authors'. Section 1 summarises the paper: equations, tables and section numbers refer to it, and
 text in quotation marks is quoted from it. The paper leaves many details open; each place where this code had to
 choose is listed below (D1, D2, …), with the reason. Measured results are in
 [PROGRESS.md](PROGRESS.md) and [../benchmarks/results/multihoprag/REPORT.md](../benchmarks/results/multihoprag/REPORT.md).

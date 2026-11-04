@@ -1,9 +1,9 @@
 import numpy as np
 
-from spectrag.utils.clusters import (auto_cluster_count, cluster_coords, kmeans,
+from spectrafuse.utils.clusters import (auto_cluster_count, cluster_coords, kmeans,
                                      trivial_eigenvector)
-from spectrag.utils.graph import build_matrix, degrees
-from spectrag.utils.spectral import normalized_laplacian, spectral_coords
+from spectrafuse.utils.graph import build_matrix, degrees
+from spectrafuse.utils.spectral import normalized_laplacian, spectral_coords
 
 # Two triangles (0,1,2) and (3,4,5) joined by one weak bridge edge 2-3.
 TWO_COMMUNITIES = [[0, 1, 1.0], [0, 2, 1.0], [1, 2, 1.0],

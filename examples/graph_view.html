@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SpectRAG graph view</title>
+<title>SpectraFuse graph view</title>
 <style>
 :root{--page:#f9f9f7;--surface:#fcfcfb;--ink:#0b0b0b;--ink2:#52514e;--muted:#898781;--line:#e1e0d9;
 --s0:#2a78d6;--s1:#eb6834;--s2:#1baf7a;--s3:#eda100;--s4:#e87ba4;--s5:#008300;
@@ -24,7 +24,7 @@ ol{margin:0;padding-left:20px;max-height:28vh;overflow:auto}li{margin:2px 0;curs
 .n{stroke:var(--surface);stroke-width:1.5}.e{stroke-linecap:round}.dim{opacity:.12}
 @media (max-width:700px){#view{height:60vh}}
 </style></head><body>
-<header><h1>SpectRAG chunk graph</h1><div class="sub" id="sub"></div></header>
+<header><h1>SpectraFuse chunk graph</h1><div class="sub" id="sub"></div></header>
 <main><svg id="view" role="img" aria-label="Chunk graph"><g id="zoom"><g id="edges"></g><g id="nodes"></g></g></svg>
 <aside><div class="box"><h2>Colour nodes by</h2><select id="mode"><option value="state">retrieval path</option>
 <option value="doc">document</option><option value="cluster">spectral cluster</option></select><div id="nodeLegend" style="margin-top:8px"></div></div>

@@ -5,7 +5,7 @@ description: >-
 
 # Graph view
 
-`spectrag graph` writes one self-contained HTML file that shows your index as a graph: chunks
+`spectrafuse graph` writes one self-contained HTML file that shows your index as a graph: chunks
 are nodes, edges are coloured by their strongest signal, and a question's retrieval path is
 highlighted (seeds, chunks reached by the graph walk, and the selected context). It is similar
 to Figure 5 of the paper, and needs no internet connection.
@@ -15,7 +15,7 @@ to Figure 5 of the paper, and needs no internet connection.
   <figcaption markdown="span">600 MultiHopRAG chunks, with the retrieval path of one question.</figcaption>
 </figure>
 
-<div class="spectrag-embed" markdown>
+<div class="spectrafuse-embed" markdown>
 <iframe src="../../interactive/graph-view.html" title="Graph view example" loading="lazy"></iframe>
 
 **Live example:** the 14-document evaluation set and the question *"Which company acquired the
@@ -27,14 +27,14 @@ former employer of the person who leads the Madrid office of Aurora Labs?"* [Ope
 === "Command line"
 
     ```bash
-    spectrag graph --index my_index --out graph.html
-    spectrag graph --index my_index --out graph.html --question "Where is Helios Energy based?"
+    spectrafuse graph --index my_index --out graph.html
+    spectrafuse graph --index my_index --out graph.html --question "Where is Helios Energy based?"
     ```
 
 === "Python"
 
     ```python
-    from spectrag.utils.graph_view import save_graph_view
+    from spectrafuse.utils.graph_view import save_graph_view
 
     save_graph_view("my_index", "graph.html", question="Where is Helios Energy based?")
     ```
@@ -73,7 +73,7 @@ outwards from it (neighbours, then their neighbours), then adds the best-connect
 visualisation:
 
 ```python
-from spectrag.utils.graph_view import graph_data
+from spectrafuse.utils.graph_view import graph_data
 
 data = graph_data("my_index", question="Where is Helios Energy based?")
 data["nodes"][0]     # {"id", "x", "y", "doc", "section", "cluster", "position", "degree", "state", "text"}

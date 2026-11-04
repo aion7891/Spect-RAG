@@ -1,4 +1,4 @@
-from spectrag.utils.references import add_references, extract_references, section_numbers
+from spectrafuse.utils.references import add_references, extract_references, section_numbers
 
 
 def test_section_references():

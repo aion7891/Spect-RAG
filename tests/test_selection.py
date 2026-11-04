@@ -1,7 +1,7 @@
 import numpy as np
 
-from spectrag.config import make_settings
-from spectrag.utils.selection import select_context
+from spectrafuse.config import make_settings
+from spectrafuse.utils.selection import select_context
 
 
 def make_case(tokens, scores, clusters=None, docs=None, vectors=None, proximity=None):

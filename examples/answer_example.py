@@ -8,8 +8,8 @@ Run:  python examples/answer_example.py                       (nomic-embed-text 
 import sys
 from pathlib import Path
 
-from spectrag import SpectRAGIngestion, SpectRAGRetrieval
-from spectrag.utils.llm import ollama_llm
+from spectrafuse import SpectRAGIngestion, SpectRAGRetrieval
+from spectrafuse.utils.llm import ollama_llm
 
 HERE = Path(__file__).parent
 QUESTION = "Which company did the co-founder of Aurora Labs join, and what does it build?"

@@ -1,9 +1,9 @@
 from pathlib import Path
 
-from spectrag.config import make_settings
-from spectrag.utils.chunker import chunk_documents, merge_small_chunks, pack_units, take_overlap
-from spectrag.utils.loader import load_docs, read_file
-from spectrag.utils.tokens import count_tokens
+from spectrafuse.config import make_settings
+from spectrafuse.utils.chunker import chunk_documents, merge_small_chunks, pack_units, take_overlap
+from spectrafuse.utils.loader import load_docs, read_file
+from spectrafuse.utils.tokens import count_tokens
 
 EXAMPLES = Path(__file__).parent.parent / "examples" / "docs"
 SENTENCES = ["Sentence number %d is here with some words." % i for i in range(30)]

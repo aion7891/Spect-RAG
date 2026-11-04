@@ -1,9 +1,9 @@
 import numpy as np
 import pytest
 
-from spectrag.config import make_settings
-from spectrag.utils.graph import neighbors
-from spectrag.utils.selectors import SELECTORS, select
+from spectrafuse.config import make_settings
+from spectrafuse.utils.graph import neighbors
+from spectrafuse.utils.selectors import SELECTORS, select
 
 
 def make_case(tokens, scores, vectors=None, clusters=None, docs=None):

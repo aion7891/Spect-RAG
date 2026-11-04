@@ -1,4 +1,4 @@
-from spectrag.utils.prompt import build_prompt, format_chunk, format_context, group_by_document
+from spectrafuse.utils.prompt import build_prompt, format_chunk, format_context, group_by_document
 
 CHUNKS = [
     {"doc_id": "b.md", "position": 3, "section": ["B", "Late"], "text": "B late.", "score": 0.4},

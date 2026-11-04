@@ -6,7 +6,7 @@ description: >-
 
 # Your own models
 
-SpectRAG talks to models only through plain Python functions, so it works with any library or
+SpectraFuse talks to models only through plain Python functions, so it works with any library or
 API. You pass these functions in:
 
 | Plug-in | Signature | Where to pass it |
@@ -17,20 +17,20 @@ API. You pass these functions in:
 | Utility questions | `question_fn(text) -> list of questions` | `SpectRAGIngestion(..., question_fn=make_question_fn(llm_fn))` |
 | Cross-encoder | `rerank_fn(question, texts) -> scores` | `SpectRAGRetrieval(..., rerank_fn=...)` with `selector="anchor_expand_ce"` |
 
-The code below uses third-party packages that SpectRAG does not install; install the ones you
+The code below uses third-party packages that SpectraFuse does not install; install the ones you
 use (`pip install sentence-transformers`, `openai`, `anthropic`, `spacy`, …).
 
 ## Embedders
 
 Built in: `"hash"` (offline, the default) and `"ollama"` (`nomic-embed-text` through a local
 Ollama server). Any other model is a function from a list of texts to a list of vectors (or a
-2-D numpy array). SpectRAG scales the vectors to length 1.
+2-D numpy array). SpectraFuse scales the vectors to length 1.
 
 === "sentence-transformers"
 
     ```python
     from sentence_transformers import SentenceTransformer
-    from spectrag import SpectRAGIngestion, SpectRAGRetrieval
+    from spectrafuse import SpectRAGIngestion, SpectRAGRetrieval
 
     model = SentenceTransformer("all-MiniLM-L6-v2")
 
@@ -45,7 +45,7 @@ Ollama server). Any other model is a function from a list of texts to a list of 
 
     ```python
     from openai import OpenAI
-    from spectrag import SpectRAGIngestion, SpectRAGRetrieval
+    from spectrafuse import SpectRAGIngestion, SpectRAGRetrieval
 
     client = OpenAI()   # reads OPENAI_API_KEY
 
@@ -92,7 +92,7 @@ temperature 0 for repeatable answers, as the paper does.
 === "Ollama"
 
     ```python
-    from spectrag.utils.llm import ollama_llm
+    from spectrafuse.utils.llm import ollama_llm
 
     llm_fn = ollama_llm("gemma3:4b")      # temperature 0, context window sized to the prompt
     result = search.answer("my question", llm_fn)
@@ -144,7 +144,7 @@ any function that returns a list of strings:
 
 ```python
 import spacy
-from spectrag import SpectRAGIngestion
+from spectrafuse import SpectRAGIngestion
 
 nlp = spacy.load("en_core_web_sm")
 
@@ -164,9 +164,9 @@ seed retrieval. The paper generates them with an LLM. Without a `question_fn` th
 utility questions, and the `utility` edge weight is shared by the other signals.
 
 ```python
-from spectrag import SpectRAGIngestion
-from spectrag.utils.llm import ollama_llm
-from spectrag.utils.questions import make_question_fn
+from spectrafuse import SpectRAGIngestion
+from spectrafuse.utils.llm import ollama_llm
+from spectrafuse.utils.questions import make_question_fn
 
 question_fn = make_question_fn(ollama_llm("gemma3:4b"), count=3)
 SpectRAGIngestion("my_index", {"embedder": "ollama"}, question_fn=question_fn).ingest("docs/")
@@ -181,7 +181,7 @@ neighbours in the order a cross-encoder ranks them:
 
 ```python
 from sentence_transformers import CrossEncoder
-from spectrag import SpectRAGRetrieval
+from spectrafuse import SpectRAGRetrieval
 
 cross_encoder = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
 
@@ -191,4 +191,4 @@ def rerank_fn(question, texts):
 search = SpectRAGRetrieval("my_index", {"selector": "anchor_expand_ce"}, rerank_fn=rerank_fn)
 ```
 
-Without a `rerank_fn`, `anchor_expand_ce` ranks the neighbours by their SpectRAG score.
+Without a `rerank_fn`, `anchor_expand_ce` ranks the neighbours by their SpectraFuse score.

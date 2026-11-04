@@ -13,7 +13,7 @@ SPLIT_SEED = 0
 
 
 def load_docs():
-    """609 articles as SpectRAG documents; doc_id "000".."608", text = title + body."""
+    """609 articles as SpectraFuse documents; doc_id "000".."608", text = title + body."""
     corpus = json.loads((DATA / "corpus.json").read_text())
     return [{"doc_id": "%03d" % i, "text": d["title"] + "\n\n" + d["body"]} for i, d in enumerate(corpus)]
 

@@ -8,12 +8,12 @@ Run:  python examples/seed_example.py                     (offline hash embedder
 import sys
 from pathlib import Path
 
-from spectrag import SpectRAGIngestion, make_settings
-from spectrag.utils.bm25 import build_bm25
-from spectrag.utils.embedder import make_embedder
-from spectrag.utils.questions import make_question_fn, ollama_llm
-from spectrag.utils.seeding import find_seeds
-from spectrag.utils.store import load_index
+from spectrafuse import SpectRAGIngestion, make_settings
+from spectrafuse.utils.bm25 import build_bm25
+from spectrafuse.utils.embedder import make_embedder
+from spectrafuse.utils.questions import make_question_fn, ollama_llm
+from spectrafuse.utils.seeding import find_seeds
+from spectrafuse.utils.store import load_index
 
 HERE = Path(__file__).parent
 QUESTIONS = ["Which company did the co-founder of Aurora Labs join after leaving?",

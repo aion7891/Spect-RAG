@@ -1,6 +1,6 @@
 import pytest
 
-from spectrag.utils.semantic_split import (find_breakpoints, sentence_distances,
+from spectrafuse.utils.semantic_split import (find_breakpoints, sentence_distances,
                                            split_by_meaning, word_cosine)
 
 

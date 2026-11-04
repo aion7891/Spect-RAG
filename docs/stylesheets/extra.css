@@ -1,14 +1,14 @@
 /* The interactive explainers, embedded in a page. */
-.spectrag-embed iframe {
+.spectrafuse-embed iframe {
   width: 100%;
   height: 760px;
   border: 1px solid var(--md-default-fg-color--lightest);
   border-radius: 8px;
   background: var(--md-default-bg-color);
 }
-.spectrag-embed {
+.spectrafuse-embed {
   margin: 1.5em 0;
 }
 @media screen and (max-width: 44.9375em) {
-  .spectrag-embed iframe { height: 600px; }
+  .spectrafuse-embed iframe { height: 600px; }
 }

@@ -5,8 +5,8 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from spectrag import SpectRAGIngestion
-from spectrag.utils.store import load_index
+from spectrafuse import SpectRAGIngestion
+from spectrafuse.utils.store import load_index
 
 EXAMPLES = Path(__file__).parent.parent / "examples" / "docs"
 EXPECTED_FILES = ["chunks.json", "edges.npy", "eigenvalues.npy", "embedder_probe.npy",
@@ -80,7 +80,7 @@ def test_semantic_embedder_is_used_only_for_chunk_breaks(tmp_path):
 
     def counting_embedder(texts):
         calls.append(len(texts))
-        from spectrag.utils.embedder import hash_embed
+        from spectrafuse.utils.embedder import hash_embed
         return hash_embed(texts, 32)
 
     SpectRAGIngestion(tmp_path, {"embedder": counting_embedder, "semantic_embedder": "hash"}).ingest(EXAMPLES)

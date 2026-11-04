@@ -5,10 +5,10 @@ description: Every setting, its default, its allowed values, and when it takes e
 # Configuration
 
 Settings are a plain dict. You only pass the ones you want to change; every other setting keeps
-its default from `spectrag.DEFAULTS`.
+its default from `spectrafuse.DEFAULTS`.
 
 ```python
-from spectrag import SpectRAGIngestion, SpectRAGRetrieval
+from spectrafuse import SpectRAGIngestion, SpectRAGRetrieval
 
 SpectRAGIngestion("my_index", {"embedder": "ollama", "chunk_tokens": 512}).ingest("docs/")
 
@@ -17,8 +17,8 @@ result = search.search("my question", settings={"alpha": 0.5})      # this call 
 ```
 
 ```bash
-spectrag ingest docs/ --index my_index --set embedder=ollama --set chunk_tokens=512
-spectrag search "my question" --index my_index --set selector=protected_mmr --budget 4000
+spectrafuse ingest docs/ --index my_index --set embedder=ollama --set chunk_tokens=512
+spectrafuse search "my question" --index my_index --set selector=protected_mmr --budget 4000
 ```
 
 On the command line, `--set` values are read as JSON (`--set n_clusters=null`,
@@ -92,7 +92,7 @@ See [Large corpora](large-corpora.md) for when to switch.
 The paper's second weight set is available too:
 
 ```python
-from spectrag.config import EDGE_WEIGHTS_CONFIG_2   # semantic .15, section .20, entity .25,
+from spectrafuse.config import EDGE_WEIGHTS_CONFIG_2   # semantic .15, section .20, entity .25,
                                                      # adjacency .10, utility .28, citation .02
 search.rebuild_graph({"edge_weights": EDGE_WEIGHTS_CONFIG_2})
 ```
@@ -140,7 +140,7 @@ Every selector stops at the token budget and never picks a chunk twice.
 
 !!! warning
 
-    With the defaults (`selector = "spectrag"`, `length_power = 0.5`), SpectRAG prefers many very
+    With the defaults (`selector = "spectrag"`, `length_power = 0.5`), SpectraFuse prefers many very
     short chunks. On MultiHopRAG this lowered Recall@10 to 0.433; `length_power = 0` raised it to
     0.580, and `topk`, `mmr` and `protected_mmr` reached 0.845 evidence recall without tuning. See
     [Benchmarks](../results/benchmarks.md#what-the-defaults-get-wrong).
@@ -148,13 +148,13 @@ Every selector stops at the token budget and never picks a chunk twice.
 ## Look at the current settings
 
 ```python
-import spectrag
+import spectrafuse
 
-spectrag.DEFAULTS["token_budget"]          # 12000
-settings = spectrag.make_settings({"alpha": 0.5})   # defaults + your changes, checked
+spectrafuse.DEFAULTS["token_budget"]          # 12000
+settings = spectrafuse.make_settings({"alpha": 0.5})   # defaults + your changes, checked
 search.settings                            # the settings a SpectRAGRetrieval object uses
 ```
 
 ```bash
-spectrag info --index my_index             # what the index contains, and how it was built
+spectrafuse info --index my_index             # what the index contains, and how it was built
 ```

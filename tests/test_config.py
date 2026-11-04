@@ -1,6 +1,6 @@
 import pytest
 
-from spectrag.config import DEFAULTS, make_settings
+from spectrafuse.config import DEFAULTS, make_settings
 
 
 def test_defaults_match_paper():

@@ -1,4 +1,4 @@
-"""Phase 9 demo: the full SpectRAG pipeline with the two main classes.
+"""Phase 9 demo: the full SpectraFuse pipeline with the two main classes.
 
 Run:  python examples/search_example.py                (offline hash embedder, 250-token budget)
       python examples/search_example.py ollama 400     (nomic-embed-text, 400-token budget)
@@ -7,7 +7,7 @@ Run:  python examples/search_example.py                (offline hash embedder, 2
 import sys
 from pathlib import Path
 
-from spectrag import SpectRAGIngestion, SpectRAGRetrieval
+from spectrafuse import SpectRAGIngestion, SpectRAGRetrieval
 
 HERE = Path(__file__).parent
 QUESTIONS = ["Which company did the co-founder of Aurora Labs join after leaving?",

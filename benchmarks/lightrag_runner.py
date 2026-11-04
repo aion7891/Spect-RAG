@@ -3,7 +3,7 @@
   python lightrag_runner.py query <workdir> <queries.json> <out.json> <mode> [max_total_tokens]
   python lightrag_runner.py retry <workdir> <docs.json>          re-insert documents that failed
 Runs in its own virtual environment: pip install lightrag-hku ollama (Python 3.12). Uses Ollama
-with gemma3:4b (extraction) and nomic-embed-text (embeddings, with the same prefixes as SpectRAG).
+with gemma3:4b (extraction) and nomic-embed-text (embeddings, with the same prefixes as SpectraFuse).
 """
 import asyncio, json, sys, time
 from functools import partial

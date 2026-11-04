@@ -4,8 +4,8 @@ import urllib.request
 import numpy as np
 import pytest
 
-from spectrag.config import make_settings
-from spectrag.utils.embedder import hash_embed, make_embedder, normalize, ollama_embed
+from spectrafuse.config import make_settings
+from spectrafuse.utils.embedder import hash_embed, make_embedder, normalize, ollama_embed
 
 
 def test_normalize_rows_have_length_one():

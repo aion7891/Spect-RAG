@@ -7,8 +7,8 @@ from pathlib import Path
 
 import pytest
 
-from spectrag import SpectRAGIngestion, SpectRAGRetrieval
-from spectrag.utils.index_folder import readable_folder, recover_folder, replace_folder
+from spectrafuse import SpectRAGIngestion, SpectRAGRetrieval
+from spectrafuse.utils.index_folder import readable_folder, recover_folder, replace_folder
 
 EXAMPLES = Path(__file__).parent.parent / "examples" / "docs"
 SMALL_CHUNKS = {"chunk_tokens": 60, "overlap_tokens": 20}
@@ -55,7 +55,7 @@ def test_stopped_after_step_1_reads_the_old_index_then_recovers(tmp_path, caplog
     target, partial, old = two_indexes(tmp_path)
     before = chunk_count(target)
     target.rename(old)                                  # the crash: step 1 done, step 2 not
-    with caplog.at_level(logging.WARNING, logger="spectrag"):
+    with caplog.at_level(logging.WARNING, logger="spectrafuse"):
         search = SpectRAGRetrieval(target)
     assert search.index_dir == old and search.search("Helios")["chunks"]
     assert "holds the previous index" in caplog.text

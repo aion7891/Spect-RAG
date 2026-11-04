@@ -1,23 +1,23 @@
 ---
-description: Common questions about using SpectRAG.
+description: Common questions about using SpectraFuse.
 ---
 
 # FAQ
 
 ## General
 
-### When should I use SpectRAG instead of plain vector search?
+### When should I use SpectraFuse instead of plain vector search?
 
 When questions need facts from more than one place: *"Which company hired the co-founder of
 Aurora Labs, and where is it based?"* Plain top-k retrieval ranks chunks one by one, so the
-second fact, which may share no words with the question, often never reaches the LLM. SpectRAG
+second fact, which may share no words with the question, often never reaches the LLM. SpectraFuse
 walks a graph of your chunks to reach it, and picks a varied set of chunks for a fixed token
 budget. For simple look-up questions, hybrid dense + BM25 search is usually as good and simpler.
 
 ### How is it different from GraphRAG or LightRAG?
 
 Those systems use an LLM to extract entities and relations from every document, then retrieve
-over that knowledge graph. SpectRAG links the *chunks* themselves, with signals computed without
+over that knowledge graph. SpectraFuse links the *chunks* themselves, with signals computed without
 an LLM (embeddings, document structure, rule-based entities, references), and returns the
 original text. Building the index needs no LLM calls, unless you choose to generate utility
 questions. In the benchmark, LightRAG needed about 225 seconds of local-LLM time per article to
@@ -30,7 +30,7 @@ Token-Budgeted Context Selection in Multi-Hop Retrieval-Augmented Generation* by
 Sahinoglu, Abdulazeez Mohammed, Buse Yaren Kazangirler and Cahit Berkay Kazangirler
 ([arXiv:2610.36991](https://arxiv.org/abs/2610.36991)), written from the paper. Where the paper
 leaves a detail open, the choice made here is recorded in
-[DESIGN.md](https://github.com/aion7891/Spect-RAG/blob/main/docs/DESIGN.md).
+[DESIGN.md](https://github.com/aion7891/SpectraFuse/blob/main/docs/DESIGN.md).
 
 ### Do I need a GPU, an API key or an internet connection?
 
@@ -84,7 +84,7 @@ Tokenisation, BM25 and the rule-based entity extractor work on any language writ
 between words, and capital letters help the entity rules. Testing so far has been in English. For
 other languages, use a multilingual embedder and an `entity_fn` suited to the language.
 
-### Why does SpectRAG return fewer chunks than the budget would allow?
+### Why does SpectraFuse return fewer chunks than the budget would allow?
 
 Chunks are only chosen from the candidates the graph walk collected (at most
 `max_candidates`, 200), and a chunk is only added if it fits in the tokens left. When every
@@ -93,7 +93,7 @@ budget. `result["tokens"]` tells you how much of the budget was used.
 
 ### Why is a chunk I expected missing?
 
-Look at the retrieval path: `spectrag graph --index my_index --question "..."` shows the seeds,
+Look at the retrieval path: `spectrafuse graph --index my_index --question "..."` shows the seeds,
 the chunks the graph walk reached, and those selected. If the chunk was never reached, raise
 `seed_count` or `hops`, or check that it is linked to the seeds (shared entities, sections or
 meaning). If it was reached but not selected, raise the budget or try another `selector`.
@@ -102,12 +102,20 @@ meaning). If it was reached but not selected, raise the budget or try another `s
 
 ### Is this the official SpectRAG?
 
-No. `spectrag` is an unofficial, independent implementation of the paper, written from the paper
-and not affiliated with or endorsed by its authors. The official implementation by the authors
-(Zafer Sahinoglu, Abdulazeez Mohammed, Buse Yaren Kazangirler and Cahit Berkay Kazangirler) is
-[SightAndCite/SpectRAG](https://github.com/SightAndCite/SpectRAG). This package contains no code
+No. SpectraFuse is an independent implementation inspired by SpectRAG, written from the paper and
+not affiliated with or endorsed by its authors (Zafer Sahinoglu, Abdulazeez Mohammed, Buse Yaren
+Kazangirler and Cahit Berkay Kazangirler). SpectRAG's official implementation and releases are at
+[SightAndCite/SpectRAG](https://github.com/SightAndCite/SpectRAG). SpectraFuse contains no code
 from it. Results and choices described here (for example the defaults the paper leaves open,
-listed in the design notes) are this implementation's, not the authors'.
+listed in the design notes) are SpectraFuse's, not SpectRAG's.
+
+### Why was the package renamed from `spectrag`?
+
+So that it can't be mistaken for an official SpectRAG release. The authors maintain SpectRAG's
+releases in their repository and keep the name for that project. Up to 0.1.4 this package was
+published as `spectrag`; from 0.2.0 it is `spectrafuse` (`pip install spectrafuse`,
+`import spectrafuse`, the `spectrafuse` command). Only the names changed: indexes built with
+`spectrag` 0.1.x open with `spectrafuse`.
 
 ### How do I cite SpectRAG?
 
@@ -126,9 +134,9 @@ SpectRAG is the authors' method, so please cite their paper:
 
 ### Where do I report a bug or ask for a feature?
 
-On [GitHub issues](https://github.com/aion7891/Spect-RAG/issues). Pull requests are welcome; the
+On [GitHub issues](https://github.com/aion7891/SpectraFuse/issues). Pull requests are welcome; the
 test suite runs offline in under 10 seconds (`pytest -q`).
 
 ### What changed between versions?
 
-See the [changelog](https://github.com/aion7891/Spect-RAG/blob/main/CHANGELOG.md).
+See the [changelog](https://github.com/aion7891/SpectraFuse/blob/main/CHANGELOG.md).

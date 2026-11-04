@@ -2,6 +2,33 @@
 
 ## Unreleased
 
+## 0.2.0 (2026-11-04): renamed to SpectraFuse
+
+**Breaking: the package is renamed from `spectrag` to `spectrafuse`.** SpectraFuse is an
+independent implementation inspired by SpectRAG (Sahinoglu, Mohammed, Kazangirler and
+Kazangirler, arXiv:2610.36991). It is not SpectRAG and not an official release. The paper's
+authors maintain SpectRAG's releases at https://github.com/SightAndCite/SpectRAG and keep the
+name for that project, so this package no longer uses it.
+
+| Before (0.1.x) | Now (0.2.0) |
+|---|---|
+| `pip install spectrag` | `pip install spectrafuse` |
+| `import spectrag`, `from spectrag import ...` | `import spectrafuse`, `from spectrafuse import ...` |
+| the `spectrag` command | the `spectrafuse` command |
+| the `spectrag` logger | the `spectrafuse` logger |
+| `SPECTRAG_*` environment variables (tests and benchmarks) | `SPECTRAFUSE_*` |
+| github.com/aion7891/Spect-RAG, aion7891.github.io/Spect-RAG | github.com/aion7891/SpectraFuse, aion7891.github.io/SpectraFuse |
+
+Unchanged: the classes `SpectRAGIngestion`, `SpectRAGRetrieval` and `SpectRAGError` and the
+selector `"spectrag"` keep the paper's method name; every setting and the index format (2) are
+the same, so indexes built with `spectrag` 0.1.x open with `spectrafuse`. New indexes record
+`spectrafuse_version` in `info.json` instead of `spectrag_version`.
+
+The README, PyPI page, NOTICE, CITATION.cff, documentation site and benchmark report describe
+SpectraFuse as an independent implementation inspired by SpectRAG, and label every result as
+SpectraFuse's. Three animations that showed the old name (`terminal.gif`, `benchmark.gif`,
+`graph-build.gif`) were removed, and the graph-view screenshot no longer shows a title.
+
 ## 0.1.4 (2026-11-04)
 
 - **Marked as an unofficial implementation:** `spectrag` is an independent implementation of
@@ -63,7 +90,7 @@
   and only then published to PyPI and as a GitHub Release. A failed release run can be re-run:
   files that are already uploaded are skipped.
 - **Documentation site:** built with MkDocs (Material theme) from `docs/` and published with
-  GitHub Pages at https://aion7891.github.io/Spect-RAG/ by the `docs` workflow: overview,
+  GitHub Pages at https://aion7891.github.io/SpectraFuse/ by the `docs` workflow: overview,
   installation, quick start, architecture, the spectral method, configuration, tuning, custom
   models, graph view, large corpora, API and CLI reference, benchmarks, FAQ, and the interactive
   explainers in `docs/interactive/`. Pull requests build it in strict mode, and

@@ -43,7 +43,7 @@ jobs:
         run: pip install -e ".[all,dev]"
       - name: Unit and integration tests
         env:
-          SPECTRAG_DOWNLOAD_PAPER: "1"  # a few tests read the paper PDF from arXiv (tests/conftest.py)
+          SPECTRAFUSE_DOWNLOAD_PAPER: "1"  # a few tests read the paper PDF from arXiv (tests/conftest.py)
         run: pytest -q -rs
       - name: Quick start runs without arguments
         run: python quickstart.py
@@ -61,6 +61,6 @@ jobs:
         run: |
           python -m venv /tmp/clean
           /tmp/clean/bin/pip install dist/*.whl
-          /tmp/clean/bin/spectrag --version
-          /tmp/clean/bin/spectrag ingest examples/docs --index /tmp/idx
-          /tmp/clean/bin/spectrag search "Where is Helios Energy based?" --index /tmp/idx --budget 300
+          /tmp/clean/bin/spectrafuse --version
+          /tmp/clean/bin/spectrafuse ingest examples/docs --index /tmp/idx
+          /tmp/clean/bin/spectrafuse search "Where is Helios Energy based?" --index /tmp/idx --budget 300

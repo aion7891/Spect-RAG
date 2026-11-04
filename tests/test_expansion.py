@@ -1,7 +1,7 @@
 import numpy as np
 
-from spectrag.utils.expansion import expand_graph, next_layer, subgraph_matrix
-from spectrag.utils.graph import neighbors
+from spectrafuse.utils.expansion import expand_graph, next_layer, subgraph_matrix
+from spectrafuse.utils.graph import neighbors
 
 PATH = neighbors([[0, 1, 1.0], [1, 2, 1.0], [2, 3, 1.0], [3, 4, 1.0]], 5)   # 0-1-2-3-4
 

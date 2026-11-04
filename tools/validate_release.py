@@ -19,12 +19,12 @@ sys.path.insert(0, str(ROOT / "benchmarks"))
 sys.path.insert(0, str(ROOT / "tests"))
 from mhr_data import load_questions, split  # noqa: E402
 from reference import ref_bm25  # noqa: E402
-from spectrag import SpectRAGRetrieval, make_settings  # noqa: E402
-from spectrag.utils.bm25 import bm25_scores, build_bm25, tokenize  # noqa: E402
-from spectrag.utils.diffusion import PROXIMITY_MODES, personalized_pagerank, restart_vector  # noqa: E402
-from spectrag.utils.expansion import subgraph_matrix  # noqa: E402
-from spectrag.utils.selectors import SELECTORS  # noqa: E402
-from spectrag.utils.spectral import inverse_sqrt  # noqa: E402
+from spectrafuse import SpectRAGRetrieval, make_settings  # noqa: E402
+from spectrafuse.utils.bm25 import bm25_scores, build_bm25, tokenize  # noqa: E402
+from spectrafuse.utils.diffusion import PROXIMITY_MODES, personalized_pagerank, restart_vector  # noqa: E402
+from spectrafuse.utils.expansion import subgraph_matrix  # noqa: E402
+from spectrafuse.utils.selectors import SELECTORS  # noqa: E402
+from spectrafuse.utils.spectral import inverse_sqrt  # noqa: E402
 
 RESULTS = []
 
@@ -69,7 +69,7 @@ def pagerank_check(search, question, vector):
 
 
 def bm25_check(search, questions):
-    # The reference splits on spaces, so give both the same words (SpectRAG's tokenizer).
+    # The reference splits on spaces, so give both the same words (SpectraFuse's tokenizer).
     texts = [" ".join(tokenize(c["text"])) for c in search.index["chunks"][:400]]
     small = build_bm25(texts)
     worst = max(float(np.abs(bm25_scores(small, q["question"]) - ref_bm25(texts, " ".join(tokenize(q["question"])))).max())
@@ -101,7 +101,7 @@ def configuration_checks(search, questions, vectors):
 
 
 def reproducibility_check(search, test, vectors):
-    """Re-run SpectRAG (default) on the test set and compare with the committed results."""
+    """Re-run SpectraFuse (default) on the test set and compare with the committed results."""
     saved = json.loads((ROOT / "benchmarks/results/multihoprag/retrieval_chunk1200.json").read_text())
     sys.path.insert(0, str(ROOT / "benchmarks"))
     from multihoprag_benchmark import with_gold
@@ -113,7 +113,7 @@ def reproducibility_check(search, test, vectors):
         ids, _ = run(search, ("spectrag", {}), item["question"], vector, 12000)
         row = metrics(ids, item["gold"], search.index["chunks"])
         differ += any(abs(row[k] - old[item["id"]][k]) > 1e-12 for k in ("recall", "recall@10", "mrr"))
-    check("benchmark reproduces: SpectRAG on all test questions", differ == 0, questions=len(items),
+    check("benchmark reproduces: SpectraFuse on all test questions", differ == 0, questions=len(items),
           different=differ)
 
 

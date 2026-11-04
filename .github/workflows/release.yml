@@ -28,7 +28,7 @@ jobs:
       - name: The tag must match the package version
         id: version
         run: |
-          package=$(python -c "exec(open('src/spectrag/_version.py').read()); print(__version__)")
+          package=$(python -c "exec(open('src/spectrafuse/_version.py').read()); print(__version__)")
           if [ "${GITHUB_REF_NAME#v}" != "$package" ]; then
             echo "::error::Tag $GITHUB_REF_NAME does not match __version__ = $package"; exit 1
           fi
@@ -77,7 +77,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: testpypi
-      url: https://test.pypi.org/project/spectrag/
+      url: https://test.pypi.org/project/spectrafuse/
     permissions:
       id-token: write  # Trusted Publishing
     steps:
@@ -101,20 +101,20 @@ jobs:
         run: |
           version="${GITHUB_REF_NAME#v}"
           python -m venv /tmp/check
-          # numpy comes from PyPI; only spectrag itself comes from TestPyPI (--no-deps), so a
+          # numpy comes from PyPI; only spectrafuse itself comes from TestPyPI (--no-deps), so a
           # look-alike package on TestPyPI can never be installed in its place.
           /tmp/check/bin/pip install -q numpy
           for attempt in 1 2 3 4 5 6; do  # TestPyPI can take a minute to list a new upload
             /tmp/check/bin/pip install -q --no-deps --index-url https://test.pypi.org/simple/ \
-              "spectrag==$version" && break
-            echo "spectrag $version is not on TestPyPI yet (try $attempt of 6), waiting 30 s"
+              "spectrafuse==$version" && break
+            echo "spectrafuse $version is not on TestPyPI yet (try $attempt of 6), waiting 30 s"
             sleep 30
           done
-          /tmp/check/bin/spectrag --version | grep -x "spectrag $version"
+          /tmp/check/bin/spectrafuse --version | grep -x "spectrafuse $version"
           mkdir /tmp/docs
           echo "Helios Energy is based in Porto. It builds solar farms." > /tmp/docs/helios.txt
-          /tmp/check/bin/spectrag ingest /tmp/docs --index /tmp/idx
-          /tmp/check/bin/spectrag search "Where is Helios Energy based?" --index /tmp/idx | grep Porto
+          /tmp/check/bin/spectrafuse ingest /tmp/docs --index /tmp/idx
+          /tmp/check/bin/spectrafuse search "Where is Helios Energy based?" --index /tmp/idx | grep Porto
 
   pypi:
     needs: [check, testpypi-check]
@@ -122,7 +122,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: pypi
-      url: https://pypi.org/project/spectrag/
+      url: https://pypi.org/project/spectrafuse/
     permissions:
       id-token: write  # Trusted Publishing
     steps:
@@ -148,5 +148,5 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |  # on a re-run the release exists already: replace its files instead
-          gh release create "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" --title "SpectRAG $GITHUB_REF_NAME" --generate-notes \
+          gh release create "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" --title "SpectraFuse $GITHUB_REF_NAME" --generate-notes \
             || gh release upload "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" --clobber

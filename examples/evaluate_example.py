@@ -1,4 +1,4 @@
-"""Phase 10 demo: SpectRAG vs dense top-k vs hybrid top-k on 12 questions (9 multi-hop).
+"""Phase 10 demo: SpectraFuse vs dense top-k vs hybrid top-k on 12 questions (9 multi-hop).
 
 Run:  python examples/evaluate_example.py                       (offline hash embedder)
       python examples/evaluate_example.py ollama                (nomic-embed-text)
@@ -8,9 +8,9 @@ Run:  python examples/evaluate_example.py                       (offline hash em
 import sys
 from pathlib import Path
 
-from spectrag import SpectRAGIngestion, SpectRAGRetrieval
-from spectrag.utils.evaluation import evaluate_answers, evaluate_retrieval, load_questions
-from spectrag.utils.llm import ollama_llm
+from spectrafuse import SpectRAGIngestion, SpectRAGRetrieval
+from spectrafuse.utils.evaluation import evaluate_answers, evaluate_retrieval, load_questions
+from spectrafuse.utils.llm import ollama_llm
 
 HERE = Path(__file__).parent / "eval"
 BUDGET = 400          # tokens of context per question (the paper uses ~12,000 on big corpora)
@@ -36,7 +36,7 @@ def main():
     result = evaluate_retrieval(search, questions, BUDGET)
     print("\nRetrieval, %d questions, %d-token budget for every method:" % (len(questions), BUDGET))
     print_summary(result["summary"], ["recall", "complete", "precision", "f1", "mrr"])
-    print("\nAll evidence found? (1 = yes)            dense hybrid spectrag")
+    print("\nAll evidence found? (1 = yes)            dense hybrid spectrafuse")
     for row in result["rows"]:
         print("  %-40s %d     %d      %d" % (row["question"][:40], row["dense"]["complete"],
                                            row["hybrid"]["complete"], row["spectrag"]["complete"]))

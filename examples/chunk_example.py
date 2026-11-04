@@ -7,9 +7,9 @@ Run:  python examples/chunk_example.py            (paper default: 1200 tokens)
 import sys
 from pathlib import Path
 
-from spectrag import make_settings
-from spectrag.utils.chunker import chunk_documents
-from spectrag.utils.loader import load_docs
+from spectrafuse import make_settings
+from spectrafuse.utils.chunker import chunk_documents
+from spectrafuse.utils.loader import load_docs
 
 DOCS_FOLDER = Path(__file__).parent / "docs"
 

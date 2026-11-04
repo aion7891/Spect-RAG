@@ -2,8 +2,8 @@ from pathlib import Path
 
 import pytest
 
-from spectrag import SpectRAGIngestion, SpectRAGRetrieval
-from spectrag.utils.evaluation import (METHODS, evaluate_answers, evaluate_retrieval, fill_budget,
+from spectrafuse import SpectRAGIngestion, SpectRAGRetrieval
+from spectrafuse.utils.evaluation import (METHODS, evaluate_answers, evaluate_retrieval, fill_budget,
                                        gold_map, load_questions, score_selection)
 
 EVAL = Path(__file__).parent.parent / "examples" / "eval"

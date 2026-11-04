@@ -4,12 +4,12 @@ import numpy as np
 import pytest
 
 from reference import ref_bm25, ref_expand_graph, ref_rrf_top, ref_select_context
-from spectrag.config import make_settings
-from spectrag.utils.bm25 import bm25_scores, build_bm25
-from spectrag.utils.expansion import expand_graph
-from spectrag.utils.graph import neighbors
-from spectrag.utils.seeding import ranking, rrf_fuse, top_seeds
-from spectrag.utils.selection import select_context
+from spectrafuse.config import make_settings
+from spectrafuse.utils.bm25 import bm25_scores, build_bm25
+from spectrafuse.utils.expansion import expand_graph
+from spectrafuse.utils.graph import neighbors
+from spectrafuse.utils.seeding import ranking, rrf_fuse, top_seeds
+from spectrafuse.utils.selection import select_context
 
 
 def random_edges(rng, n, m):

@@ -5,9 +5,9 @@ Run:  python examples/load_example.py
 
 from pathlib import Path
 
-from spectrag import make_settings
-from spectrag.utils.loader import load_docs
-from spectrag.utils.tokens import count_tokens, get_encoder, split_sentences
+from spectrafuse import make_settings
+from spectrafuse.utils.loader import load_docs
+from spectrafuse.utils.tokens import count_tokens, get_encoder, split_sentences
 
 DOCS_FOLDER = Path(__file__).parent / "docs"
 

@@ -1,12 +1,12 @@
 ---
-description: The exceptions SpectRAG raises, and how to see what it is doing.
+description: The exceptions SpectraFuse raises, and how to see what it is doing.
 ---
 
 # Errors and logging
 
 ## Exceptions
 
-Every error SpectRAG raises on purpose is a `spectrag.SpectRAGError`. Each one also inherits
+Every error SpectraFuse raises on purpose is a `spectrafuse.SpectRAGError`. Each one also inherits
 the matching built-in exception, so code that already catches `ValueError` or `KeyError` keeps
 working.
 
@@ -15,7 +15,7 @@ working.
 | `SpectRAGError` | `Exception` | (the base class) |
 | `SettingsError` | `ValueError` | a setting has the wrong type, is out of range, or is not an allowed choice |
 | `UnknownSettingError` | `SettingsError`, `KeyError` | a setting name is unknown, usually a typo; the message suggests the closest name |
-| `IndexError_` | `FileNotFoundError` | the index folder is missing or incomplete, was made by a newer version, or the target folder is not a SpectRAG index |
+| `IndexError_` | `FileNotFoundError` | the index folder is missing or incomplete, was made by a newer version, or the target folder is not a SpectraFuse index |
 | `EmbedderError` | `ConnectionError` | the embedder cannot be reached (for example Ollama is not running), the query vector does not match the index, or the index is opened with a different embedder from the one that built it (see [Index format](index-format.md#safety)) |
 | `DocumentError` | `ValueError` | documents passed to `ingest_documents()` are not `{"doc_id", "text"}` dicts, or two share a `doc_id`; also an evaluation snippet found in no chunk |
 | `NoDocumentsError` | `DocumentError` | there is no document with text to ingest |
@@ -26,14 +26,14 @@ working.
 `IndexError_` has a trailing underscore so that it does not hide Python's built-in `IndexError`.
 
 ```python
-import spectrag
-from spectrag import SpectRAGRetrieval
+import spectrafuse
+from spectrafuse import SpectRAGRetrieval
 
 try:
     search = SpectRAGRetrieval("my_index", {"token_budjet": 4000})
-except spectrag.UnknownSettingError as error:
+except spectrafuse.UnknownSettingError as error:
     print(error)     # Unknown setting: 'token_budjet' (did you mean 'token_budget'?)
-except spectrag.SpectRAGError as error:
+except spectrafuse.SpectRAGError as error:
     print(error)
 ```
 
@@ -53,35 +53,35 @@ Two more cases raise `SettingsError`: an index built with your own embed functio
 without `embed_fn` (the message says to pass it again), and a graph setting passed to
 `search(settings=...)` (*Use rebuild_graph() to change graph settings*).
 
-The `spectrag` command prints any of these as one line, `spectrag: error: ...`, and exits
+The `spectrafuse` command prints any of these as one line, `spectrafuse: error: ...`, and exits
 with code 1 instead of showing a traceback.
 
 ## Logging
 
-SpectRAG is silent by default, like any library. Its messages go to the standard `logging`
-logger named `spectrag`.
+SpectraFuse is silent by default, like any library. Its messages go to the standard `logging`
+logger named `spectrafuse`.
 
 ```python
-import spectrag
+import spectrafuse
 
-spectrag.enable_logging()          # INFO: one line per pipeline step, with its time
-spectrag.enable_logging("DEBUG")   # also one line per question
+spectrafuse.enable_logging()          # INFO: one line per pipeline step, with its time
+spectrafuse.enable_logging("DEBUG")   # also one line per question
 ```
 
 ```
-2026-11-03 15:24:59,310 spectrag INFO: chunking: 0.00 s (documents=3, chunks=8)
-2026-11-03 15:24:59,311 spectrag INFO: embedding: 0.00 s (backend=exact)
-2026-11-03 15:24:59,311 spectrag INFO: edge signals: 0.00 s (semantic=28, adjacency=5, section=3, entity=14, utility=0, citation=3)
-2026-11-03 15:24:59,311 spectrag INFO: graph and spectral: 0.00 s (edges=21, dims=7)
-2026-11-03 15:24:59,314 spectrag INFO: saved index: 0.00 s (folder=my_index)
+2026-11-03 15:24:59,310 spectrafuse INFO: chunking: 0.00 s (documents=3, chunks=8)
+2026-11-03 15:24:59,311 spectrafuse INFO: embedding: 0.00 s (backend=exact)
+2026-11-03 15:24:59,311 spectrafuse INFO: edge signals: 0.00 s (semantic=28, adjacency=5, section=3, entity=14, utility=0, citation=3)
+2026-11-03 15:24:59,311 spectrafuse INFO: graph and spectral: 0.00 s (edges=21, dims=7)
+2026-11-03 15:24:59,314 spectrafuse INFO: saved index: 0.00 s (folder=my_index)
 ```
 
-On the command line, `-v` does the same: `spectrag -v ingest docs/ --index my_index`.
+On the command line, `-v` does the same: `spectrafuse -v ingest docs/ --index my_index`.
 
-To route the messages through your own logging setup, configure the `spectrag` logger instead
+To route the messages through your own logging setup, configure the `spectrafuse` logger instead
 of calling `enable_logging()`:
 
 ```python
 import logging
-logging.getLogger("spectrag").setLevel(logging.INFO)
+logging.getLogger("spectrafuse").setLevel(logging.INFO)
 ```

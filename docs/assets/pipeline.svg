@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 400" width="980" height="400" role="img" aria-label="SpectRAG pipeline: offline ingestion builds a graph index; online retrieval walks it">
-<title>SpectRAG pipeline</title><style>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 400" width="980" height="400" role="img" aria-label="SpectraFuse pipeline: offline ingestion builds a graph index; online retrieval walks it">
+<title>SpectraFuse pipeline</title><style>
 svg{--bg:#fcfcfb;--ink:#0b0b0b;--ink2:#52514e;--line:#c3c2b7;--box:#ffffff;--a:#2a78d6;--b:#eb6834;--c:#1baf7a}
 @media (prefers-color-scheme: dark){svg{--bg:#1a1a19;--ink:#f0efec;--ink2:#c3c2b7;--line:#52514e;--box:#242423;--a:#3987e5;--b:#d95926;--c:#199e70}}
 text{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif}

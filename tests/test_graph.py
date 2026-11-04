@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from spectrag.utils.graph import (active_weights, build_matrix, degrees, fuse_edges,
+from spectrafuse.utils.graph import (active_weights, build_matrix, degrees, fuse_edges,
                                   keep_strongest, neighbors)
 
 WEIGHTS = {"semantic": 0.3, "section": 0.25, "entity": 0.2, "adjacency": 0.084,

@@ -1,5 +1,10 @@
 # SpectRAG 0.1.0: production-readiness report
 
+> **Renamed:** this project is now **SpectraFuse** (`pip install spectrafuse`), an independent
+> implementation inspired by SpectRAG; until 0.1.4 it was published as `spectrag`. This page is a
+> historical record and keeps the old name. SpectRAG's official implementation is
+> [SightAndCite/SpectRAG](https://github.com/SightAndCite/SpectRAG).
+
 This report records what was checked before the 0.1.0 release, how it was checked, and what is
 still open. Every number comes from a command that was run on this repository; the commands
 are listed so anyone can repeat them. Machine: Apple Silicon Mac (macOS 26), Python 3.12 unless
@@ -19,7 +24,7 @@ is a known bug.
 | Benchmark reproducibility | All **1,955** MultiHopRAG test questions give the same results as the committed ones (0 differences) | same script |
 | Package build | wheel 75 KB, sdist 101 KB; `twine check` **PASSED** for both | `uv build && twine check dist/*` |
 | Clean install | wheel installed in fresh Python 3.10 and 3.14 environments: test suite passes (318 passed, 1 skipped, before the last docs-link test was added); `quickstart.py` and the `spectrag` CLI work | section 4 |
-| Install from GitHub | `pip install "spectrag[all] @ git+https://github.com/aion7891/Spect-RAG.git@base-2"` works | section 4 |
+| Install from GitHub | `pip install "spectrag[all] @ git+https://github.com/aion7891/SpectraFuse.git@base-2"` works | section 4 |
 | Documentation | every README Python example and 7 shell commands run; every setting in `DEFAULTS` is documented; every local link and image exists | `pytest tests/test_docs.py` |
 | Lint | no pyflakes errors (unused imports, undefined names, syntax) | `ruff check --isolated --select F,E9 src tests tools benchmarks` |
 
@@ -128,7 +133,7 @@ The jobs run in this order, and each one runs only if the one before it passed:
 check → tests → build → testpypi → testpypi-check → pypi (final tags only) → github-release
 ```
 
-1. **check:** the tag is on `main`, and it equals `__version__` in `src/spectrag/_version.py`
+1. **check:** the tag is on `main`, and it equals `__version__` in `src/spectrafuse/_version.py`
    (`v0.1.0` needs `0.1.0`);
 2. **tests:** two quick Linux jobs, Python 3.10 with numpy only and Python 3.14 with all extras
    (`pytest` and `quickstart.py`). The full matrix in `tests.yml` already ran on `main` when
@@ -159,7 +164,7 @@ Publishing uses PyPI Trusted Publishing (OpenID Connect), so no API token is sto
 ### Each release
 
 ```bash
-# 1. Set the version in src/spectrag/_version.py and add the CHANGELOG entry, through a PR to main
+# 1. Set the version in src/spectrafuse/_version.py and add the CHANGELOG entry, through a PR to main
 # 2. The release: TestPyPI, the install check, then PyPI and the GitHub Release
 git switch main && git pull origin main
 git tag -a v0.1.0 -m "SpectRAG 0.1.0" && git push origin v0.1.0

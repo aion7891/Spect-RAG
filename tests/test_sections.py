@@ -1,4 +1,4 @@
-from spectrag.utils.sections import has_structure, is_heading, split_by_sections
+from spectrafuse.utils.sections import has_structure, is_heading, split_by_sections
 
 
 def test_markdown_headings():

@@ -26,4 +26,5 @@ def test_project_url_labels_fit_pypi():
 def test_summary_fits_pypi():
     summary = re.search(r'^description = "(.*)"$', PYPROJECT, re.MULTILINE).group(1)
     assert len(summary) <= 512 and "\n" not in summary
-    assert summary.startswith("Unofficial implementation of SpectRAG")
+    assert summary.startswith("SpectraFuse: an independent implementation inspired by SpectRAG")
+    assert "Not the official SpectRAG" in summary and "SightAndCite/SpectRAG" in summary

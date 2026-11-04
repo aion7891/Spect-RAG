@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+## 0.1.4 (2026-11-04)
+
+- **Marked as an unofficial implementation:** `spectrag` is an independent implementation of
+  SpectRAG, written from the paper by Zafer Sahinoglu, Abdulazeez Mohammed, Buse Yaren
+  Kazangirler and Cahit Berkay Kazangirler (arXiv:2610.36991). It is not affiliated with or
+  endorsed by the authors. Their official implementation is
+  https://github.com/SightAndCite/SpectRAG. This is now stated in the README (the PyPI page),
+  the package summary and project links, the package docstring, `spectrag --help`, the
+  documentation site (home page, footer, FAQ) and the design notes.
+- **Credits:** a new `NOTICE` file (shipped in the wheel with `LICENSE`) and `CITATION.cff`, so
+  GitHub's "Cite this repository" gives the paper. A comparison with the official repository
+  found no shared code (4 identical generic lines, such as `if __name__ == "__main__":`).
+- **The paper PDF is no longer stored in the repository or on the docs site;** links point to
+  arXiv. The tests that read it now take it from `SPECTRAG_PAPER_PDF`, a local cache, or arXiv
+  when `SPECTRAG_DOWNLOAD_PAPER=1` (set in CI), and skip otherwise.
+
 ## 0.1.3 (2026-11-04)
 
 - **Safe index replace:** re-ingesting into an existing index used to delete the old index

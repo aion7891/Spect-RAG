@@ -45,7 +45,7 @@ Documentation = "https://aion7891.github.io/Spect-RAG/"
 Repository = "https://github.com/aion7891/Spect-RAG"
 Issues = "https://github.com/aion7891/Spect-RAG/issues"
 Paper = "https://arxiv.org/abs/2610.36991"
-"Official implementation (by the paper's authors)" = "https://github.com/SightAndCite/SpectRAG"
+"Official implementation" = "https://github.com/SightAndCite/SpectRAG"  # by the paper's authors
 
 [tool.setuptools.dynamic]
 version = { attr = "spectrag._version.__version__" }

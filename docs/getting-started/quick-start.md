@@ -4,22 +4,17 @@ description: Build an index and get a token-budgeted context for a question in f
 
 # Quick start
 
-SpectRAG has two steps. **Ingestion** builds an index from your documents, once.
+SpectraFuse has two steps. **Ingestion** builds an index from your documents, once.
 **Retrieval** finds the context for each question, in a few milliseconds.
-
-<figure markdown="span">
-  ![Terminal recording: pip install spectrag; spectrag ingest docs; spectrag search returns three ranked chunks.](../assets/animations/terminal.gif)
-  <figcaption markdown="span">The three commands below, recorded from a fresh install.</figcaption>
-</figure>
 
 ## From the command line
 
 Put some `.txt`, `.md` or `.pdf` files in a folder, then:
 
 ```bash
-pip install spectrag
-spectrag ingest docs/ --index my_index
-spectrag search "Where is Helios Energy based?" --index my_index --budget 300
+pip install spectrafuse
+spectrafuse ingest docs/ --index my_index
+spectrafuse search "Where is Helios Energy based?" --index my_index --budget 300
 ```
 
 `search` prints the ranked chunks, then the context for your LLM, grouped by source document:
@@ -38,17 +33,17 @@ Add `--json` for machine-readable output, or ask an LLM directly (needs
 [Ollama](installation.md#embeddings-and-llms-with-ollama-optional)):
 
 ```bash
-spectrag answer "Where is Helios Energy based?" --index my_index --model gemma3:4b
+spectrafuse answer "Where is Helios Energy based?" --index my_index --model gemma3:4b
 ```
 
 All commands and options: [Command line](../reference/cli.md).
 
 ## From Python
 
-This example runs as it is, offline, right after `pip install spectrag`:
+This example runs as it is, offline, right after `pip install spectrafuse`:
 
 ```python
-from spectrag import SpectRAGIngestion, SpectRAGRetrieval
+from spectrafuse import SpectRAGIngestion, SpectRAGRetrieval
 
 docs = [
     {"doc_id": "aurora", "text": "# Aurora Labs\nAurora Labs was founded in 2014 in Lisbon by Maya Chen and Tomas Ruiz. "
@@ -111,7 +106,7 @@ To ingest files instead, pass a file or a folder: `SpectRAGIngestion("my_index")
 `answer()` runs `search()` and then any function that takes a prompt and returns text:
 
 ```python
-from spectrag.utils.llm import ollama_llm
+from spectrafuse.utils.llm import ollama_llm
 
 result = search.answer("In which city is the company that hired Aurora's co-founder based?",
                        ollama_llm("gemma3:4b"))
@@ -137,7 +132,7 @@ documents in `examples/docs/` and prints the context for two questions. Every se
 top of the file; set `USE_OLLAMA = True` for nomic embeddings and LLM answers.
 
 ```bash
-git clone https://github.com/aion7891/Spect-RAG.git && cd Spect-RAG
+git clone https://github.com/aion7891/SpectraFuse.git && cd SpectraFuse
 pip install -e . && python quickstart.py
 ```
 

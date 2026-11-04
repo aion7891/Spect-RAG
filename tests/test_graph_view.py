@@ -6,9 +6,9 @@ from pathlib import Path
 
 import pytest
 
-from spectrag import IndexError_, SpectRAGIngestion
-from spectrag.cli import main
-from spectrag.utils.graph_view import choose_nodes, graph_data, save_graph_view
+from spectrafuse import IndexError_, SpectRAGIngestion
+from spectrafuse.cli import main
+from spectrafuse.utils.graph_view import choose_nodes, graph_data, save_graph_view
 
 EXAMPLES = Path(__file__).parent.parent / "examples"
 QUESTION = "Which company acquired the former employer of the person who leads the Madrid office of Aurora Labs?"

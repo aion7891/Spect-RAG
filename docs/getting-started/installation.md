@@ -1,5 +1,5 @@
 ---
-description: Install SpectRAG from PyPI, choose the extras you need, and set up Ollama.
+description: Install SpectraFuse from PyPI, choose the extras you need, and set up Ollama.
 ---
 
 # Installation
@@ -9,28 +9,28 @@ description: Install SpectRAG from PyPI, choose the extras you need, and set up 
 === "pip"
 
     ```bash
-    pip install spectrag                # core: numpy only
-    pip install "spectrag[all]"         # every optional extra
+    pip install spectrafuse                # core: numpy only
+    pip install "spectrafuse[all]"         # every optional extra
     ```
 
 === "uv"
 
     ```bash
-    uv add spectrag                     # core: numpy only
-    uv add "spectrag[all]"              # every optional extra
+    uv add spectrafuse                     # core: numpy only
+    uv add "spectrafuse[all]"              # every optional extra
     ```
 
 === "From source"
 
     ```bash
-    git clone https://github.com/aion7891/Spect-RAG.git && cd Spect-RAG
+    git clone https://github.com/aion7891/SpectraFuse.git && cd SpectraFuse
     pip install -e ".[all,dev]"         # or: uv sync --all-extras
     ```
 
 Check that it works:
 
 ```bash
-spectrag --version                  # spectrag 0.1.4
+spectrafuse --version                  # spectrafuse 0.2.0
 ```
 
 ## Optional extras
@@ -45,7 +45,7 @@ The core package needs only `numpy`. Extras add features you may not need:
 | `all` | all of the above | |
 | `dev` | `pytest`, `build` | running the tests and building the package (from a clone) |
 
-Install several at once with `pip install "spectrag[tokens,pdf]"`.
+Install several at once with `pip install "spectrafuse[tokens,pdf]"`.
 
 !!! info
 
@@ -55,7 +55,7 @@ Install several at once with `pip install "spectrag[tokens,pdf]"`.
 
 ## Embeddings and LLMs with Ollama (optional)
 
-SpectRAG runs offline by default, with a hashing embedder that needs no model. For real
+SpectraFuse runs offline by default, with a hashing embedder that needs no model. For real
 semantic search, and for LLM answers, it can use a local [Ollama](https://ollama.com) server:
 
 ```bash
@@ -66,7 +66,7 @@ ollama pull gemma3:4b               # any chat model, for answers and utility qu
 Then choose the Ollama embedder when you build an index:
 
 ```bash
-spectrag ingest docs/ --index my_index --set embedder=ollama
+spectrafuse ingest docs/ --index my_index --set embedder=ollama
 ```
 
 ```python

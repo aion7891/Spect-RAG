@@ -1,20 +1,20 @@
-<p align="center"><img src="docs/assets/banner.svg" alt="SpectRAG" width="100%"></p>
+<p align="center"><img src="docs/assets/banner.svg" alt="SpectraFuse" width="100%"></p>
 
 <h3 align="center">Spectral graph-augmented retrieval with token-budgeted context selection for multi-hop RAG</h3>
 
 <p align="center">
-  <a href="https://aion7891.github.io/Spect-RAG/"><img src="https://img.shields.io/badge/docs-online-3F51B5" alt="documentation"></a>
-  <a href="https://pypi.org/project/spectrag/"><img src="https://img.shields.io/pypi/v/spectrag" alt="PyPI version"></a>
-  <a href="https://github.com/aion7891/Spect-RAG/actions/workflows/tests.yml"><img src="https://github.com/aion7891/Spect-RAG/actions/workflows/tests.yml/badge.svg" alt="tests"></a>
+  <a href="https://aion7891.github.io/SpectraFuse/"><img src="https://img.shields.io/badge/docs-online-3F51B5" alt="documentation"></a>
+  <a href="https://pypi.org/project/spectrafuse/"><img src="https://img.shields.io/pypi/v/spectrafuse" alt="PyPI version"></a>
+  <a href="https://github.com/aion7891/SpectraFuse/actions/workflows/tests.yml"><img src="https://github.com/aion7891/SpectraFuse/actions/workflows/tests.yml/badge.svg" alt="tests"></a>
   <img src="https://img.shields.io/badge/python-3.10%20%E2%80%93%203.14-blue" alt="python 3.10 to 3.14">
   <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT license">
   <img src="https://img.shields.io/badge/required%20dependency-numpy-lightgrey" alt="only numpy required">
   <a href="https://arxiv.org/abs/2610.36991"><img src="https://img.shields.io/badge/paper-arXiv%3A2610.36991-b31b1b" alt="paper"></a>
-  <a href="https://github.com/SightAndCite/SpectRAG"><img src="https://img.shields.io/badge/unofficial-official%20code%3A%20SightAndCite%2FSpectRAG-orange" alt="unofficial implementation; official code: SightAndCite/SpectRAG"></a>
+  <a href="https://github.com/SightAndCite/SpectRAG"><img src="https://img.shields.io/badge/inspired%20by-SpectRAG%20(SightAndCite%2FSpectRAG)-orange" alt="independent implementation inspired by SpectRAG; official code: SightAndCite/SpectRAG"></a>
 </p>
 
 <p align="center">
-  <a href="https://aion7891.github.io/Spect-RAG/"><b>Documentation</b></a> ·
+  <a href="https://aion7891.github.io/SpectraFuse/"><b>Documentation</b></a> ·
   <a href="#installation">Installation</a> ·
   <a href="#quick-start">Quick start</a> ·
   <a href="#how-it-works">How it works</a> ·
@@ -27,24 +27,26 @@
 ---
 
 > [!IMPORTANT]
-> **This is an unofficial implementation.** The `spectrag` package is an independent
-> re-implementation of the SpectRAG method, written from the paper. It is **not affiliated with
-> or endorsed by** the paper's authors. **The official implementation by the authors is
-> [SightAndCite/SpectRAG](https://github.com/SightAndCite/SpectRAG)** (MIT license).
-> This package contains no code from the official repository.
+> **SpectraFuse is an independent implementation inspired by SpectRAG.** It is not SpectRAG and
+> not the official release. It is not affiliated with or endorsed by the SpectRAG authors, and
+> where its behaviour or results differ from SpectRAG, those differences are SpectraFuse's own.
+> **Official SpectRAG:** [SightAndCite/SpectRAG](https://github.com/SightAndCite/SpectRAG), where
+> the authors maintain SpectRAG's releases. **Paper:** [arXiv:2610.36991](https://arxiv.org/abs/2610.36991).
+> SpectraFuse contains no code from the official repository. It was published on PyPI as
+> `spectrag` until 0.1.4 and is now `spectrafuse`.
 
-SpectRAG, the method, is the work of **Zafer Sahinoglu, Abdulazeez Mohammed, Buse Yaren
-Kazangirler and Cahit Berkay Kazangirler**: *SpectRAG: Weighted Chunk Graphs for Token-Budgeted
-Context Selection in Multi-Hop Retrieval-Augmented Generation*,
-[arXiv:2610.36991](https://arxiv.org/abs/2610.36991) (2026). This repository is a readable,
-tested Python implementation of that paper by Kumar Nishant. If you use the method, please
+SpectraFuse follows the method of the paper *SpectRAG: Weighted Chunk Graphs for Token-Budgeted
+Context Selection in Multi-Hop Retrieval-Augmented Generation* by **Zafer Sahinoglu, Abdulazeez
+Mohammed, Buse Yaren Kazangirler and Cahit Berkay Kazangirler** (2026). It is a readable, tested
+Python implementation written from that paper by Kumar Nishant, with its own choices where the
+paper leaves details open. The method is the authors' work: if you use it, please
 [cite the paper](#citation).
 
-> **📖 Documentation: [aion7891.github.io/Spect-RAG](https://aion7891.github.io/Spect-RAG/)** covers installation, the quick
+> **📖 Documentation: [aion7891.github.io/SpectraFuse](https://aion7891.github.io/SpectraFuse/)** covers installation, the quick
 > start, architecture, configuration, tuning, API reference, benchmarks and FAQ, plus
-> [interactive explainers](https://aion7891.github.io/Spect-RAG/interactive/) of the method.
+> [interactive explainers](https://aion7891.github.io/SpectraFuse/interactive/) of the method.
 
-| | Plain top-k RAG | SpectRAG |
+| | Plain top-k RAG | SpectraFuse |
 |---|---|---|
 | **Unit of retrieval** | chunks ranked one by one | a *set* of chunks chosen together |
 | **Near-duplicates** | often fill the context | penalised (redundancy term) |
@@ -52,7 +54,7 @@ tested Python implementation of that paper by Kumar Nishant. If you use the meth
 | **Structure** (sections, entities, citations, order) | ignored | six edge signals and spectral coordinates |
 | **Context size** | a fixed *k* | a token budget, filled by relevance, coverage and diversity |
 
-<p align="center"><img src="docs/assets/pipeline.svg" alt="SpectRAG pipeline: offline ingestion builds a chunk graph and its spectral coordinates; online retrieval seeds, expands, re-scores and selects within a token budget" width="100%"></p>
+<p align="center"><img src="docs/assets/pipeline.svg" alt="SpectraFuse pipeline: offline ingestion builds a chunk graph and its spectral coordinates; online retrieval seeds, expands, re-scores and selects within a token budget" width="100%"></p>
 
 ## Highlights
 
@@ -109,23 +111,23 @@ offline HTML file.
 </table>
 
 > [!TIP]
-> On MultiHopRAG, tuned SpectRAG finds more of the evidence than **standard RAG (+0.088)** and
+> On MultiHopRAG, tuned SpectraFuse finds more of the evidence than **standard RAG (+0.088)** and
 > **hybrid RAG (+0.014, 95% CI +0.007 … +0.021)** within the same 12,000-token budget, with
 > its largest gain on inference questions. [See the benchmark.](#benchmark-multihoprag)
 
 ## Installation
 
 ```bash
-pip install spectrag              # core (numpy only)
-pip install "spectrag[all]"       # every extra
+pip install spectrafuse              # core (numpy only)
+pip install "spectrafuse[all]"       # every extra
 ```
 
-The latest code from `main`: `pip install "git+https://github.com/aion7891/Spect-RAG.git"`.
+The latest code from `main`: `pip install "git+https://github.com/aion7891/SpectraFuse.git"`.
 
 From a clone (for development):
 
 ```bash
-git clone https://github.com/aion7891/Spect-RAG.git && cd Spect-RAG
+git clone https://github.com/aion7891/SpectraFuse.git && cd SpectraFuse
 pip install -e ".[all,dev]"        # or: uv sync --all-extras
 ```
 
@@ -139,7 +141,7 @@ pip install -e ".[all,dev]"        # or: uv sync --all-extras
 
 Real semantic embeddings and LLM answers use a local [Ollama](https://ollama.com) server:
 `ollama pull nomic-embed-text` (the paper's embedding model) and, for answers, e.g.
-`ollama pull gemma3:4b`. Without Ollama, SpectRAG uses an offline hashing embedder.
+`ollama pull gemma3:4b`. Without Ollama, SpectraFuse uses an offline hashing embedder.
 
 Python 3.10–3.14 are tested. There is no upper version limit; Python 3.15 is waiting for a
 numpy release that supports it.
@@ -157,7 +159,7 @@ are at the top of the file; set `USE_OLLAMA = True` for nomic embeddings and LLM
 ### Python
 
 ```python
-from spectrag import SpectRAGIngestion, SpectRAGRetrieval
+from spectrafuse import SpectRAGIngestion, SpectRAGRetrieval
 
 # Offline, once per document set: chunk, embed, build the graph, spectral coordinates
 SpectRAGIngestion("my_index").ingest("examples/docs")      # a file or a folder (.txt .md .pdf)
@@ -170,7 +172,7 @@ for chunk in result["chunks"]:          # ranked sources with their scores
     print(chunk["rank"], chunk["doc_id"], round(chunk["score"], 3), chunk["reason"])
 
 # Optional: an answer from any LLM (any function prompt -> text)
-from spectrag.utils.llm import ollama_llm
+from spectrafuse.utils.llm import ollama_llm
 print(search.answer("Which company did the co-founder of Aurora Labs join?", ollama_llm("gemma3:4b"))["answer"])
 ```
 
@@ -180,11 +182,11 @@ Documents can also come from memory:
 ### Command line
 
 ```bash
-spectrag ingest examples/docs --index my_index --set chunk_tokens=256 --set overlap_tokens=64
-spectrag search "Where is Helios Energy based?" --index my_index --budget 2000
-spectrag answer "Where is Helios Energy based?" --index my_index --model gemma3:4b
-spectrag graph --index my_index --out graph.html --question "Where is Helios Energy based?"
-spectrag info --index my_index
+spectrafuse ingest examples/docs --index my_index --set chunk_tokens=256 --set overlap_tokens=64
+spectrafuse search "Where is Helios Energy based?" --index my_index --budget 2000
+spectrafuse answer "Where is Helios Energy based?" --index my_index --model gemma3:4b
+spectrafuse graph --index my_index --out graph.html --question "Where is Helios Energy based?"
+spectrafuse info --index my_index
 ```
 
 `--set key=value` changes any setting (values are read as JSON); `-v` prints progress.
@@ -247,7 +249,7 @@ Every place where the paper leaves a detail open, and what this code chose, is l
 
 ## Graph view
 
-`spectrag graph` (or `spectrag.utils.graph_view.save_graph_view`) writes one self-contained HTML
+`spectrafuse graph` (or `spectrafuse.utils.graph_view.save_graph_view`) writes one self-contained HTML
 file, similar to Figure 5 of the paper. Chunks are drawn as nodes, starting from their spectral
 coordinates, and edges are coloured by their strongest signal. For a question it shows the
 retrieval path: seeds, chunks reached by expansion, and the selected context. Hover for a
@@ -352,9 +354,9 @@ value is checked: a typo gets "did you mean …?", a bad value says which range 
 ### Tuning
 
 ```python
-from spectrag import SpectRAGIngestion, SpectRAGRetrieval
-from spectrag.utils.evaluation import load_questions
-from spectrag.utils.tuning import tune
+from spectrafuse import SpectRAGIngestion, SpectRAGRetrieval
+from spectrafuse.utils.evaluation import load_questions
+from spectrafuse.utils.tuning import tune
 
 SpectRAGIngestion("eval_index").ingest("examples/eval/docs")     # the documents the questions are about
 search = SpectRAGRetrieval("eval_index")
@@ -379,12 +381,12 @@ applied by `search.rebuild_graph({...})` from the saved signals, so nothing is e
 
 ### Errors and logging
 
-All errors raised on purpose subclass `spectrag.SpectRAGError` and the matching built-in:
+All errors raised on purpose subclass `spectrafuse.SpectRAGError` and the matching built-in:
 `SettingsError` (`ValueError`), `UnknownSettingError` (`KeyError`), `IndexError_`
 (`FileNotFoundError`), `EmbedderError` (`ConnectionError`), `DocumentError` (`ValueError`),
 `DocumentNotFoundError` (`FileNotFoundError`), `MissingPackageError` (`ImportError`) and
-`LLMError` (`ConnectionError`). The CLI prints them as one `spectrag: error: ...` line.
-SpectRAG is silent by default; `spectrag.enable_logging()` prints one timed line per pipeline
+`LLMError` (`ConnectionError`). The CLI prints them as one `spectrafuse: error: ...` line.
+SpectraFuse is silent by default; `spectrafuse.enable_logging()` prints one timed line per pipeline
 step, and `enable_logging("DEBUG")` one line per query.
 
 ## Benchmark: MultiHopRAG
@@ -399,18 +401,18 @@ used only for tuning; all numbers below are on the other **1,955 test questions*
 | BM25 | 0.462 | 0.577 | 0.788 | 0.545 | 0.617 | 1.0 |
 | Dense + MMR | 0.359 | 0.482 | 0.756 | 0.507 | 0.508 | 1.3 |
 | Hybrid RAG (dense + BM25, RRF) | 0.445 | 0.574 | 0.832 | 0.615 | 0.609 | 2.8 |
-| SpectRAG, default settings | 0.385 | 0.433 | 0.803 | 0.550 | 0.592 | 4.4 |
-| **SpectRAG, tuned on validation** | **0.470** | **0.592** | **0.846** | **0.639** | **0.617** | 3.5 |
+| SpectraFuse, default settings | 0.385 | 0.433 | 0.803 | 0.550 | 0.592 | 4.4 |
+| **SpectraFuse, tuned on validation** | **0.470** | **0.592** | **0.846** | **0.639** | **0.617** | 3.5 |
 
 <p align="center"><img src="benchmarks/results/multihoprag/recall_at_k_chunk1200.svg" alt="Recall at 2, 5 and 10 per method" width="49%"> <img src="benchmarks/results/multihoprag/budget_chunk1200.svg" alt="Evidence recall and all evidence found within the budget per method" width="49%"></p>
 
-- **Tuned SpectRAG beats hybrid RAG**: evidence recall +0.014 (95% CI +0.007 … +0.021),
+- **Tuned SpectraFuse beats hybrid RAG**: evidence recall +0.014 (95% CI +0.007 … +0.021),
   Recall@10 +0.017 (+0.009 … +0.025). Its largest gain is on **inference** questions
   (0.802 vs 0.757); on comparison questions hybrid stays slightly ahead, as in the paper.
 - Removing graph expansion drops evidence recall to 0.705: the graph walk is where most of the
   extra evidence comes from.
 - **Smaller tests:** HyDE (60 questions): 0.760, against dense 0.807. Answers with `gemma3:4b`
-  (30 questions): exact match 0.400 tuned SpectRAG, 0.333 dense, 0.267 hybrid (one answer = 0.033).
+  (30 questions): exact match 0.400 tuned SpectraFuse, 0.333 dense, 0.267 hybrid (one answer = 0.033).
   LightRAG on a 4-article subset could not be compared fairly (the subset fits in the budget), and
   it needed about 225 s of LLM time per 1,000-word article to index.
 
@@ -420,7 +422,7 @@ used only for tuning; all numbers below are on the other **1,955 test questions*
 > `length_power = 0`, Recall@10 rises from 0.433 to 0.580, and the `topk` / `mmr` selectors reach
 > 0.845 with no tuning. Tune on your own validation questions before relying on the defaults.
 
-Reproduce (needs Ollama; quick mode takes minutes, `SPECTRAG_BENCH_FULL=1` runs the full version):
+Reproduce (needs Ollama; quick mode takes minutes, `SPECTRAFUSE_BENCH_FULL=1` runs the full version):
 
 ```bash
 python benchmarks/multihoprag_benchmark.py      # index, tune, evaluate, latency
@@ -450,10 +452,10 @@ and [docs/PROGRESS.md](docs/PROGRESS.md). The dataset (ODC-BY) is stored in
 <summary><b>Show the folders and modules</b></summary>
 
 ```
-src/spectrag/
+src/spectrafuse/
   ingestion.py, retrieval.py         the two main classes
   config.py, validation.py           settings and their checks
-  errors.py, log.py, cli.py          exceptions, logging, the spectrag command
+  errors.py, log.py, cli.py          exceptions, logging, the spectrafuse command
   utils/                             one small module per step: loader, tokens, sections, units,
                                      chunker, embedder, entities, references, questions, edges*,
                                      graph, graph_build, spectral, clusters, vector_index, bm25,
@@ -482,7 +484,7 @@ The tests cover every formula against hand-computed or closed-form values (BM25,
 PageRank, the heat kernel against `scipy.linalg.expm`, the sparse eigensolver against the dense
 one, the paper's metrics). The fast vectorised code is checked against simple loop versions on
 random cases, and the full pipeline runs end to end on real documents. Live Ollama tests run
-when Ollama is available (`SPECTRAG_LIVE_LLM=1` for the LLM test). CI runs on every pull request
+when Ollama is available (`SPECTRAFUSE_LIVE_LLM=1` for the LLM test). CI runs on every pull request
 and on `main`: Linux × Python 3.10 / 3.12 / 3.14 × minimal / all extras, one macOS job (Python
 3.12, all extras), and a build that installs the wheel and runs the CLI. A release tag runs two
 quick Linux test jobs, because the merged commit has already passed the full set.
@@ -546,10 +548,12 @@ cite their paper. GitHub's "Cite this repository" button gives the same citation
 - **Method and paper:** Zafer Sahinoglu, Abdulazeez Mohammed, Buse Yaren Kazangirler and Cahit
   Berkay Kazangirler, [arXiv:2610.36991](https://arxiv.org/abs/2610.36991). The equations,
   tables and settings this code refers to (Eq. 10, Table 9, ...) are theirs.
-- **Official implementation:** [SightAndCite/SpectRAG](https://github.com/SightAndCite/SpectRAG),
-  by the paper's authors, MIT license.
-- **This package:** an unofficial, independent implementation by Kumar Nishant, written from the
-  paper. No code from the official implementation is included; see [NOTICE](NOTICE).
+- **SpectRAG, the official implementation and releases:**
+  [SightAndCite/SpectRAG](https://github.com/SightAndCite/SpectRAG), by the paper's authors, MIT
+  license.
+- **SpectraFuse, this package:** an independent implementation inspired by SpectRAG, by Kumar
+  Nishant, written from the paper. It is not SpectRAG and contains no code from the official
+  implementation; see [NOTICE](NOTICE).
 
 The code in this repository is MIT, see [LICENSE](LICENSE). The MultiHopRAG data in `benchmarks/data/` is ODC-BY
 (see its [SOURCE.md](benchmarks/data/multihoprag/SOURCE.md)).

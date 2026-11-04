@@ -3,9 +3,9 @@ requires = ["setuptools>=69"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "spectrag"
+name = "spectrafuse"
 dynamic = ["version"]
-description = "Unofficial implementation of SpectRAG (Sahinoglu, Mohammed, Kazangirler and Kazangirler, arXiv:2610.36991): spectral graph-augmented retrieval for multi-hop RAG. Official code: github.com/SightAndCite/SpectRAG"
+description = "SpectraFuse: an independent implementation inspired by SpectRAG (Sahinoglu, Mohammed, Kazangirler and Kazangirler, arXiv:2610.36991). Not the official SpectRAG, which is at github.com/SightAndCite/SpectRAG"
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE", "NOTICE"]
@@ -32,23 +32,23 @@ classifiers = [
 tokens = ["tiktoken>=0.5"]                                 # exact cl100k_base token counts
 pdf = ["pypdf>=4"]                                         # read .pdf files
 scale = ["scipy>=1.10", "faiss-cpu>=1.8", "hnswlib>=0.8"]  # large corpora: sparse eigensolver, ANN
-all = ["spectrag[tokens,pdf,scale]"]
-extras = ["spectrag[all]"]                                 # older name for "all"
+all = ["spectrafuse[tokens,pdf,scale]"]
+extras = ["spectrafuse[all]"]                                 # older name for "all"
 dev = ["pytest>=8", "build>=1"]
 
 [project.scripts]
-spectrag = "spectrag.cli:main"
+spectrafuse = "spectrafuse.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/aion7891/Spect-RAG"
-Documentation = "https://aion7891.github.io/Spect-RAG/"
-Repository = "https://github.com/aion7891/Spect-RAG"
-Issues = "https://github.com/aion7891/Spect-RAG/issues"
+Homepage = "https://github.com/aion7891/SpectraFuse"
+Documentation = "https://aion7891.github.io/SpectraFuse/"
+Repository = "https://github.com/aion7891/SpectraFuse"
+Issues = "https://github.com/aion7891/SpectraFuse/issues"
 Paper = "https://arxiv.org/abs/2610.36991"
 "Official implementation" = "https://github.com/SightAndCite/SpectRAG"  # by the paper's authors
 
 [tool.setuptools.dynamic]
-version = { attr = "spectrag._version.__version__" }
+version = { attr = "spectrafuse._version.__version__" }
 
 [tool.setuptools.packages.find]
 where = ["src"]

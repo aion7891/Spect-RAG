@@ -8,12 +8,12 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from spectrag import (EmbedderError, SettingsError, SpectRAGIngestion, SpectRAGRetrieval,
+from spectrafuse import (EmbedderError, SettingsError, SpectRAGIngestion, SpectRAGRetrieval,
                       make_settings)
-from spectrag.utils.embedder import hash_embed
-from spectrag.utils.embedder_id import (embedder_name, function_name, read_embedder_name,
+from spectrafuse.utils.embedder import hash_embed
+from spectrafuse.utils.embedder_id import (embedder_name, function_name, read_embedder_name,
                                         saved_settings)
-from spectrag.utils.store import load_index
+from spectrafuse.utils.store import load_index
 
 EXAMPLES = Path(__file__).parent.parent / "examples" / "docs"
 
@@ -107,6 +107,12 @@ def test_tiny_differences_are_allowed(tmp_path):
 def test_index_without_a_fingerprint_still_opens(tmp_path, caplog):
     SpectRAGIngestion(tmp_path).ingest(EXAMPLES)
     (tmp_path / "embedder_probe.npy").unlink()                             # as made by 0.1.1
-    with caplog.at_level(logging.INFO, logger="spectrag"):
+    with caplog.at_level(logging.INFO, logger="spectrafuse"):
         assert SpectRAGRetrieval(tmp_path, embed_fn=reversed_embed).search("Helios")["chunks"]
     assert "embedder not checked" in caplog.text
+
+
+def test_the_fingerprint_sentence_never_changes():
+    """Every index since 0.1.2 stores this sentence's vector; changing it breaks all of them."""
+    from spectrafuse.utils.embedder_id import PROBE_TEXT
+    assert PROBE_TEXT == "SpectRAG embedder check: Helios Energy builds solar farms near Porto."

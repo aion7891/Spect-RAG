@@ -1,50 +1,48 @@
 ---
 description: >-
-  An unofficial implementation of SpectRAG (Sahinoglu et al., arXiv:2610.36991):
-  spectral graph-augmented retrieval for multi-hop RAG.
+  SpectraFuse, an independent implementation inspired by SpectRAG (Sahinoglu et al.,
+  arXiv:2610.36991): spectral graph-augmented retrieval for multi-hop RAG.
 ---
 
-# SpectRAG
+# SpectraFuse
 
-![SpectRAG](assets/banner.svg)
+![SpectraFuse](assets/banner.svg)
 
-SpectRAG retrieves context for retrieval-augmented generation (RAG) when the answer is spread
+SpectraFuse retrieves context for retrieval-augmented generation (RAG) when the answer is spread
 over several documents. It links every chunk of your documents into a weighted graph, walks that
 graph from the chunks that match the question, and packs the best chunks into a fixed token
 budget.
 
 ```bash
-pip install spectrag
+pip install spectrafuse
 ```
 
-**Links:** [GitHub](https://github.com/aion7891/Spect-RAG) ·
-[PyPI](https://pypi.org/project/spectrag/) ·
+**Links:** [GitHub](https://github.com/aion7891/SpectraFuse) ·
+[PyPI](https://pypi.org/project/spectrafuse/) ·
 [Paper (arXiv:2610.36991)](https://arxiv.org/abs/2610.36991) ·
-[Official implementation](https://github.com/SightAndCite/SpectRAG) ·
+[Official SpectRAG](https://github.com/SightAndCite/SpectRAG) ·
 [Interactive explainers](interactive/index.html)
 
-!!! warning "Unofficial implementation"
+!!! warning "An independent implementation inspired by SpectRAG"
 
-    This site documents `spectrag`, an **unofficial**, independent implementation of the paper
-    *SpectRAG: Weighted Chunk Graphs for Token-Budgeted Context Selection in Multi-Hop
-    Retrieval-Augmented Generation* by **Zafer Sahinoglu, Abdulazeez Mohammed, Buse Yaren
-    Kazangirler and Cahit Berkay Kazangirler** ([arXiv:2610.36991](https://arxiv.org/abs/2610.36991)).
-    It is not affiliated with or endorsed by the authors. **The official implementation by the
-    authors is [SightAndCite/SpectRAG](https://github.com/SightAndCite/SpectRAG).** The method is
-    theirs; if you use it, please [cite the paper](help/faq.md#how-do-i-cite-spectrag).
+    SpectraFuse is **not SpectRAG** and not an official release. It is an independent
+    implementation, written by Kumar Nishant from the paper *SpectRAG: Weighted Chunk Graphs for
+    Token-Budgeted Context Selection in Multi-Hop Retrieval-Augmented Generation* by **Zafer
+    Sahinoglu, Abdulazeez Mohammed, Buse Yaren Kazangirler and Cahit Berkay Kazangirler**
+    ([arXiv:2610.36991](https://arxiv.org/abs/2610.36991)). It is not affiliated with or endorsed
+    by the authors, and differences in behaviour or results are SpectraFuse's own. **SpectRAG's
+    official implementation and releases: [SightAndCite/SpectRAG](https://github.com/SightAndCite/SpectRAG).**
+    The method is the authors' work; if you use it, please [cite the paper](help/faq.md#how-do-i-cite-spectrag).
+    SpectraFuse was published on PyPI as `spectrag` until 0.1.4.
 
-<figure markdown="span">
-  ![Chunks of 14 documents appear as nodes of a graph, coloured by spectral cluster; links between documents light up; then the command pip install spectrag.](assets/animations/graph-build.gif)
-  <figcaption markdown="span">The chunk graph of the 14-document example set, built by `spectrag ingest`. Red links join chunks from different documents.</figcaption>
-</figure>
 
-## Why SpectRAG
+## Why SpectraFuse
 
 Most RAG pipelines rank chunks one by one by how similar they are to the question, then keep
 the top *k*. That fails on multi-hop questions: the passage that completes the answer often
 shares no words with the question, and near-duplicates of the best match fill the context.
 
-| Aspect | Plain top-k RAG | SpectRAG |
+| Aspect | Plain top-k RAG | SpectraFuse |
 |---|---|---|
 | **Unit of retrieval** | chunks ranked one by one | a *set* of chunks chosen together |
 | **Near-duplicates** | often fill the context | penalised (redundancy term) |
@@ -54,7 +52,7 @@ shares no words with the question, and near-duplicates of the best match fill th
 
 ## What it does, in one picture
 
-![SpectRAG pipeline: offline ingestion builds a chunk graph and its spectral coordinates; online retrieval seeds, expands, re-scores and selects within a token budget.](assets/pipeline.svg)
+![SpectraFuse pipeline: offline ingestion builds a chunk graph and its spectral coordinates; online retrieval seeds, expands, re-scores and selects within a token budget.](assets/pipeline.svg)
 
 * **Offline, once per document set** (`SpectRAGIngestion`): split documents into chunks, embed
   them, link them with six signals (meaning, reading order, section, shared entities, the
@@ -89,9 +87,9 @@ On 1,955 MultiHopRAG test questions, with a 12,000-token budget for every method
 
 | Method | Evidence recall |
 |---|---|
-| **SpectRAG, tuned on validation questions** | **0.846** |
+| **SpectraFuse, tuned on validation questions** | **0.846** |
 | Hybrid RAG (dense + BM25) | 0.832 |
-| SpectRAG, default settings | 0.803 |
+| SpectraFuse, default settings | 0.803 |
 | BM25 | 0.788 |
 | Standard RAG (dense top-k) | 0.758 |
 

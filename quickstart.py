@@ -1,4 +1,4 @@
-"""SpectRAG quick start: ingest documents, build the index, ask questions.
+"""SpectraFuse quick start: ingest documents, build the index, ask questions.
 
 Run:  python quickstart.py
 No arguments are needed. Everything you may want to change is in the block below.
@@ -7,8 +7,8 @@ It works offline by default; set USE_OLLAMA = True for real embeddings and LLM a
 
 from pathlib import Path
 
-import spectrag
-from spectrag import SpectRAGIngestion, SpectRAGRetrieval
+import spectrafuse
+from spectrafuse import SpectRAGIngestion, SpectRAGRetrieval
 
 # ----------------------------------------------------------------------------------------
 # Change these freely.
@@ -22,7 +22,7 @@ QUESTIONS = [
 USE_OLLAMA = False      # True: nomic-embed-text embeddings + answers from LLM_MODEL (needs Ollama)
 LLM_MODEL = "gemma3:4b"
 
-INGEST_SETTINGS = {      # used once, when the index is built (see spectrag.DEFAULTS for all)
+INGEST_SETTINGS = {      # used once, when the index is built (see spectrafuse.DEFAULTS for all)
     "chunk_tokens": 1200,        # paper: 1,200-token chunks ...
     "overlap_tokens": 100,       # ... with 100 tokens of overlap
     "edge_threshold": 0.05,      # tau: weaker graph edges are dropped
@@ -43,7 +43,7 @@ GRAPH_VIEW = Path(__file__).parent / "quickstart_graph.html"   # interactive gra
 
 def main():
     if SHOW_PROGRESS:
-        spectrag.enable_logging()
+        spectrafuse.enable_logging()
     ingest_settings = dict(INGEST_SETTINGS, embedder="ollama" if USE_OLLAMA else "hash")
 
     # 1. Ingest and index (offline, once per document set).
@@ -55,7 +55,7 @@ def main():
     search = SpectRAGRetrieval(INDEX_DIR, SEARCH_SETTINGS)
     llm = None
     if USE_OLLAMA:
-        from spectrag.utils.llm import ollama_llm
+        from spectrafuse.utils.llm import ollama_llm
         llm = ollama_llm(LLM_MODEL)
     for question in QUESTIONS:
         result = search.answer(question, llm) if llm else search.search(question)
@@ -67,7 +67,7 @@ def main():
             first_line = chunk["text"].splitlines()[0][:60]
             print("  %d. [%s] score %.2f  %s" % (chunk["rank"], chunk["doc_id"], chunk["score"], first_line))
     if GRAPH_VIEW:
-        from spectrag.utils.graph_view import save_graph_view
+        from spectrafuse.utils.graph_view import save_graph_view
         save_graph_view(INDEX_DIR, GRAPH_VIEW, question=QUESTIONS[0], settings=SEARCH_SETTINGS)
         print("\nGraph view of the first question: %s (open it in a browser)" % GRAPH_VIEW.name)
     print("\nTry: change SEARCH_SETTINGS at the top of this file and run it again.")

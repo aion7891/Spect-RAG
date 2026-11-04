@@ -1,10 +1,10 @@
 """The MultiHopRAG steps that need an LLM (gemma3:4b through Ollama).
 
 Run:  python benchmarks/mhr_llm_steps.py hyde|answers|lightrag
-  hyde      HyDE vs dense vs SpectRAG retrieval on a fixed test sample
-  answers   answer accuracy (EM, token F1, contains) of dense, hybrid and SpectRAG contexts
+  hyde      HyDE vs dense vs SpectraFuse retrieval on a fixed test sample
+  answers   answer accuracy (EM, token F1, contains) of dense, hybrid and SpectraFuse contexts
   lightrag  scores the contexts produced by benchmarks/lightrag_runner.py on the subset
-Sample sizes are small in quick mode; set SPECTRAG_BENCH_FULL=1 for bigger samples.
+Sample sizes are small in quick mode; set SPECTRAFUSE_BENCH_FULL=1 for bigger samples.
 """
 
 import json
@@ -17,10 +17,10 @@ sys.path.insert(0, str(Path(__file__).parent))
 from mhr_data import load_docs, load_questions, normalise, split  # noqa: E402
 from mhr_eval import average, metrics, run  # noqa: E402
 from multihoprag_benchmark import FULL, INDEXES, OUT, query_vectors, save, with_gold  # noqa: E402
-from spectrag import SpectRAGIngestion, SpectRAGRetrieval  # noqa: E402
-from spectrag.utils.evaluation import prompt_for  # noqa: E402
-from spectrag.utils.llm import ollama_llm  # noqa: E402
-from spectrag.utils.metrics import contains, exact_match, token_f1  # noqa: E402
+from spectrafuse import SpectRAGIngestion, SpectRAGRetrieval  # noqa: E402
+from spectrafuse.utils.evaluation import prompt_for  # noqa: E402
+from spectrafuse.utils.llm import ollama_llm  # noqa: E402
+from spectrafuse.utils.metrics import contains, exact_match, token_f1  # noqa: E402
 
 MODEL = "gemma3:4b"
 CONFIG, BUDGET = "chunk1200", 12000

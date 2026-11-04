@@ -3,15 +3,15 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from spectrag import SpectRAGIngestion, make_settings
-from spectrag.utils.bm25 import build_bm25
-from spectrag.utils.diffusion import (personalized_pagerank, restart_vector, score_candidates,
+from spectrafuse import SpectRAGIngestion, make_settings
+from spectrafuse.utils.bm25 import build_bm25
+from spectrafuse.utils.diffusion import (personalized_pagerank, restart_vector, score_candidates,
                                       spectral_closeness)
-from spectrag.utils.embedder import make_embedder
-from spectrag.utils.graph import build_matrix, neighbors
-from spectrag.utils.seeding import find_seeds
-from spectrag.utils.spectral import normalized_laplacian, spectral_coords
-from spectrag.utils.store import load_index
+from spectrafuse.utils.embedder import make_embedder
+from spectrafuse.utils.graph import build_matrix, neighbors
+from spectrafuse.utils.seeding import find_seeds
+from spectrafuse.utils.spectral import normalized_laplacian, spectral_coords
+from spectrafuse.utils.store import load_index
 
 EXAMPLES = Path(__file__).parent.parent / "examples" / "docs"
 # Two triangles (0,1,2) and (3,4,5) joined by one weak bridge edge 2-3.

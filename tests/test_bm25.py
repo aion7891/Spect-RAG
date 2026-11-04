@@ -2,7 +2,7 @@ import math
 
 import pytest
 
-from spectrag.utils.bm25 import bm25_scores, build_bm25, idf, tokenize
+from spectrafuse.utils.bm25 import bm25_scores, build_bm25, idf, tokenize
 
 TEXTS = ["Helios Energy builds solar farms.",
          "Aurora Labs builds sensors. Aurora sensors measure soil.",

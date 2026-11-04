@@ -6,12 +6,12 @@ description: >-
 
 # The spectral part
 
-Dense embeddings tell you what a chunk *says*. SpectRAG also wants to know where a chunk
+Dense embeddings tell you what a chunk *says*. SpectraFuse also wants to know where a chunk
 *sits*: which chunks belong to the same neighbourhood of the corpus, even when they share few
 words. The spectral part answers that from the chunk graph alone, with linear algebra instead of
 hand-written rules.
 
-<div class="spectrag-embed" markdown>
+<div class="spectrafuse-embed" markdown>
 <iframe src="../../interactive/spectral.html" title="The spectral part, explained visually" loading="lazy"></iframe>
 
 **Interactive explainer:** watch each eigenvector "wobble" the graph, drag the strength of the
@@ -34,7 +34,7 @@ link, c4–c6, is the bridge a multi-hop question needs.
 ## Springs and the Laplacian
 
 Picture every chunk as a ball and every edge as a spring whose stiffness is its weight. A
-chunk's *degree* $d_i = \sum_j W_{ij}$ is the total stiffness attached to it. SpectRAG uses the
+chunk's *degree* $d_i = \sum_j W_{ij}$ is the total stiffness attached to it. SpectraFuse uses the
 symmetric normalised Laplacian (paper Eq. 11), which divides each spring by the degrees at both
 ends so that heavily connected chunks don't dominate:
 
@@ -87,9 +87,9 @@ $$
 z_i = \left[\, u_2(i),\ u_3(i),\ \dots,\ u_{m+1}(i) \,\right] \in \mathbb{R}^m
 $$
 
-SpectRAG keeps $m$ = `spectral_dims` = 32 coordinates per chunk. Strongly linked chunks get
+SpectraFuse keeps $m$ = `spectral_dims` = 32 coordinates per chunk. Strongly linked chunks get
 similar numbers in every cheap pattern, so they land close together: communities become
-clusters of points. SpectRAG scales each row to length 1 and runs k-means to label the
+clusters of points. SpectraFuse scales each row to length 1 and runs k-means to label the
 communities (`n_clusters`, by default about $\sqrt{n/2}$).
 
 The coordinates come from the graph, not the text. *"The research is done by Helix Labs"* and
@@ -115,7 +115,7 @@ $$
 s^{(r+1)} = \beta\, s(0) + (1 - \beta)\, \tilde{A}\, s^{(r)}, \qquad \tilde{A} = D^{-1/2} W D^{-1/2} = I - L_{sym}
 $$
 
-## How SpectRAG uses it
+## How SpectraFuse uses it
 
 **Closeness during re-scoring.** With the default `proximity_mode = "hybrid"`, a candidate's
 proximity is the mean of its PageRank score (scaled to 0…1) and its spectral closeness to the
@@ -147,12 +147,12 @@ evaluates Eq. 17 from the stored eigenpairs; `"none"` switches the graph signal 
 
 | What | Where |
 |---|---|
-| $L_{sym}$ and the dense eigensolver (`numpy.linalg.eigh`) | `spectrag/utils/spectral.py`: `normalized_laplacian()`, `spectral_coords()` |
+| $L_{sym}$ and the dense eigensolver (`numpy.linalg.eigh`) | `spectrafuse/utils/spectral.py`: `normalized_laplacian()`, `spectral_coords()` |
 | Sparse eigensolver above 2,000 chunks (`scipy`, the `scale` extra) | `spectral.py`: `sparse_spectral_coords()` |
-| Clusters | `spectrag/utils/clusters.py`: `cluster_coords()` |
-| PageRank, spectral closeness, heat kernel | `spectrag/utils/diffusion.py` |
+| Clusters | `spectrafuse/utils/clusters.py`: `cluster_coords()` |
+| PageRank, spectral closeness, heat kernel | `spectrafuse/utils/diffusion.py` |
 
 `tools/validate_release.py` checks these on a real 10,335-chunk index: the stored eigenpairs
 satisfy $L u = \lambda u$ to $5.3 \times 10^{-15}$, and the PageRank iteration matches its
 closed form to $1.7 \times 10^{-17}$
-([production-readiness report](https://github.com/aion7891/Spect-RAG/blob/main/docs/PRODUCTION_READINESS.md)).
+([production-readiness report](https://github.com/aion7891/SpectraFuse/blob/main/docs/PRODUCTION_READINESS.md)).

@@ -1,9 +1,9 @@
-"""MultiHopRAG benchmark for SpectRAG (paper Section 4) with real nomic-embed-text embeddings.
+"""MultiHopRAG benchmark for SpectraFuse (paper Section 4) with real nomic-embed-text embeddings.
 
 Run all steps:   python benchmarks/multihoprag_benchmark.py
 Or one step:     python benchmarks/multihoprag_benchmark.py index|tune|evaluate
 Quick mode (default): one chunk setting (1,200 tokens) and 30 tuning trials.
-Full mode:       SPECTRAG_BENCH_FULL=1 python benchmarks/multihoprag_benchmark.py
+Full mode:       SPECTRAFUSE_BENCH_FULL=1 python benchmarks/multihoprag_benchmark.py
 Needs Ollama with nomic-embed-text. Results go to benchmarks/results/multihoprag/.
 Validation (300 questions) is used only for tuning; every reported number is on the test set.
 """
@@ -20,12 +20,12 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).parent))
 from mhr_data import chunks_by_doc, gold_chunks, load_docs, load_questions, split  # noqa: E402
 from mhr_eval import BASELINES, average, metrics, run  # noqa: E402
-from spectrag import SpectRAGIngestion, SpectRAGRetrieval  # noqa: E402
-from spectrag.utils.tuning import tune  # noqa: E402
+from spectrafuse import SpectRAGIngestion, SpectRAGRetrieval  # noqa: E402
+from spectrafuse.utils.tuning import tune  # noqa: E402
 
 HERE = Path(__file__).parent
 INDEXES, OUT = HERE / "indexes", HERE / "results" / "multihoprag"
-FULL = os.environ.get("SPECTRAG_BENCH_FULL") == "1"  # quick mode by default (minutes, not hours)
+FULL = os.environ.get("SPECTRAFUSE_BENCH_FULL") == "1"  # quick mode by default (minutes, not hours)
 CONFIGS = {"chunk1200": {"chunk_tokens": 1200, "overlap_tokens": 100, "budget": 12000}}
 if FULL:
     CONFIGS["chunk256"] = {"chunk_tokens": 256, "overlap_tokens": 64, "budget": 2560}

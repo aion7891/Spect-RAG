@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SpectRAG, step by step</title>
+<title>SpectraFuse, step by step</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -207,12 +207,12 @@ pre.code{font-family:var(--mono); font-size:13px; line-height:1.6; background:va
 </head>
 <body>
 <div class="wrap">
-<nav class="docbar" aria-label="SpectRAG links"><a href="../">SpectRAG documentation</a><span aria-hidden="true">·</span><a href="./">All interactive pages</a><span aria-hidden="true">·</span><a href="https://github.com/aion7891/Spect-RAG">GitHub</a><span aria-hidden="true">·</span><a href="https://pypi.org/project/spectrag/">PyPI</a></nav>
+<nav class="docbar" aria-label="SpectraFuse links"><a href="../">SpectraFuse documentation</a><span aria-hidden="true">·</span><a href="./">All interactive pages</a><span aria-hidden="true">·</span><a href="https://github.com/aion7891/SpectraFuse">GitHub</a><span aria-hidden="true">·</span><a href="https://pypi.org/project/spectrafuse/">PyPI</a></nav>
 <p class="docnote">This walkthrough runs a compact teaching implementation of the method on a 12-chunk corpus, so that every step fits on screen. Its parameter values (budget, core size, selection weights, α) are chosen for that corpus and differ from the package defaults. Each step names the package function that does the same job.</p>
 
 <header class="top">
   <div>
-    <h1>SpectRAG, step by step</h1>
+    <h1>SpectraFuse, step by step</h1>
     <p class="dek">The pipeline from the SpectRAG paper, run on a 12-chunk toy corpus. Every number below comes from an actual run of a compact teaching version of the method. Click a step, a chunk, or an edge to see what the method is doing and why.</p>
   </div>
   <div class="query">
@@ -261,7 +261,7 @@ pre.code{font-family:var(--mono); font-size:13px; line-height:1.6; background:va
 
 <section class="block">
   <h2>Same budget, two different contexts</h2>
-  <div class="prose"><p>Dense top-k fills the token budget in similarity order. SpectRAG fills it with the set-level utility from Eq. 21. Move the sliders to see how each term changes what reaches the generator.</p></div>
+  <div class="prose"><p>Dense top-k fills the token budget in similarity order. SpectraFuse fills it with the set-level utility from Eq. 21. Move the sliders to see how each term changes what reaches the generator.</p></div>
   <div class="controls">
     <div><label for="r-budget">Token budget <output id="o-budget"></output></label><div class="hint">B in Eq. 19</div><input id="r-budget" type="range" min="30" max="140" step="1"></div>
     <div><label for="r-alpha">Graph re-scoring α <output id="o-alpha"></output></label><div class="hint">(1−α)·relevance + α·proximity</div><input id="r-alpha" type="range" min="0" max="1" step="0.05"></div>
@@ -284,7 +284,7 @@ pre.code{font-family:var(--mono); font-size:13px; line-height:1.6; background:va
 <section class="block">
   <h2>Run it yourself</h2>
   <div class="prose"><p>The pip package runs the same stages; each step above names the function that does it. Its chunker keeps headings in the chunk text, and its entity rules and default settings differ from the teaching version, so on this toy corpus it picks different chunks. Start from the <a href="../getting-started/quick-start/">quick start</a>.</p></div>
-<pre class="code"><span class="k">from</span> spectrag <span class="k">import</span> SpectRAGIngestion, SpectRAGRetrieval
+<pre class="code"><span class="k">from</span> spectrafuse <span class="k">import</span> SpectRAGIngestion, SpectRAGRetrieval
 
 SpectRAGIngestion("my_index").ingest("docs/")             <span class="c"># Table 1: chunk, embed, graph, spectral</span>
 
@@ -542,7 +542,7 @@ function later(fn, ms){ timers.push(setTimeout(fn, REDUCED?0:ms)); }
 
 const STAGES = [
  {phase:0, short:"Chunk", title:"Split documents into chunks",
-  fn:"spectrag.utils.chunker.chunk_documents()",
+  fn:"spectrafuse.utils.chunker.chunk_documents()",
   view(){ moveTo(POS_GRAPH); edgeMode="none"; styleEdges(); showBlobs(false); docLabels(true); axes(false); nodeState(); legend("docs"); },
   body(){
     const rows = DOCS.map(d=>{ const cs=D.chunks.filter(c=>c.doc===d.id); return `<tr><td>${d.title}</td><td>${cs.map(c=>"c"+c.id).join(", ")}</td><td>${cs.reduce((a,c)=>a+c.tokens,0)}</td></tr>`;}).join("");
@@ -551,7 +551,7 @@ const STAGES = [
     <div class="tbl-wrap"><table><tr><th>Document</th><th style="text-align:left">Chunks</th><th>Tokens</th></tr>${rows}</table></div>`;
   }},
  {phase:0, short:"Embed", title:"Embed every chunk",
-  fn:"spectrag.utils.embedder.make_embedder()",
+  fn:"spectrafuse.utils.embedder.make_embedder()",
   view(){ moveTo(POS_GRAPH); edgeMode="semantic"; styleEdges(); showBlobs(false); docLabels(true); axes(false); nodeState(); legend("semantic"); },
   body(){
     return `<div class="prose"><p>Each chunk becomes a dense vector e<sub>i</sub>. The paper uses nomic-embed-text (768 dimensions) in an exact FAISS flat index. The toy uses a hashed bag of words and character n-grams, and searches it exactly with a matrix product.</p>
@@ -559,16 +559,16 @@ const STAGES = [
     <div class="eq">w<sup>sem</sup><sub>ij</sub> = max(0, cos(e<sub>i</sub>, e<sub>j</sub>))<span class="n">Eq. 3</span></div>`;
   }},
  {phase:0, short:"Signals", title:"Extract six kinds of edges",
-  fn:"spectrag.utils.entities.add_entities(), spectrag.utils.edges.build_edge_signals()",
+  fn:"spectrafuse.utils.entities.add_entities(), spectrafuse.utils.edges.build_edge_signals()",
   view(){ moveTo(POS_GRAPH); edgeMode="signals"; styleEdges(); showBlobs(false); docLabels(true); axes(false); nodeState(); legend("signals"); },
   body(){
     const rows = SIG.map(s=>`<tr><td><span style="display:inline-block;width:12px;height:3px;background:var(--s-${s});margin-right:7px;vertical-align:3px"></span>${SIG_LABEL[s]}</td><td>${sigCounts[s]}</td></tr>`).join("");
-    return `<div class="prose"><p>Similarity alone treats chunks as independent. SpectRAG adds five structural signals, each scaled to [0, 1]: adjacency inside a document, shared section path, shared entities, similar utility questions (questions a chunk can answer), and explicit “See …” references.</p>
+    return `<div class="prose"><p>Similarity alone treats chunks as independent. SpectraFuse adds five structural signals, each scaled to [0, 1]: adjacency inside a document, shared section path, shared entities, similar utility questions (questions a chunk can answer), and explicit “See …” references.</p>
     <p>This is what links the two hops. c4 and c6 share the entity <em>Helix Labs</em> and the utility question “What is Helix Labs?”, so an edge exists even though their text barely overlaps. Each edge is coloured by its strongest signal; toggle signals below the graph.</p></div>
     <div class="tbl-wrap"><table><tr><th>Signal</th><th>Edges</th></tr>${rows}</table></div>`;
   }},
  {phase:0, short:"Fuse", title:"Fuse the signals into one weight",
-  fn:"spectrag.utils.graph_build.build_graph()",
+  fn:"spectrafuse.utils.graph_build.build_graph()",
   view(){ moveTo(POS_GRAPH); edgeMode="fused"; styleEdges(); showBlobs(false); docLabels(true); axes(false); nodeState(); legend("signals"); inspectEdge(e46); pinned={edge:e46}; },
   body(){
     const rows = SIG.map(s=>`<tr><td>${SIG_LABEL[s]}</td><td>${D.weights[s].toFixed(3)}</td></tr>`).join("");
@@ -578,7 +578,7 @@ const STAGES = [
     <div class="prose"><p>Below is the bridge edge c4 – c6, broken down. Click any other edge to compare.</p></div>`;
   }},
  {phase:0, short:"Spectrum", title:"Laplacian and spectral coordinates",
-  fn:"spectrag.utils.graph_build.build_spectral()",
+  fn:"spectrafuse.utils.graph_build.build_spectral()",
   view(){ moveTo(POS_SPEC, 1200); edgeMode="faint"; styleEdges(); showBlobs(true); docLabels(false); axes(true); nodeState(); legend("clusters"); },
   body(){
     const ev = D.eigvals.slice(0,8), mx = Math.max(...ev);
@@ -589,7 +589,7 @@ const STAGES = [
     <div class="prose"><p>The graph now shows each chunk at (u<sub>2</sub>, u<sub>3</sub>). Helix Labs and Nova Motors separate cleanly, and c4, the Orion team chunk, sits between Orion and Helix: it is the bridge. k-means on all ${D.chunks[0].z.length > 0 ? "four" : ""} coordinates finds ${nClusters} communities; two Orion communities overlap in this two-dimensional slice. The paper uses m = 32; this run uses m = 4.</p></div>`;
   }},
  {phase:1, short:"Seeds", title:"Hybrid seed retrieval",
-  fn:"spectrag.utils.seeding.find_seeds()",
+  fn:"spectrafuse.utils.seeding.find_seeds()",
   view(){ moveTo(POS_GRAPH); edgeMode="query"; styleEdges(); showBlobs(false); docLabels(false); axes(false); nodeState({seeds:true, gold:true, dim:SEEDS}); legend("query"); },
   body(){
     const rows = rrfOrder.map(id=>`<tr class="${SEEDS.has(id)?"hl":""} ${GOLD.has(id)?"gold":""}"><td>c${id}</td><td>${D.ranks.dense[id]}</td><td>${D.ranks.bm25[id]}</td><td>${D.ranks.utility[id]}</td><td>${(D.rrf[id]*1000).toFixed(2)}</td></tr>`).join("");
@@ -599,7 +599,7 @@ const STAGES = [
     <div class="prose"><p>c6 makes the seed set, but dense similarity ranks it ${denseRank[6]}th of ${N}. A plain top-k retriever with a 70-token budget only fits its first five chunks, so c6 never reaches the generator.</p></div>`;
   }},
  {phase:1, short:"Expand", title:"Expand through the graph",
-  fn:"spectrag.utils.expansion.expand_graph()",
+  fn:"spectrafuse.utils.expansion.expand_graph()",
   view(){
     moveTo(POS_GRAPH); edgeMode="query"; styleEdges(); showBlobs(false); docLabels(false); axes(false);
     nodeState({seeds:true, gold:true, dim:SEEDS}); legend("query");
@@ -611,7 +611,7 @@ const STAGES = [
     <p>In a corpus of thousands of chunks this is the step that lets a bridge chunk in even if it never matched the query. Expansion can only reach what is connected to the seeds, so recall at S₀ caps recall for the whole pipeline.</p></div>`;
   }},
  {phase:1, short:"Re-score", title:"Re-score with graph proximity",
-  fn:"spectrag.utils.diffusion.score_candidates()",
+  fn:"spectrafuse.utils.diffusion.score_candidates()",
   view(){ moveTo(POS_GRAPH); edgeMode="query"; styleEdges(); showBlobs(false); docLabels(false); axes(false);
     nodeState({seeds:true, reached:true, gold:true, sizeBy:id=>D.s2[CI[id]]}); legend("query"); },
   body(){
@@ -623,7 +623,7 @@ const STAGES = [
     <p>Two effects show up. The Delhi distractor c8 drops from ${f2(D.relevance[8])} to ${f2(D.s2[CI[8]])}: it sits in a different spectral community from every seed and its one weak link to them carries almost no PageRank mass. That is the precision side of the graph. But proximity also rewards whatever community dominates the seeds, so the duplicate goal chunks rise to the top. Re-scoring alone does not rescue c6; the selector does.</p></div>`;
   }},
  {phase:1, short:"Select", title:"Fill the token budget",
-  fn:"spectrag.utils.selectors.select()",
+  fn:"spectrafuse.utils.selectors.select()",
   view(){ moveTo(POS_GRAPH); edgeMode="query"; styleEdges(); showBlobs(false); docLabels(false); axes(false);
     nodeState({seeds:true, gold:true}); legend("query"); playPicks(); },
   body(){
@@ -635,7 +635,7 @@ const STAGES = [
     <div class="prose" id="pickNote" style="margin-top:10px"></div>`;
   }},
  {phase:1, short:"Generate", title:"Hand the context to the generator",
-  fn:"spectrag.utils.prompt.build_prompt(), SpectRAGRetrieval.answer(question, llm_fn)",
+  fn:"spectrafuse.utils.prompt.build_prompt(), SpectRAGRetrieval.answer(question, llm_fn)",
   view(){ moveTo(POS_GRAPH); edgeMode="query"; styleEdges(); showBlobs(false); docLabels(false); axes(false);
     const sel=new Set(D.selected); nodeState({selected:sel, dim:sel, gold:true}); legend("query"); },
   body(){
@@ -722,7 +722,7 @@ document.addEventListener("keydown", ev=>{
   if(ev.key==="ArrowLeft"){ stopPlay(); go(stageIdx-1); }
 });
 
-/* ---------- live selector (same logic as SpectRAG.select) ---------- */
+/* ---------- live selector (same logic as SpectraFuse.select) ---------- */
 function selectJS({alpha=D.alpha, budget=D.budget, lam=0.6, c=0.3, d=0.2, a=1.0, b=0.3, core=2, floor=0.35}={}){
   const cand = D.candidates, s2={}, px={};
   cand.forEach((id,k)=>{ px[id]=D.prox[k]; s2[id]=(1-alpha)*D.relevance[id] + alpha*D.prox[k]; });
@@ -768,13 +768,13 @@ function updateCompare(){
   $("#o-budget").textContent = p.budget; $("#o-alpha").textContent = p.alpha.toFixed(2);
   $("#o-lam").textContent = p.lam.toFixed(2); $("#o-c").textContent = p.c.toFixed(2);
   $("#col-dense").innerHTML = colHTML("Dense top-k", "Similarity order until the budget is full", denseJS(p.budget), p.budget);
-  $("#col-spec").innerHTML = colHTML("SpectRAG", "Protected core, greedy U(c | C), backfill", selectJS(p), p.budget);
+  $("#col-spec").innerHTML = colHTML("SpectraFuse", "Protected core, greedy U(c | C), backfill", selectJS(p), p.budget);
 }
 Object.values(ctl).forEach(el=>el.addEventListener("input", updateCompare));
 
 function ablation(){
   const rows = [
-    ["Full SpectRAG", {}],
+    ["Full SpectraFuse", {}],
     ["No graph re-scoring (α = 0)", {alpha:0}],
     ["No spectral cluster gain (c = 0)", {c:0}],
     ["No document gain (d = 0)", {d:0}],

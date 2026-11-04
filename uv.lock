@@ -934,7 +934,7 @@ wheels = [
 ]
 
 [[package]]
-name = "spectrag"
+name = "spectrafuse"
 source = { editable = "." }
 dependencies = [
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
@@ -988,8 +988,8 @@ requires-dist = [
     { name = "pypdf", marker = "extra == 'pdf'", specifier = ">=4" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8" },
     { name = "scipy", marker = "extra == 'scale'", specifier = ">=1.10" },
-    { name = "spectrag", extras = ["all"], marker = "extra == 'extras'" },
-    { name = "spectrag", extras = ["pdf", "scale", "tokens"], marker = "extra == 'all'" },
+    { name = "spectrafuse", extras = ["all"], marker = "extra == 'extras'" },
+    { name = "spectrafuse", extras = ["pdf", "scale", "tokens"], marker = "extra == 'all'" },
     { name = "tiktoken", marker = "extra == 'tokens'", specifier = ">=0.5" },
 ]
 provides-extras = ["tokens", "pdf", "scale", "all", "extras", "dev"]

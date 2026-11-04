@@ -6,12 +6,12 @@ from pathlib import Path
 
 import pytest
 
-import spectrag
-from spectrag import (DocumentError, EmbedderError, IndexError_, NoDocumentsError, SettingsError,
+import spectrafuse
+from spectrafuse import (DocumentError, EmbedderError, IndexError_, NoDocumentsError, SettingsError,
                       SpectRAGError, SpectRAGIngestion, SpectRAGRetrieval, UnknownSettingError,
                       make_settings)
-from spectrag.cli import main, parse_sets
-from spectrag.utils.embedder import hash_embed
+from spectrafuse.cli import main, parse_sets
+from spectrafuse.utils.embedder import hash_embed
 
 EXAMPLES = Path(__file__).parent.parent / "examples" / "docs"
 
@@ -46,7 +46,7 @@ def test_unknown_setting_suggests_the_right_name():
 
 
 def test_every_default_is_valid():
-    assert make_settings() == spectrag.DEFAULTS
+    assert make_settings() == spectrafuse.DEFAULTS
 
 
 def test_document_errors():
@@ -75,9 +75,9 @@ def test_future_index_format_is_refused(tmp_path):
     SpectRAGIngestion(tmp_path / "idx").ingest(EXAMPLES)
     info_path = tmp_path / "idx" / "info.json"
     info = json.loads(info_path.read_text())
-    assert info["format_version"] == spectrag.INDEX_FORMAT and info["spectrag_version"] == spectrag.__version__
+    assert info["format_version"] == spectrafuse.INDEX_FORMAT and info["spectrafuse_version"] == spectrafuse.__version__
     info_path.write_text(json.dumps(dict(info, format_version=99)))
-    with pytest.raises(IndexError_, match="Upgrade spectrag"):
+    with pytest.raises(IndexError_, match="Upgrade spectrafuse"):
         SpectRAGRetrieval(tmp_path / "idx")
 
 
@@ -93,7 +93,7 @@ def test_embedder_with_the_wrong_size_is_caught(tmp_path):
 def test_saving_is_safe(tmp_path):
     (tmp_path / "notes").mkdir()
     (tmp_path / "notes" / "my_file.txt").write_text("keep me")
-    with pytest.raises(IndexError_, match="not a SpectRAG index"):
+    with pytest.raises(IndexError_, match="not a SpectraFuse index"):
         SpectRAGIngestion(tmp_path / "notes").ingest(EXAMPLES)
     assert (tmp_path / "notes" / "my_file.txt").read_text() == "keep me"   # nothing deleted
     first = SpectRAGIngestion(tmp_path / "idx").ingest(EXAMPLES)
@@ -104,14 +104,14 @@ def test_saving_is_safe(tmp_path):
 
 
 def test_logging_is_silent_by_default_and_can_be_enabled(tmp_path, caplog):
-    logger = spectrag.enable_logging("INFO")
-    with caplog.at_level(logging.INFO, logger="spectrag"):
+    logger = spectrafuse.enable_logging("INFO")
+    with caplog.at_level(logging.INFO, logger="spectrafuse"):
         SpectRAGIngestion(tmp_path / "idx").ingest(EXAMPLES)
     steps = [r.getMessage() for r in caplog.records]
     assert any(s.startswith("chunking:") for s in steps) and any(s.startswith("saved index") for s in steps)
-    assert len([h for h in logger.handlers if getattr(h, "spectrag", False)]) == 1
-    spectrag.enable_logging("INFO")                                # no duplicate handler
-    assert len([h for h in logger.handlers if getattr(h, "spectrag", False)]) == 1
+    assert len([h for h in logger.handlers if getattr(h, "spectrafuse", False)]) == 1
+    spectrafuse.enable_logging("INFO")                                # no duplicate handler
+    assert len([h for h in logger.handlers if getattr(h, "spectrafuse", False)]) == 1
     logger.setLevel(logging.WARNING)
 
 
@@ -124,7 +124,7 @@ def test_cli_ingest_search_info(tmp_path, capsys):
     result = json.loads(capsys.readouterr().out)
     assert result["tokens"] <= 200 and result["chunks"]
     assert main(["info", "--index", index]) == 0
-    assert json.loads(capsys.readouterr().out)["format_version"] == spectrag.INDEX_FORMAT
+    assert json.loads(capsys.readouterr().out)["format_version"] == spectrafuse.INDEX_FORMAT
     assert main(["search", "q", "--index", str(tmp_path / "nope")]) == 1
     assert "No index at" in capsys.readouterr().err
 

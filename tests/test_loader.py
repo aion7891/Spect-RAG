@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from spectrag.utils.loader import list_files, load_docs, read_file
+from spectrafuse.utils.loader import list_files, load_docs, read_file
 
 EXAMPLES = Path(__file__).parent.parent / "examples" / "docs"
 
@@ -41,7 +41,7 @@ def test_missing_path_raises():
 
 
 def test_read_pdf_paper(paper_pdf):  # paper_pdf: see conftest.py
-    assert "SpectRAG" in read_file(paper_pdf)
+    assert "SpectRAG" in read_file(paper_pdf)  # the paper names its method
 
 
 def test_read_file_keeps_unicode(tmp_path):

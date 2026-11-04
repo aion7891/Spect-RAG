@@ -1,7 +1,7 @@
 name: docs
 
 # Builds the documentation site (MkDocs, see mkdocs.yml) and publishes it with GitHub Pages at
-# https://aion7891.github.io/Spect-RAG/. The site includes the interactive explainers in docs/interactive/.
+# https://aion7891.github.io/SpectraFuse/. The site includes the interactive explainers in docs/interactive/.
 # Pull requests build the site without publishing, so a broken link or anchor fails the check (strict mode).
 # One-time setup: Settings -> Pages -> Build and deployment -> Source: GitHub Actions.
 

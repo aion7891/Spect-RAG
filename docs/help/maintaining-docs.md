@@ -7,7 +7,7 @@ description: How this documentation is built, published and kept correct.
 The documentation lives in the repository, next to the code. [MkDocs](https://www.mkdocs.org)
 with the [Material](https://squidfunk.github.io/mkdocs-material/) theme builds it, and the
 `docs` workflow (`.github/workflows/docs.yml`) publishes it with GitHub Pages at
-[aion7891.github.io/Spect-RAG](https://aion7891.github.io/Spect-RAG/).
+[aion7891.github.io/SpectraFuse](https://aion7891.github.io/SpectraFuse/).
 
 ## Layout
 
@@ -32,7 +32,7 @@ docs/
 
 ```bash
 pip install -r .github/docs-requirements.txt
-mkdocs serve                  # http://127.0.0.1:8000/Spect-RAG/, reloads on every save
+mkdocs serve                  # http://127.0.0.1:8000/SpectraFuse/, reloads on every save
 mkdocs build                  # strict: any broken link, anchor or missing page is an error
 ```
 
@@ -47,7 +47,7 @@ mkdocs build                  # strict: any broken link, anchor or missing page 
 3. After the merge, the `docs` workflow publishes the site.
 
 To **add a page**, create the file and add it to `nav` in `mkdocs.yml`. The page's URL follows
-its path: `guides/tuning.md` becomes `/Spect-RAG/guides/tuning/`.
+its path: `guides/tuning.md` becomes `/SpectraFuse/guides/tuning/`.
 
 Material blocks used in these pages (they show as plain text on GitHub):
 
@@ -55,7 +55,7 @@ Material blocks used in these pages (they show as plain text on GitHub):
 |---|---|---|
 | `!!! info` / `!!! warning` (admonitions, body indented 4 spaces) | call-outs | [Configuration](../guides/configuration.md) |
 | `=== "Title"` (content tabs, body indented 4 spaces) | alternatives, e.g. pip and uv | [Installation](../getting-started/installation.md) |
-| `<div class="spectrag-embed" markdown>` with an `<iframe>` | the interactive pages | [Architecture](../concepts/architecture.md) |
+| `<div class="spectrafuse-embed" markdown>` with an `<iframe>` | the interactive pages | [Architecture](../concepts/architecture.md) |
 | `$…$` inline, `$$` on its own lines | maths (MathJax) | [The spectral part](../concepts/spectral.md) |
 | `<figure markdown="span">` | an image with a caption | [Benchmarks](../results/benchmarks.md) |
 
@@ -77,7 +77,7 @@ The `src` of an `<iframe>` is relative to the page's URL, which is a folder: fro
 ## The interactive pages
 
 `docs/interactive/` holds self-contained HTML files with inline CSS and JavaScript. MkDocs copies
-them to the site unchanged, at `/Spect-RAG/interactive/`. Edit a page, open it in a browser (or
+them to the site unchanged, at `/SpectraFuse/interactive/`. Edit a page, open it in a browser (or
 through `mkdocs serve`) to check it, and commit it. `step-by-step.html` and `spectral.html`
 explain the method with a compact teaching implementation; their notes say where its values
 differ from the package.
@@ -88,6 +88,6 @@ Done once, by a maintainer with access to the repository settings: Repository �
 Pages → Build and deployment → Source: **GitHub Actions**. Or from a terminal:
 
 ```bash
-gh api -X POST repos/aion7891/Spect-RAG/pages -f build_type=workflow
+gh api -X POST repos/aion7891/SpectraFuse/pages -f build_type=workflow
 gh workflow run docs.yml
 ```

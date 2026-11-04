@@ -1,4 +1,4 @@
-"""Exact vs FAISS vs HNSW for SpectRAG's two vector-search steps.
+"""Exact vs FAISS vs HNSW for SpectraFuse's two vector-search steps.
 
   1. Ingestion: the semantic k-nearest-neighbour graph (paper Eq. 3), k = 10.
   2. Query time: the dense top-1000 search used for seeding.
@@ -16,9 +16,9 @@ from pathlib import Path
 
 import numpy as np
 
-from spectrag import make_settings
-from spectrag.utils.edges_content import ann_knn_edges, knn_edges
-from spectrag.utils.vector_index import build_vector_index, installed, search_vectors
+from spectrafuse import make_settings
+from spectrafuse.utils.edges_content import ann_knn_edges, knn_edges
+from spectrafuse.utils.vector_index import build_vector_index, installed, search_vectors
 
 SIZES = [10_000, 50_000, 100_000]
 DIMS, TOPICS, K, QUERIES, TOP_N = 768, 200, 10, 200, 1000

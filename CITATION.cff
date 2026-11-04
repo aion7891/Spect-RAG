@@ -1,14 +1,14 @@
 cff-version: 1.2.0
 message: >-
-  This repository is an unofficial implementation of SpectRAG. If you use the method, please
-  cite the paper below. The official implementation by the authors is
+  SpectraFuse is an independent implementation inspired by SpectRAG, not the official SpectRAG.
+  If you use the method, please cite the paper below. SpectRAG's official implementation is
   https://github.com/SightAndCite/SpectRAG.
-title: "spectrag: an unofficial implementation of SpectRAG"
+title: "SpectraFuse: an independent implementation inspired by SpectRAG"
 type: software
 authors:
   - family-names: Nishant
     given-names: Kumar
-repository-code: "https://github.com/aion7891/Spect-RAG"
+repository-code: "https://github.com/aion7891/SpectraFuse"
 license: MIT
 preferred-citation:
   type: article

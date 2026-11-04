@@ -5,14 +5,14 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from spectrag import SpectRAGIngestion, SpectRAGRetrieval, make_settings
-from spectrag.utils.diffusion import PROXIMITY_MODES, heat_diffusion
-from spectrag.utils.edges_content import ann_knn_edges, knn_edges
-from spectrag.utils.graph import build_matrix, degrees
-from spectrag.utils.spectral import normalized_laplacian, spectral_coords
-from spectrag.utils.store import load_index
-from spectrag.utils.tuning import expand_grid, sample_grid, tune
-from spectrag.utils.vector_index import (build_vector_index, exact_search, load_vector_index,
+from spectrafuse import SpectRAGIngestion, SpectRAGRetrieval, make_settings
+from spectrafuse.utils.diffusion import PROXIMITY_MODES, heat_diffusion
+from spectrafuse.utils.edges_content import ann_knn_edges, knn_edges
+from spectrafuse.utils.graph import build_matrix, degrees
+from spectrafuse.utils.spectral import normalized_laplacian, spectral_coords
+from spectrafuse.utils.store import load_index
+from spectrafuse.utils.tuning import expand_grid, sample_grid, tune
+from spectrafuse.utils.vector_index import (build_vector_index, exact_search, load_vector_index,
                                          resolve_backend, save_vector_index, search_vectors)
 
 EXAMPLES = Path(__file__).parent.parent / "examples"
@@ -113,7 +113,7 @@ def test_rebuild_graph_equals_ingesting_with_the_same_threshold(tmp_path):
 
 
 def test_tuning_grid_and_restores_the_graph(eval_index):
-    from spectrag.utils.evaluation import load_questions
+    from spectrafuse.utils.evaluation import load_questions
     search = SpectRAGRetrieval(eval_index, {"seed_count": 5})
     edges_before = list(search.index["edges"])
     questions = load_questions(EXAMPLES / "eval" / "questions.json")[:6]

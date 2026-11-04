@@ -1,6 +1,6 @@
 import pytest
 
-from spectrag.utils.metrics import (contains, exact_match, normalize_answer, precision_recall_f1,
+from spectrafuse.utils.metrics import (contains, exact_match, normalize_answer, precision_recall_f1,
                                     reciprocal_rank, token_f1)
 
 

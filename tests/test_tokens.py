@@ -1,5 +1,5 @@
-from spectrag.utils import tokens
-from spectrag.utils.tokens import count_tokens, estimate_tokens, split_sentences
+from spectrafuse.utils import tokens
+from spectrafuse.utils.tokens import count_tokens, estimate_tokens, split_sentences
 
 
 def test_estimate_tokens():

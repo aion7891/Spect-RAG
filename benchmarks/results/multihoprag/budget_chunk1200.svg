@@ -21,10 +21,10 @@
 <text x="242" y="179" font-size="11" fill="var(--ink)" text-anchor="end">Dense + MMR</text>
 <rect x="250" y="162" width="317.7" height="9" rx="2" fill="var(--s1)"><title>Dense + MMR, Evidence recall: 0.756</title></rect>
 <rect x="250" y="173" width="213.1" height="9" rx="2" fill="var(--s2)"><title>Dense + MMR, All evidence found: 0.507</title></rect>
-<text x="242" y="213" font-size="11" fill="var(--ink)" text-anchor="end">SpectRAG (default)</text>
-<rect x="250" y="196" width="337.1" height="9" rx="2" fill="var(--s1)"><title>SpectRAG (default), Evidence recall: 0.803</title></rect>
-<rect x="250" y="207" width="230.9" height="9" rx="2" fill="var(--s2)"><title>SpectRAG (default), All evidence found: 0.550</title></rect>
-<text x="242" y="247" font-size="11" fill="var(--ink)" text-anchor="end">SpectRAG (tuned on validation)</text>
-<rect x="250" y="230" width="355.3" height="9" rx="2" fill="var(--s1)"><title>SpectRAG (tuned on validation), Evidence recall: 0.846</title></rect>
-<rect x="250" y="241" width="268.3" height="9" rx="2" fill="var(--s2)"><title>SpectRAG (tuned on validation), All evidence found: 0.639</title></rect>
+<text x="242" y="213" font-size="11" fill="var(--ink)" text-anchor="end">SpectraFuse (default)</text>
+<rect x="250" y="196" width="337.1" height="9" rx="2" fill="var(--s1)"><title>SpectraFuse (default), Evidence recall: 0.803</title></rect>
+<rect x="250" y="207" width="230.9" height="9" rx="2" fill="var(--s2)"><title>SpectraFuse (default), All evidence found: 0.550</title></rect>
+<text x="242" y="247" font-size="11" fill="var(--ink)" text-anchor="end">SpectraFuse (tuned on validation)</text>
+<rect x="250" y="230" width="355.3" height="9" rx="2" fill="var(--s1)"><title>SpectraFuse (tuned on validation), Evidence recall: 0.846</title></rect>
+<rect x="250" y="241" width="268.3" height="9" rx="2" fill="var(--s2)"><title>SpectraFuse (tuned on validation), All evidence found: 0.639</title></rect>
 </svg>

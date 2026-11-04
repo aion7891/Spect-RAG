@@ -1,8 +1,8 @@
 import json
 import urllib.request
 
-from spectrag.utils import questions
-from spectrag.utils.llm import clean_reply, ollama_llm
+from spectrafuse.utils import questions
+from spectrafuse.utils.llm import clean_reply, ollama_llm
 
 
 def test_clean_reply_removes_thinking():
@@ -31,8 +31,8 @@ def test_ollama_llm_cleans_the_reply(monkeypatch):
 
 
 def test_context_window_grows_with_the_prompt(monkeypatch):
-    from spectrag.utils.llm import context_size
-    from spectrag.utils.tokens import count_tokens
+    from spectrafuse.utils.llm import context_size
+    from spectrafuse.utils.tokens import count_tokens
     assert context_size("short prompt") == 4096
     long_prompt = "word " * 12000                                     # about 12k tokens
     size = context_size(long_prompt)

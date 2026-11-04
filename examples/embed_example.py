@@ -9,11 +9,11 @@ from pathlib import Path
 
 import numpy as np
 
-from spectrag import make_settings
-from spectrag.utils.chunker import chunk_documents
-from spectrag.utils.embedder import make_embedder
-from spectrag.utils.loader import load_docs
-from spectrag.utils.store import load_index, save_index
+from spectrafuse import make_settings
+from spectrafuse.utils.chunker import chunk_documents
+from spectrafuse.utils.embedder import make_embedder
+from spectrafuse.utils.loader import load_docs
+from spectrafuse.utils.store import load_index, save_index
 
 HERE = Path(__file__).parent
 QUESTION = "Who is the chief technology officer of Helios Energy?"

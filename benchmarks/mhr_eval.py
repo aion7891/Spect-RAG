@@ -6,18 +6,18 @@ Every method returns a ranked list of chunk ids that fits the SAME token budget.
   hybrid     - HybridRAG-style: dense + BM25 fused with RRF (k = 60)
   dense_mmr  - MMR (lambda 0.7) over the dense top-200
   hyde       - HyDE: dense search with the embedding of an LLM-written hypothetical answer
-SpectRAG variants are run through SpectRAGRetrieval.retrieve() with their settings.
+SpectraFuse variants are run through SpectRAGRetrieval.retrieve() with their settings.
 """
 
 import time
 
 import numpy as np
 
-from spectrag.utils.bm25 import bm25_scores
-from spectrag.utils.evaluation import fill_budget
-from spectrag.utils.metrics import reciprocal_rank
-from spectrag.utils.seeding import min_max, ranking, rrf_fuse
-from spectrag.utils.selectors import select
+from spectrafuse.utils.bm25 import bm25_scores
+from spectrafuse.utils.evaluation import fill_budget
+from spectrafuse.utils.metrics import reciprocal_rank
+from spectrafuse.utils.seeding import min_max, ranking, rrf_fuse
+from spectrafuse.utils.selectors import select
 
 KS = (2, 5, 10)
 BASELINES = ("dense", "bm25", "hybrid", "dense_mmr")

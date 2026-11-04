@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 
-from spectrag.config import make_settings
-from spectrag.utils.store import load_index, save_index
+from spectrafuse.config import make_settings
+from spectrafuse.utils.store import load_index, save_index
 
 
 def test_save_and_load_round_trip(tmp_path):
@@ -30,7 +30,7 @@ def test_missing_folder_raises(tmp_path):
 
 
 def test_edge_arrays_and_signal_npz_round_trip(tmp_path):
-    from spectrag.utils.store import array_to_edges, edges_to_array
+    from spectrafuse.utils.store import array_to_edges, edges_to_array
     edges = [[0, 1, 0.5], [2, 7, 0.25]]
     signals = {"semantic": edges_to_array(edges), "citation": edges_to_array([])}
     save_index(tmp_path, {"edges": edges_to_array(edges), "signals": signals})
@@ -43,6 +43,6 @@ def test_edge_arrays_and_signal_npz_round_trip(tmp_path):
 
 
 def test_old_json_edge_lists_still_load(tmp_path):
-    from spectrag.utils.store import array_to_edges, save_json
+    from spectrafuse.utils.store import array_to_edges, save_json
     save_json(tmp_path / "edges.json", [[0, 1, 0.5]])            # format of older indexes
     assert array_to_edges(load_index(tmp_path)["edges"]) == [[0, 1, 0.5]]

@@ -1,21 +1,21 @@
-"""Every error SpectRAG raises on purpose is a SpectRAGError, and still the old built-in one."""
+"""Every error SpectraFuse raises on purpose is a SpectRAGError, and still the old built-in one."""
 
 from pathlib import Path
 
 import pytest
 
-from spectrag import (DocumentError, DocumentNotFoundError, IndexError_, LLMError,
+from spectrafuse import (DocumentError, DocumentNotFoundError, IndexError_, LLMError,
                       MissingPackageError, SettingsError, SpectRAGError, SpectRAGIngestion,
                       SpectRAGRetrieval)
-from spectrag.cli import main
-from spectrag.utils import vector_index
-from spectrag.utils.diffusion import proximity_scores
-from spectrag.utils.embedder import hash_embed
-from spectrag.utils.evaluation import gold_map
-from spectrag.utils.llm import post_json
-from spectrag.utils.loader import load_docs
-from spectrag.utils.selectors import select
-from spectrag.utils.store import load_index
+from spectrafuse.cli import main
+from spectrafuse.utils import vector_index
+from spectrafuse.utils.diffusion import proximity_scores
+from spectrafuse.utils.embedder import hash_embed
+from spectrafuse.utils.evaluation import gold_map
+from spectrafuse.utils.llm import post_json
+from spectrafuse.utils.loader import load_docs
+from spectrafuse.utils.selectors import select
+from spectrafuse.utils.store import load_index
 
 EXAMPLES = Path(__file__).parent.parent / "examples" / "docs"
 
@@ -72,4 +72,4 @@ def test_evidence_not_in_any_chunk():
 
 def test_cli_reports_errors_without_a_traceback(tmp_path, capsys):
     assert main(["ingest", str(tmp_path / "missing"), "--index", str(tmp_path / "idx")]) == 1
-    assert "spectrag: error: No such file or folder" in capsys.readouterr().err
+    assert "spectrafuse: error: No such file or folder" in capsys.readouterr().err

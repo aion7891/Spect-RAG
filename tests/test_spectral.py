@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 
-from spectrag.utils.graph import build_matrix
-from spectrag.utils.spectral import (compute_spectral, normalized_laplacian, spectral_coords,
+from spectrafuse.utils.graph import build_matrix
+from spectrafuse.utils.spectral import (compute_spectral, normalized_laplacian, spectral_coords,
                                      sparse_spectral_coords)
 
 # Two triangles (0,1,2) and (3,4,5) joined by one weak bridge edge 2-3.

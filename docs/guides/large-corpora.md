@@ -6,11 +6,11 @@ description: >-
 
 # Large corpora
 
-With the core package, SpectRAG uses exact numpy computations. That is fast up to a few thousand
+With the core package, SpectraFuse uses exact numpy computations. That is fast up to a few thousand
 chunks. For larger corpora, install the `scale` extra:
 
 ```bash
-pip install "spectrag[scale]"       # scipy, faiss-cpu, hnswlib
+pip install "spectrafuse[scale]"       # scipy, faiss-cpu, hnswlib
 ```
 
 ## What changes with `scale`
@@ -34,7 +34,7 @@ chunks only. HNSW quality and speed are set by `hnsw_m`, `hnsw_ef_construction` 
 
 All numbers come from runs in the repository on an Apple Silicon Mac. Commands and details are
 in the
-[production-readiness report](https://github.com/aion7891/Spect-RAG/blob/main/docs/PRODUCTION_READINESS.md#5-performance-from-phases-13).
+[production-readiness report](https://github.com/aion7891/SpectraFuse/blob/main/docs/PRODUCTION_READINESS.md#5-performance-from-phases-13).
 
 | Corpus | Ingestion | Search (median) | Index on disk | Memory |
 |---|---|---|---|---|
@@ -42,7 +42,7 @@ in the
 | MultiHopRAG: 7,807 chunks, `nomic-embed-text` | dominated by embedding through Ollama | 3.5–4.4 ms, plus 19 ms to embed the question | 39.5 MB | 256 MB after loading |
 | 100,000 synthetic 768-d vectors, kNN graph only | exact 70.9 s, FAISS 10.4 s (the same edges) | | | |
 
-Search time is the SpectRAG pipeline (seeds, expansion, re-scoring, selection) with a
+Search time is the SpectraFuse pipeline (seeds, expansion, re-scoring, selection) with a
 12,000-token budget. Embedding the question is extra and depends on your model.
 
 ## Tips

@@ -2,18 +2,18 @@ from pathlib import Path
 
 import numpy as np
 
-from spectrag.config import make_settings
-from spectrag.utils.chunker import chunk_documents
-from spectrag.utils.edge_list import add_edge, as_list
-from spectrag.utils.edges import SIGNALS, build_edge_signals, count_edges
-from spectrag.utils.edges_content import entity_edges, knn_edges, utility_edges
-from spectrag.utils.edges_structure import (adjacency_edges, citation_edges, section_edges,
+from spectrafuse.config import make_settings
+from spectrafuse.utils.chunker import chunk_documents
+from spectrafuse.utils.edge_list import add_edge, as_list
+from spectrafuse.utils.edges import SIGNALS, build_edge_signals, count_edges
+from spectrafuse.utils.edges_content import entity_edges, knn_edges, utility_edges
+from spectrafuse.utils.edges_structure import (adjacency_edges, citation_edges, section_edges,
                                             section_weight)
-from spectrag.utils.embedder import make_embedder
-from spectrag.utils.entities import add_entities
-from spectrag.utils.loader import load_docs
-from spectrag.utils.questions import add_utility_questions
-from spectrag.utils.references import add_references
+from spectrafuse.utils.embedder import make_embedder
+from spectrafuse.utils.entities import add_entities
+from spectrafuse.utils.loader import load_docs
+from spectrafuse.utils.questions import add_utility_questions
+from spectrafuse.utils.references import add_references
 
 EXAMPLES = Path(__file__).parent.parent / "examples" / "docs"
 

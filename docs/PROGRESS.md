@@ -1,5 +1,10 @@
 # SpectRAG upgrade: progress
 
+> **Renamed:** this project is now **SpectraFuse** (`pip install spectrafuse`), an independent
+> implementation inspired by SpectRAG; until 0.1.4 it was published as `spectrag`. This page is a
+> historical record and keeps the old name. SpectRAG's official implementation is
+> [SightAndCite/SpectRAG](https://github.com/SightAndCite/SpectRAG).
+
 This file records each phase of the production upgrade: what was done, the measured results,
 the tests that were run, and what is still open. Every number here comes from a command that
 was actually run; the commands are listed so they can be repeated.
@@ -388,7 +393,7 @@ The full report, with every number and how to repeat it, is
   600/2,826 nodes/edges); the selected-context list matches (8/8, 75/75).
 - Wheel and sdist: `twine check` PASSED; the wheel installed in fresh Python 3.10 and 3.14
   environments passes the test suite (318 passed, 1 skipped); `quickstart.py` and the CLI work.
-- `pip install "spectrag[all] @ git+https://github.com/aion7891/Spect-RAG.git@base-2"` works.
+- `pip install "spectrag[all] @ git+https://github.com/aion7891/SpectraFuse.git@base-2"` works.
   Installing from `main` fails until PR #1 is merged (`main` holds only the first commit).
 - Lint: 6 unused imports removed; no other pyflakes errors.
 
@@ -435,7 +440,7 @@ Two bugs, both reproduced before the fix:
 The fingerprint is `embedder_probe.npy`, the vector of one fixed sentence. Opening an index
 embeds the sentence again and compares the two vectors. The index is refused if the sizes
 differ or the cosine is below 0.99 (DESIGN.md D65). Indexes without the file open with a log
-message. The code is in `src/spectrag/utils/embedder_id.py`.
+message. The code is in `src/spectrafuse/utils/embedder_id.py`.
 
 Tests: `tests/test_embedder_id.py` (19 tests). Full suite: 391 passed, 1 skipped (all extras);
 377 passed, 15 skipped (numpy only).
@@ -454,7 +459,7 @@ search started in that gap failed with `IndexError_`.
 | Program stops between 1 and 2 | no index | opening reads `<index>.old` with a warning; the next ingest renames it back |
 
 Opening an index only reads, so a search during an ingest can't undo the ingest's swap. The
-code is in `src/spectrag/utils/index_folder.py` (moved out of `ingestion.py`), and the decision
+code is in `src/spectrafuse/utils/index_folder.py` (moved out of `ingestion.py`), and the decision
 is DESIGN.md D66. Still not safe: two ingests into the same folder at the same time.
 
 Tests: `tests/test_index_folder.py` (5 tests, one per crash point). Full suite: 396 passed,

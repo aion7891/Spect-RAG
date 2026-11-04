@@ -10,8 +10,8 @@ from pathlib import Path
 
 import pytest
 
-from spectrag import SpectRAGIngestion, SpectRAGRetrieval
-from spectrag.utils.metrics import contains
+from spectrafuse import SpectRAGIngestion, SpectRAGRetrieval
+from spectrafuse.utils.metrics import contains
 
 ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT / "benchmarks"))
@@ -84,7 +84,7 @@ def test_multihoprag_articles_end_to_end(news, tmp_path):
 
 @pytest.mark.skipif(not ollama_up(), reason="Ollama is not running")
 def test_live_paper_with_nomic_and_gemma(tmp_path, paper_pdf):
-    from spectrag.utils.llm import ollama_llm
+    from spectrafuse.utils.llm import ollama_llm
     SpectRAGIngestion(tmp_path, {"embedder": "ollama", "semantic_embedder": "hash",
                                  "chunk_tokens": 256, "overlap_tokens": 64}).ingest(paper_pdf)
     search = SpectRAGRetrieval(tmp_path)

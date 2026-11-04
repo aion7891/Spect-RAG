@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from spectrag import SpectRAGIngestion, SpectRAGRetrieval
-from spectrag.utils.embedder import hash_embed
+from spectrafuse import SpectRAGIngestion, SpectRAGRetrieval
+from spectrafuse.utils.embedder import hash_embed
 
 EXAMPLES = Path(__file__).parent.parent / "examples" / "docs"
 QUESTION = "Which company did the co-founder of Aurora Labs join after leaving?"

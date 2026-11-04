@@ -5,7 +5,7 @@ description: Every public class and function, with its arguments and what it ret
 # Python API
 
 ```python
-from spectrag import (SpectRAGIngestion, SpectRAGRetrieval, make_settings, DEFAULTS,
+from spectrafuse import (SpectRAGIngestion, SpectRAGRetrieval, make_settings, DEFAULTS,
                       enable_logging, __version__)
 ```
 
@@ -20,7 +20,7 @@ SpectRAGIngestion(index_dir, settings=None, entity_fn=None, question_fn=None)
 
 | Argument | Meaning |
 |---|---|
-| `index_dir` | the folder to write the index to. An existing SpectRAG index there is replaced; any other non-empty folder raises `IndexError_` |
+| `index_dir` | the folder to write the index to. An existing SpectraFuse index there is replaced; any other non-empty folder raises `IndexError_` |
 | `settings` | a dict of [settings](../guides/configuration.md) to change |
 | `entity_fn` | optional `text -> list of entities`; the default is rule-based ([details](../guides/custom-models.md#entities)) |
 | `question_fn` | optional `text -> list of questions`, for utility edges ([details](../guides/custom-models.md#utility-questions)) |
@@ -61,7 +61,7 @@ Both methods return the dict that is also saved as `info.json`:
 | `weights_used` | the signal weights after empty signals shared theirs |
 | `spectral_dims`, `clusters` | coordinates per chunk and spectral clusters (fewer than asked for on very small corpora) |
 | `ann_backend` | the vector-search backend used: `exact`, `faiss` or `hnsw` |
-| `format_version`, `spectrag_version` | the index format (2) and the package version that wrote it |
+| `format_version`, `spectrafuse_version` | the index format (2) and the package version that wrote it |
 | `seconds` | how long ingestion took |
 
 ### Lower-level steps
@@ -125,7 +125,7 @@ Each item of `chunks`:
 ### `answer(question, llm_fn, token_budget=None, settings=None)`
 
 `search()`, then `llm_fn(result["prompt"])`. Returns the search result with an extra `answer` key.
-`llm_fn` is any function `prompt -> text`, e.g. `spectrag.utils.llm.ollama_llm("gemma3:4b")`.
+`llm_fn` is any function `prompt -> text`, e.g. `spectrafuse.utils.llm.ollama_llm("gemma3:4b")`.
 
 ### `rebuild_graph(overrides=None)`
 
@@ -162,31 +162,31 @@ Stages 1–4 without formatting, for inspection and evaluation. Returns `(seeds,
 |---|---|
 | `DEFAULTS` | the default settings (a dict; do not modify it) |
 | `make_settings(overrides=None)` | a fresh copy of the defaults with your changes, checked; raises `UnknownSettingError` or `SettingsError` |
-| `spectrag.config.EDGE_WEIGHTS_CONFIG_1`, `EDGE_WEIGHTS_CONFIG_2` | the paper's two edge-weight sets (1 is the default) |
+| `spectrafuse.config.EDGE_WEIGHTS_CONFIG_1`, `EDGE_WEIGHTS_CONFIG_2` | the paper's two edge-weight sets (1 is the default) |
 
 ## Logging and version
 
 | Name | Meaning |
 |---|---|
-| `enable_logging(level="INFO")` | print SpectRAG's messages to stderr: one timed line per pipeline step; `"DEBUG"` adds one line per question |
-| `__version__` | the package version, e.g. `"0.1.4"` |
+| `enable_logging(level="INFO")` | print SpectraFuse's messages to stderr: one timed line per pipeline step; `"DEBUG"` adds one line per question |
+| `__version__` | the package version, e.g. `"0.2.0"` |
 | `INDEX_FORMAT` | the index format this version writes and reads (2) |
 
 ## Utilities
 
 | Function | Module | Meaning |
 |---|---|---|
-| `ollama_llm(model="gemma3:4b", url=..., num_ctx=None, timeout=600, max_tokens=None, retries=2)` | `spectrag.utils.llm` | an `llm_fn` for a local Ollama model, temperature 0 |
-| `make_question_fn(llm_fn, count=3)` | `spectrag.utils.questions` | a `question_fn` that asks an LLM for utility questions |
-| `save_graph_view(index_dir, path="graph.html", question=None, settings=None, max_nodes=1500)` | `spectrag.utils.graph_view` | write the [graph view](../guides/graph-view.md); returns the path |
-| `graph_data(index_dir, question=None, settings=None, max_nodes=1500)` | `spectrag.utils.graph_view` | the graph view's data as Python dicts |
-| `tune(search, questions, grid, objective="recall", budget=None, trials=None, seed=0)` | `spectrag.utils.tuning` | [hyperparameter search](../guides/tuning.md); returns trials, best first |
-| `load_questions(path)` | `spectrag.utils.evaluation` | read a questions JSON file |
-| `evaluate_retrieval(search, questions, budget)` | `spectrag.utils.evaluation` | SpectRAG against dense and hybrid top-k with the same budget; returns `rows` and `summary` |
-| `evaluate_answers(search, questions, budget, llm_fn)` | `spectrag.utils.evaluation` | the same for answers (needs `answers` in each question): exact match, token F1, contains |
-| `build_prompt(question, context, short=False)` | `spectrag.utils.prompt` | the grounded prompt; `short=True` asks for a bare answer |
-| `count_tokens(text)` | `spectrag.utils.tokens` | the token count SpectRAG uses (`tiktoken` with the `tokens` extra, otherwise an estimate) |
+| `ollama_llm(model="gemma3:4b", url=..., num_ctx=None, timeout=600, max_tokens=None, retries=2)` | `spectrafuse.utils.llm` | an `llm_fn` for a local Ollama model, temperature 0 |
+| `make_question_fn(llm_fn, count=3)` | `spectrafuse.utils.questions` | a `question_fn` that asks an LLM for utility questions |
+| `save_graph_view(index_dir, path="graph.html", question=None, settings=None, max_nodes=1500)` | `spectrafuse.utils.graph_view` | write the [graph view](../guides/graph-view.md); returns the path |
+| `graph_data(index_dir, question=None, settings=None, max_nodes=1500)` | `spectrafuse.utils.graph_view` | the graph view's data as Python dicts |
+| `tune(search, questions, grid, objective="recall", budget=None, trials=None, seed=0)` | `spectrafuse.utils.tuning` | [hyperparameter search](../guides/tuning.md); returns trials, best first |
+| `load_questions(path)` | `spectrafuse.utils.evaluation` | read a questions JSON file |
+| `evaluate_retrieval(search, questions, budget)` | `spectrafuse.utils.evaluation` | SpectraFuse against dense and hybrid top-k with the same budget; returns `rows` and `summary` |
+| `evaluate_answers(search, questions, budget, llm_fn)` | `spectrafuse.utils.evaluation` | the same for answers (needs `answers` in each question): exact match, token F1, contains |
+| `build_prompt(question, context, short=False)` | `spectrafuse.utils.prompt` | the grounded prompt; `short=True` asks for a bare answer |
+| `count_tokens(text)` | `spectrafuse.utils.tokens` | the token count SpectraFuse uses (`tiktoken` with the `tokens` extra, otherwise an estimate) |
 
-Every module in `spectrag.utils` is short and does one step; read the source for the
-lower-level functions. The [source on GitHub](https://github.com/aion7891/Spect-RAG/tree/main/src/spectrag)
+Every module in `spectrafuse.utils` is short and does one step; read the source for the
+lower-level functions. The [source on GitHub](https://github.com/aion7891/SpectraFuse/tree/main/src/spectrafuse)
 links each one to its section or equation in the paper.

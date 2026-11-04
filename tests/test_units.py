@@ -1,5 +1,5 @@
-from spectrag.utils.tokens import count_tokens
-from spectrag.utils.units import split_table, split_units
+from spectrafuse.utils.tokens import count_tokens
+from spectrafuse.utils.units import split_table, split_units
 
 TABLE = "| Name | Year |\n|------|------|\n| S1 | 2017 |\n| S2 | 2020 |"
 

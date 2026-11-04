@@ -6,14 +6,14 @@ description: >-
 
 # Architecture
 
-SpectRAG has two pipelines. **Ingestion** (`SpectRAGIngestion`) runs once per document set and
+SpectraFuse has two pipelines. **Ingestion** (`SpectRAGIngestion`) runs once per document set and
 saves an index folder. **Retrieval** (`SpectRAGRetrieval`) loads that folder and runs once per
 question.
 
-![SpectRAG pipeline: offline ingestion builds a chunk graph and its spectral coordinates; online retrieval seeds, expands, re-scores and selects within a token budget.](../assets/pipeline.svg)
+![SpectraFuse pipeline: offline ingestion builds a chunk graph and its spectral coordinates; online retrieval seeds, expands, re-scores and selects within a token budget.](../assets/pipeline.svg)
 
-<div class="spectrag-embed" markdown>
-<iframe src="../../interactive/step-by-step.html" title="SpectRAG, step by step" loading="lazy"></iframe>
+<div class="spectrafuse-embed" markdown>
+<iframe src="../../interactive/step-by-step.html" title="SpectraFuse, step by step" loading="lazy"></iframe>
 
 **Interactive walkthrough:** click through all ten stages on a 12-chunk corpus, inspect any
 chunk or edge, and move the selection sliders. [Open it in a full window](../interactive/step-by-step.html).
@@ -32,7 +32,7 @@ c6 never mentions Project Orion. In the walkthrough corpus, dense similarity ran
 behind three near-identical *"Project Orion research targets…"* chunks. A top-k retriever with a
 70-token budget fits only its first five chunks, so c6 never reaches the LLM.
 
-SpectRAG links c4 and c6 through the entity *Helix Labs*. It reaches c6 by walking the graph,
+SpectraFuse links c4 and c6 through the entity *Helix Labs*. It reaches c6 by walking the graph,
 then prefers it over a fourth Orion chunk because it opens a new document and a new community,
 and repeats nothing already chosen.
 
@@ -155,4 +155,4 @@ selectors (`mmr`, `protected_mmr`, `anchor_expand_ce`, `topk`) are described in
 
 The paper leaves some details open: for example the value of $\rho$, the edge threshold
 $\tau$, and how entities are found. Every such choice, and why it was made, is listed in
-[DESIGN.md](https://github.com/aion7891/Spect-RAG/blob/main/docs/DESIGN.md) (decisions D1–D64).
+[DESIGN.md](https://github.com/aion7891/SpectraFuse/blob/main/docs/DESIGN.md) (decisions D1–D64).

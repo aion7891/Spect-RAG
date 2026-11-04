@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 170" width="880" height="170" role="img" aria-label="SpectRAG">
-<title>SpectRAG</title><style>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 170" width="880" height="170" role="img" aria-label="SpectraFuse">
+<title>SpectraFuse</title><style>
 svg{--bg:#fcfcfb;--ink:#0b0b0b;--ink2:#52514e;--edge:#c3c2b7;--a:#2a78d6;--b:#eb6834;--c:#1baf7a;--bridge:#e34948}
 @media (prefers-color-scheme: dark){svg{--bg:#1a1a19;--ink:#f0efec;--ink2:#c3c2b7;--edge:#52514e;--a:#3987e5;--b:#d95926;--c:#199e70;--bridge:#e66767}}
 text{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif}
@@ -44,6 +44,6 @@ text{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif}
 <circle cx="162.5" cy="101.4" r="6" fill="var(--c)" stroke="var(--bg)" stroke-width="2"/>
 <circle cx="175.0" cy="118.3" r="6" fill="var(--c)" stroke="var(--bg)" stroke-width="2"/>
 <circle cx="164.6" cy="139.4" r="6" fill="var(--c)" stroke="var(--bg)" stroke-width="2"/>
-<text x="250" y="92" font-size="56" font-weight="800" fill="var(--ink)" letter-spacing="-1">Spect<tspan fill="var(--a)">RAG</tspan></text>
+<text x="250" y="92" font-size="56" font-weight="800" fill="var(--ink)" letter-spacing="-1">Spectra<tspan fill="var(--a)">Fuse</tspan></text>
 <text x="253" y="126" font-size="17" fill="var(--ink2)">Weighted chunk graphs · spectral coordinates · token-budgeted context</text>
 </svg>

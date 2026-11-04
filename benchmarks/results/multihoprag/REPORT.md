@@ -16,48 +16,48 @@ Default settings: evidence recall 0.794. Best trial: 0.841 with `{"alpha": 0.3, 
 
 | Method | Recall@2 | Recall@5 | Recall@10 | Precision@5 | F1@5 | MRR | Evidence recall (budget) | All evidence found | Chunks | Latency (ms) |
 |---|---|---|---|---|---|---|---|---|---|---|
-| SpectRAG (tuned on validation) | 0.297 | 0.470 | 0.592 | 0.236 | 0.309 | 0.617 | 0.846 | 0.639 | 47.6 | 12.67 |
-| SpectRAG, topk selector | 0.293 | 0.457 | 0.579 | 0.229 | 0.300 | 0.610 | 0.845 | 0.641 | 47.3 | 9.57 |
-| SpectRAG, mmr selector | 0.310 | 0.477 | 0.595 | 0.239 | 0.313 | 0.618 | 0.845 | 0.634 | 47.3 | 12.67 |
-| SpectRAG, protected_mmr | 0.293 | 0.475 | 0.595 | 0.238 | 0.312 | 0.612 | 0.845 | 0.634 | 47.3 | 16.16 |
+| SpectraFuse (tuned on validation) | 0.297 | 0.470 | 0.592 | 0.236 | 0.309 | 0.617 | 0.846 | 0.639 | 47.6 | 12.67 |
+| SpectraFuse, topk selector | 0.293 | 0.457 | 0.579 | 0.229 | 0.300 | 0.610 | 0.845 | 0.641 | 47.3 | 9.57 |
+| SpectraFuse, mmr selector | 0.310 | 0.477 | 0.595 | 0.239 | 0.313 | 0.618 | 0.845 | 0.634 | 47.3 | 12.67 |
+| SpectraFuse, protected_mmr | 0.293 | 0.475 | 0.595 | 0.238 | 0.312 | 0.612 | 0.845 | 0.634 | 47.3 | 16.16 |
 | Hybrid RAG (dense + BM25, RRF) | 0.293 | 0.445 | 0.574 | 0.222 | 0.292 | 0.609 | 0.832 | 0.615 | 45.5 | 9.84 |
-| SpectRAG default, length_power 0 | 0.293 | 0.457 | 0.580 | 0.227 | 0.299 | 0.609 | 0.820 | 0.589 | 46.4 | 13.93 |
-| SpectRAG, anchor_expand | 0.293 | 0.440 | 0.530 | 0.221 | 0.289 | 0.607 | 0.809 | 0.590 | 51.8 | 14.73 |
-| SpectRAG, no proximity | 0.316 | 0.407 | 0.449 | 0.202 | 0.266 | 0.621 | 0.808 | 0.566 | 56.4 | 12.24 |
-| SpectRAG (default) | 0.293 | 0.385 | 0.433 | 0.191 | 0.251 | 0.592 | 0.803 | 0.550 | 85.3 | 15.21 |
+| SpectraFuse default, length_power 0 | 0.293 | 0.457 | 0.580 | 0.227 | 0.299 | 0.609 | 0.820 | 0.589 | 46.4 | 13.93 |
+| SpectraFuse, anchor_expand | 0.293 | 0.440 | 0.530 | 0.221 | 0.289 | 0.607 | 0.809 | 0.590 | 51.8 | 14.73 |
+| SpectraFuse, no proximity | 0.316 | 0.407 | 0.449 | 0.202 | 0.266 | 0.621 | 0.808 | 0.566 | 56.4 | 12.24 |
+| SpectraFuse (default) | 0.293 | 0.385 | 0.433 | 0.191 | 0.251 | 0.592 | 0.803 | 0.550 | 85.3 | 15.21 |
 | BM25 top-k | 0.296 | 0.462 | 0.577 | 0.232 | 0.304 | 0.617 | 0.788 | 0.545 | 43.6 | 0.98 |
 | Standard RAG (dense top-k) | 0.225 | 0.355 | 0.483 | 0.176 | 0.232 | 0.507 | 0.758 | 0.512 | 49.6 | 1.53 |
 | Dense + MMR | 0.228 | 0.359 | 0.482 | 0.178 | 0.234 | 0.508 | 0.756 | 0.507 | 48.5 | 5.70 |
-| SpectRAG, heat proximity | 0.263 | 0.338 | 0.382 | 0.167 | 0.220 | 0.535 | 0.732 | 0.453 | 78.8 | 12.50 |
-| SpectRAG, no graph expansion | 0.286 | 0.403 | 0.492 | 0.201 | 0.264 | 0.581 | 0.705 | 0.441 | 20.0 | 9.09 |
+| SpectraFuse, heat proximity | 0.263 | 0.338 | 0.382 | 0.167 | 0.220 | 0.535 | 0.732 | 0.453 | 78.8 | 12.50 |
+| SpectraFuse, no graph expansion | 0.286 | 0.403 | 0.492 | 0.201 | 0.264 | 0.581 | 0.705 | 0.441 | 20.0 | 9.09 |
 
-- SpectRAG (default) − Hybrid RAG (dense + BM25, RRF), recall: **-0.029** (95% CI -0.040 … -0.018)
-- SpectRAG (default) − Hybrid RAG (dense + BM25, RRF), recall@10: **-0.142** (95% CI -0.153 … -0.130)
-- SpectRAG (tuned on validation) − Hybrid RAG (dense + BM25, RRF), recall: **+0.014** (95% CI +0.007 … +0.021)
-- SpectRAG (tuned on validation) − Hybrid RAG (dense + BM25, RRF), recall@10: **+0.017** (95% CI +0.009 … +0.025)
-- SpectRAG (default) − Standard RAG (dense top-k), recall: **+0.044** (95% CI +0.032 … +0.057)
-- SpectRAG (default) − Standard RAG (dense top-k), recall@10: **-0.050** (95% CI -0.063 … -0.037)
-- SpectRAG (tuned on validation) − Standard RAG (dense top-k), recall: **+0.088** (95% CI +0.076 … +0.099)
-- SpectRAG (tuned on validation) − Standard RAG (dense top-k), recall@10: **+0.109** (95% CI +0.096 … +0.122)
+- SpectraFuse (default) − Hybrid RAG (dense + BM25, RRF), recall: **-0.029** (95% CI -0.040 … -0.018)
+- SpectraFuse (default) − Hybrid RAG (dense + BM25, RRF), recall@10: **-0.142** (95% CI -0.153 … -0.130)
+- SpectraFuse (tuned on validation) − Hybrid RAG (dense + BM25, RRF), recall: **+0.014** (95% CI +0.007 … +0.021)
+- SpectraFuse (tuned on validation) − Hybrid RAG (dense + BM25, RRF), recall@10: **+0.017** (95% CI +0.009 … +0.025)
+- SpectraFuse (default) − Standard RAG (dense top-k), recall: **+0.044** (95% CI +0.032 … +0.057)
+- SpectraFuse (default) − Standard RAG (dense top-k), recall@10: **-0.050** (95% CI -0.063 … -0.037)
+- SpectraFuse (tuned on validation) − Standard RAG (dense top-k), recall: **+0.088** (95% CI +0.076 … +0.099)
+- SpectraFuse (tuned on validation) − Standard RAG (dense top-k), recall@10: **+0.109** (95% CI +0.096 … +0.122)
 
 By question type (evidence recall within the budget):
 
 | Method | comparison | inference | temporal |
 |---|---|---|---|
-| SpectRAG (tuned on validation) | 0.902 | 0.802 | 0.826 |
-| SpectRAG, topk selector | 0.895 | 0.793 | 0.845 |
-| SpectRAG, mmr selector | 0.901 | 0.789 | 0.841 |
-| SpectRAG, protected_mmr | 0.901 | 0.789 | 0.841 |
+| SpectraFuse (tuned on validation) | 0.902 | 0.802 | 0.826 |
+| SpectraFuse, topk selector | 0.895 | 0.793 | 0.845 |
+| SpectraFuse, mmr selector | 0.901 | 0.789 | 0.841 |
+| SpectraFuse, protected_mmr | 0.901 | 0.789 | 0.841 |
 | Hybrid RAG (dense + BM25, RRF) | 0.911 | 0.757 | 0.820 |
-| SpectRAG default, length_power 0 | 0.885 | 0.753 | 0.818 |
-| SpectRAG, anchor_expand | 0.864 | 0.744 | 0.822 |
-| SpectRAG, no proximity | 0.890 | 0.726 | 0.804 |
-| SpectRAG (default) | 0.852 | 0.746 | 0.809 |
+| SpectraFuse default, length_power 0 | 0.885 | 0.753 | 0.818 |
+| SpectraFuse, anchor_expand | 0.864 | 0.744 | 0.822 |
+| SpectraFuse, no proximity | 0.890 | 0.726 | 0.804 |
+| SpectraFuse (default) | 0.852 | 0.746 | 0.809 |
 | BM25 top-k | 0.864 | 0.720 | 0.771 |
 | Standard RAG (dense top-k) | 0.843 | 0.637 | 0.804 |
 | Dense + MMR | 0.845 | 0.632 | 0.802 |
-| SpectRAG, heat proximity | 0.793 | 0.662 | 0.741 |
-| SpectRAG, no graph expansion | 0.800 | 0.630 | 0.673 |
+| SpectraFuse, heat proximity | 0.793 | 0.662 | 0.741 |
+| SpectraFuse, no graph expansion | 0.800 | 0.630 | 0.673 |
 
 ![Recall@k](recall_at_k_chunk1200.svg)
 
@@ -71,7 +71,7 @@ Memory: 252 MB after loading the index, 447 MB peak during the run. Gold-label f
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | Standard RAG (dense top-k) | 54.250 | 11999.117 | 0.201 | 0.242 | 0.215 | 0.340 | 0.163 | 0.217 | 0.481 | 0.113 | 0.182 | 0.807 | 0.600 | 0.478 | 6.028 |
 | HyDE | 64.000 | 11999.117 | 0.153 | 0.175 | 0.161 | 0.246 | 0.120 | 0.159 | 0.378 | 0.095 | 0.150 | 0.760 | 0.517 | 0.345 | 2.916 |
-| SpectRAG (default) | 89.400 | 11992.517 | 0.311 | 0.367 | 0.332 | 0.396 | 0.187 | 0.250 | 0.465 | 0.112 | 0.178 | 0.825 | 0.600 | 0.544 | 7.816 |
+| SpectraFuse (default) | 89.400 | 11992.517 | 0.311 | 0.367 | 0.332 | 0.396 | 0.187 | 0.250 | 0.465 | 0.112 | 0.178 | 0.825 | 0.600 | 0.544 | 7.816 |
 
 ## Answers: 30 questions
 
@@ -79,8 +79,8 @@ Memory: 252 MB after loading the index, 447 MB peak during the run. Gold-label f
 |---|---|---|---|
 | Standard RAG (dense top-k) | 0.333 | 0.363 | 0.367 |
 | Hybrid RAG (dense + BM25, RRF) | 0.267 | 0.298 | 0.333 |
-| SpectRAG (default) | 0.367 | 0.394 | 0.367 |
-| SpectRAG (tuned on validation) | 0.400 | 0.402 | 0.433 |
+| SpectraFuse (default) | 0.367 | 0.394 | 0.367 |
+| SpectraFuse (tuned on validation) | 0.400 | 0.402 | 0.433 |
 
 ## LightRAG subset: 4 articles, 18 questions, 2400-token budget for every method
 
@@ -91,7 +91,7 @@ Budget 2,400 tokens for every method. LightRAG max_total_tokens=2400: its entity
 | Standard RAG (dense top-k) | 0.833 | 0.500 |
 | BM25 top-k | 0.847 | 0.556 |
 | Hybrid RAG (dense + BM25, RRF) | 0.898 | 0.722 |
-| SpectRAG (default) | 0.755 | 0.278 |
+| SpectraFuse (default) | 0.755 | 0.278 |
 | LightRAG (hybrid mode) | 0.000 | 0.000 |
 
 LightRAG mean query time: 0.1 s (includes an LLM call).
@@ -105,7 +105,7 @@ Budget matched to LightRAG median context (11,854 tokens). The 4-article subset 
 | Standard RAG (dense top-k) | 1.000 | 1.000 |
 | BM25 top-k | 1.000 | 1.000 |
 | Hybrid RAG (dense + BM25, RRF) | 1.000 | 1.000 |
-| SpectRAG (default) | 1.000 | 1.000 |
+| SpectraFuse (default) | 1.000 | 1.000 |
 | LightRAG (hybrid mode) | 1.000 | 1.000 |
 
 LightRAG mean query time: 0.1 s (includes an LLM call).
@@ -118,8 +118,8 @@ LightRAG mean query time: 0.1 s (includes an LLM call).
 | BM25 top-k | 0.96 | 1.29 |
 | Hybrid RAG (dense + BM25, RRF) | 2.76 | 3.61 |
 | Dense + MMR | 1.30 | 1.53 |
-| SpectRAG (default) | 4.39 | 4.94 |
-| SpectRAG (tuned on validation) | 3.51 | 3.86 |
+| SpectraFuse (default) | 4.39 | 4.94 |
+| SpectraFuse (tuned on validation) | 3.51 | 3.86 |
 
 Query embedding (nomic-embed-text via Ollama, shared by every method): 19.2 ms. Memory after loading the index: 256 MB. Index on disk: 39.5 MB.
 

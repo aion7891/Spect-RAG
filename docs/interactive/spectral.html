@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>The spectral part of SpectRAG, explained visually</title>
+<title>The spectral part of SpectraFuse, explained visually</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400;1,6..72,500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -155,20 +155,20 @@ input[type=range]{accent-color:var(--accent); flex:1; min-width:140px}
 </head>
 <body>
 <div class="page">
-<nav class="docbar" aria-label="SpectRAG links"><a href="../">SpectRAG documentation</a><span aria-hidden="true">·</span><a href="./">All interactive pages</a><span aria-hidden="true">·</span><a href="https://github.com/aion7891/Spect-RAG">GitHub</a><span aria-hidden="true">·</span><a href="https://pypi.org/project/spectrag/">PyPI</a></nav>
+<nav class="docbar" aria-label="SpectraFuse links"><a href="../">SpectraFuse documentation</a><span aria-hidden="true">·</span><a href="./">All interactive pages</a><span aria-hidden="true">·</span><a href="https://github.com/aion7891/SpectraFuse">GitHub</a><span aria-hidden="true">·</span><a href="https://pypi.org/project/spectrafuse/">PyPI</a></nav>
 <p class="docnote">Figures 1 and 2 use a seven-chunk toy graph and run in your browser. Section 6 and the end of Section 7 show what the pip package computes.</p>
 <header>
-  <h1>The spectral part of SpectRAG, explained visually</h1>
+  <h1>The spectral part of SpectraFuse, explained visually</h1>
   <p class="dek">How a graph’s Laplacian finds communities, why its eigenvectors make good “map coordinates” for chunks, and how the same matrix spreads relevance. With every formula, two live visuals you can drive while you explain, and the exact code behind them.</p>
   <nav class="toc" aria-label="Sections">
-    <a href="#idea"><b>1</b>The question</a><a href="#laplacian"><b>2</b>Springs and the Laplacian</a><a href="#patterns"><b>3</b>Wobble patterns</a><a href="#coords"><b>4</b>Spectral coordinates</a><a href="#heat"><b>5</b>Spreading relevance</a><a href="#spectrag"><b>6</b>Inside SpectRAG</a><a href="#build"><b>7</b>How the visuals work</a><a href="#present"><b>8</b>Presenting it</a>
+    <a href="#idea"><b>1</b>The question</a><a href="#laplacian"><b>2</b>Springs and the Laplacian</a><a href="#patterns"><b>3</b>Wobble patterns</a><a href="#coords"><b>4</b>Spectral coordinates</a><a href="#heat"><b>5</b>Spreading relevance</a><a href="#spectrafuse"><b>6</b>Inside SpectraFuse</a><a href="#build"><b>7</b>How the visuals work</a><a href="#present"><b>8</b>Presenting it</a>
   </nav>
 </header>
 
 <section class="col">
 <h2 id="idea"><span class="n">1</span>The question the spectral part answers</h2>
-<p>Dense embeddings tell you what a chunk <em>says</em>. SpectRAG also wants to know where a chunk <em>sits</em>: which chunks belong to the same neighbourhood of the corpus, even when they share few words. The spectral part answers that from the chunk graph alone, with linear algebra instead of hand-written rules.</p>
-<p>Throughout this page we use a seven-chunk graph that mirrors the main SpectRAG demo. Chunks c1–c3 are about Project Orion, c4 is the Orion team chunk (“the research is carried out by Helix Labs”), and c5–c7 are about Helix Labs. Inside each group the links are strong. Between the groups there is one weak link, c4–c6, the bridge a multi-hop question needs.</p>
+<p>Dense embeddings tell you what a chunk <em>says</em>. SpectraFuse also wants to know where a chunk <em>sits</em>: which chunks belong to the same neighbourhood of the corpus, even when they share few words. The spectral part answers that from the chunk graph alone, with linear algebra instead of hand-written rules.</p>
+<p>Throughout this page we use a seven-chunk graph that mirrors the main SpectraFuse demo. Chunks c1–c3 are about Project Orion, c4 is the Orion team chunk (“the research is carried out by Helix Labs”), and c5–c7 are about Helix Labs. Inside each group the links are strong. Between the groups there is one weak link, c4–c6, the bridge a multi-hop question needs.</p>
 <table class="tbl" aria-label="Edges of the example graph">
 <tr><th>Edges</th><th>Weight W<sub>ij</sub></th><th>Meaning</th></tr>
 <tr><td>c1–c2, c2–c3, c1–c3</td><td>1.0</td><td>Orion chunks, tightly linked</td></tr>
@@ -180,7 +180,7 @@ input[type=range]{accent-color:var(--accent); flex:1; min-width:140px}
 <h2 id="laplacian"><span class="n">2</span>Springs and the Laplacian</h2>
 <p>Picture every chunk as a ball and every edge as a spring whose stiffness is its weight. Each chunk’s <em>degree</em> is the total stiffness attached to it:</p>
 <div class="eq"><span class="f">d<sub>i</sub> = <span class="big">Σ</span><sub>j</sub> W<sub>ij</sub>,&nbsp;&nbsp; D = diag(d<sub>1</sub>, …, d<sub>n</sub>)</span><span class="tag">degree</span></div>
-<p>The Laplacian packages the whole spring system into one matrix. SpectRAG uses the symmetric normalised version, which divides each spring by the degrees at both ends so that heavily connected chunks don’t dominate:</p>
+<p>The Laplacian packages the whole spring system into one matrix. SpectraFuse uses the symmetric normalised version, which divides each spring by the degrees at both ends so that heavily connected chunks don’t dominate:</p>
 <div class="eq"><span class="f">L = D − W,&nbsp;&nbsp;&nbsp; L<sub>sym</sub> = I − D<sup>−½</sup> W D<sup>−½</sup></span><span class="tag">paper Eq. 4, 5, 11</span></div>
 <p>Why this matrix? Give every chunk a number x<sub>i</sub> (think: how far that ball is displaced). The Laplacian measures how much those numbers <em>disagree across springs</em>:</p>
 <div class="eq"><span class="f">x<sup>⊤</sup> L<sub>sym</sub> x = <span class="big">Σ</span><sub>(i,j) ∈ E</sub> W<sub>ij</sub> <span class="big" style="font-size:1.6em">(</span> <span class="frac"><span>x<sub>i</sub></span><span>√d<sub>i</sub></span></span> − <span class="frac"><span>x<sub>j</sub></span><span>√d<sub>j</sub></span></span> <span class="big" style="font-size:1.6em">)</span><sup>2</sup></span><span class="tag">spring energy</span></div>
@@ -232,8 +232,8 @@ input[type=range]{accent-color:var(--accent); flex:1; min-width:140px}
 <h2 id="coords"><span class="n">4</span>From patterns to spectral coordinates</h2>
 <p>Stack the first few non-trivial eigenvectors as columns, and read the table row by row. Each chunk’s row is its <em>spectral coordinate</em>:</p>
 <div class="eq"><span class="f">U = [u<sub>2</sub>, u<sub>3</sub>, …, u<sub>m+1</sub>] ∈ ℝ<sup>n×m</sup>,&nbsp;&nbsp; z<sub>i</sub> = [u<sub>2</sub>(i), u<sub>3</sub>(i), …, u<sub>m+1</sub>(i)] ∈ ℝ<sup>m</sup></span><span class="tag">paper Eq. 13</span></div>
-<p class="where">SpectRAG keeps <b>m = 32</b> coordinates per chunk (the demo uses 4; the figure above shows 2). Pressing “Spectral map” in Figure 1 places each chunk at (u<sub>2</sub>(i), u<sub>3</sub>(i)): the Orion chunks land on one side, the Helix chunks on the other, and c4 sits toward the middle.</p>
-<p>Because strongly linked chunks get similar numbers in every cheap pattern, their rows are similar, so they land close together. Communities become clusters of points. SpectRAG normalises each row and runs k-means to label the communities:</p>
+<p class="where">SpectraFuse keeps <b>m = 32</b> coordinates per chunk (the demo uses 4; the figure above shows 2). Pressing “Spectral map” in Figure 1 places each chunk at (u<sub>2</sub>(i), u<sub>3</sub>(i)): the Orion chunks land on one side, the Helix chunks on the other, and c4 sits toward the middle.</p>
+<p>Because strongly linked chunks get similar numbers in every cheap pattern, their rows are similar, so they land close together. Communities become clusters of points. SpectraFuse normalises each row and runs k-means to label the communities:</p>
 <div class="eq"><span class="f">ẑ<sub>i</sub> = <span class="frac"><span>z<sub>i</sub></span><span>‖z<sub>i</sub>‖</span></span>,&nbsp;&nbsp; community(i) = k-means(ẑ<sub>1</sub>, …, ẑ<sub>n</sub>)</span><span class="tag">spectral clustering</span></div>
 <div class="key"><p>The coordinates come from the graph, not the text. Two chunks with no words in common, like “research is done by Helix Labs” and “Helix Labs is headquartered in Pune”, can still sit close together because the graph ties them.</p></div>
 
@@ -273,7 +273,7 @@ input[type=range]{accent-color:var(--accent); flex:1; min-width:140px}
 <div class="eq"><span class="f">s<sup>(r+1)</sup> = β s + (1 − β) Ã s<sup>(r)</sup>,&nbsp;&nbsp; Ã = D<sup>−½</sup> W D<sup>−½</sup> = I − L<sub>sym</sub></span><span class="tag">paper Eq. 18</span></div>
 <p class="where">β is the restart weight: each round, a share β of the relevance jumps back to the seeds, so it never drifts too far from what matched the query. The package's default, <code>proximity_mode="hybrid"</code>, averages this with the spectral closeness of Section 6; <code>"heat"</code> evaluates Eq. 17 from the stored eigenpairs instead.</p>
 
-<h2 id="spectrag"><span class="n">6</span>How SpectRAG uses all of this</h2>
+<h2 id="spectrafuse"><span class="n">6</span>How SpectraFuse uses all of this</h2>
 <p>The spectral machinery shows up in three places in the online pipeline.</p>
 <h3>Closeness during re-scoring</h3>
 <p>A candidate gets a proximity bonus for sitting close to the seeds in spectral space, averaged with the PageRank diffusion above, and blended into its score. Each coordinate is first damped by e<sup>−tλ</sup>, as in the heat kernel, so the smooth community-level directions count most:</p>
@@ -288,7 +288,7 @@ input[type=range]{accent-color:var(--accent); flex:1; min-width:140px}
 </section>
 
 <figure id="fig-real">
-  <div class="fig-title"><span>Figure 3. The real 12-chunk SpectRAG demo, placed at (u<sub>2</sub>, u<sub>3</sub>)</span><span class="nt">Hover a chunk for its text</span></div>
+  <div class="fig-title"><span>Figure 3. The real 12-chunk SpectraFuse demo, placed at (u<sub>2</sub>, u<sub>3</sub>)</span><span class="nt">Hover a chunk for its text</span></div>
   <svg id="r-svg" viewBox="0 0 1000 420" role="img" aria-label="Spectral coordinates of the twelve demo chunks with their communities" style="width:100%;height:auto;display:block"></svg>
   <div class="legend" id="r-leg"></div>
   <figcaption>Same idea on a graph built from all six signals, the one used by the <a href="step-by-step.html">step-by-step explainer</a>. Helix (c5–c7) and Nova (c8–c9) form their own communities, and the Orion team chunk c4 sits between Orion and Helix, exactly like the toy graph. Eigenvalues: <span id="r-eig"></span></figcaption>
@@ -378,7 +378,7 @@ input[type=range]{accent-color:var(--accent); flex:1; min-width:140px}
 <span class="n">heat</span> <span class="o">=</span> <span class="n">U</span> <span class="o">@</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mf">2.0</span> <span class="o">*</span> <span class="n">lam</span><span class="p">)</span><span class="p">)</span> <span class="o">@</span> <span class="n">U</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">s0</span>   <span class="c1"># Eq. 17 at t = 2</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">lam</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="p">)</span>                            <span class="c1"># [0. 0.066 0.986 1.357 1.454 1.5 1.637]</span></pre></div>
 <p>And this is how the package does it. The spectral coordinates are computed once, at ingestion (above 2,000 chunks a sparse solver from the <code>scale</code> extra gives the same eigenvectors); the proximity scores are computed for every question.</p>
-<div class="code"><div class="codeh"><span>src/spectrag/utils/spectral.py, lines 21–36</span><b>normalized_laplacian(), spectral_coords()</b></div><pre><span class="k">def</span><span class="w"> </span><span class="nf">normalized_laplacian</span><span class="p">(</span><span class="n">matrix</span><span class="p">):</span>
+<div class="code"><div class="codeh"><span>src/spectrafuse/utils/spectral.py, lines 21–36</span><b>normalized_laplacian(), spectral_coords()</b></div><pre><span class="k">def</span><span class="w"> </span><span class="nf">normalized_laplacian</span><span class="p">(</span><span class="n">matrix</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""L_sym = I - D^-1/2 W D^-1/2 (paper Eq. 11)."""</span>
     <span class="n">scale</span> <span class="o">=</span> <span class="n">inverse_sqrt</span><span class="p">(</span><span class="n">matrix</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">matrix</span><span class="p">))</span> <span class="o">-</span> <span class="n">scale</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="n">matrix</span> <span class="o">*</span> <span class="n">scale</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>
@@ -393,7 +393,7 @@ input[type=range]{accent-color:var(--accent); flex:1; min-width:140px}
     <span class="k">if</span> <span class="n">used</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">),</span> <span class="mi">0</span><span class="p">)),</span> <span class="n">values</span><span class="p">[:</span><span class="mi">0</span><span class="p">]</span>
     <span class="k">return</span> <span class="n">vectors</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">:</span><span class="n">used</span> <span class="o">+</span> <span class="mi">1</span><span class="p">],</span> <span class="n">values</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="n">used</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span></pre></div>
-<div class="code"><div class="codeh"><span>src/spectrag/utils/diffusion.py, lines 34–56</span><b>personalized_pagerank(), spectral_closeness()</b></div><pre><span class="k">def</span><span class="w"> </span><span class="nf">personalized_pagerank</span><span class="p">(</span><span class="n">matrix</span><span class="p">,</span> <span class="n">restart</span><span class="p">,</span> <span class="n">beta</span><span class="o">=</span><span class="mf">0.15</span><span class="p">,</span> <span class="n">steps</span><span class="o">=</span><span class="mi">30</span><span class="p">):</span>
+<div class="code"><div class="codeh"><span>src/spectrafuse/utils/diffusion.py, lines 34–56</span><b>personalized_pagerank(), spectral_closeness()</b></div><pre><span class="k">def</span><span class="w"> </span><span class="nf">personalized_pagerank</span><span class="p">(</span><span class="n">matrix</span><span class="p">,</span> <span class="n">restart</span><span class="p">,</span> <span class="n">beta</span><span class="o">=</span><span class="mf">0.15</span><span class="p">,</span> <span class="n">steps</span><span class="o">=</span><span class="mi">30</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Eq. 18: s &lt;- beta * restart + (1 - beta) * A_tilde @ s, with A_tilde = D^-1/2 A D^-1/2."""</span>
     <span class="n">scale</span> <span class="o">=</span> <span class="n">inverse_sqrt</span><span class="p">(</span><span class="n">matrix</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
     <span class="n">a_tilde</span> <span class="o">=</span> <span class="n">scale</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="n">matrix</span> <span class="o">*</span> <span class="n">scale</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>
@@ -420,7 +420,7 @@ input[type=range]{accent-color:var(--accent); flex:1; min-width:140px}
 <ol class="steps">
 <li><b>Start with the problem.</b> <span class="say">“Embeddings tell us what a chunk says. We also want to know which chunks belong together, even when they use different words.”</span> Show the edge table in Section 1.</li>
 <li><b>Springs.</b> <span class="say">“Every link is a spring; stronger link, stiffer spring.”</span> Show the energy formula and say it in words: stiffness times stretch squared.</li>
-<li><b>Pattern 1 in Figure 1.</b> <span class="say">“Everything moves together, nothing stretches, energy zero. It tells us nothing, so SpectRAG skips it.”</span></li>
+<li><b>Pattern 1 in Figure 1.</b> <span class="say">“Everything moves together, nothing stretches, energy zero. It tells us nothing, so SpectraFuse skips it.”</span></li>
 <li><b>Pattern 2.</b> <span class="say">“The cheapest way to make chunks disagree: the two groups swing opposite.”</span> Point at the gold bar: most of the energy is on the weak bridge, so that is where the split falls.</li>
 <li><b>Drag the bridge slider.</b> <span class="say">“Weaker link, smaller λ₂, cleaner split.”</span> Mention the eigengap rule.</li>
 <li><b>Spectral map.</b> <span class="say">“Use each chunk’s numbers in the cheap patterns as coordinates. Groups become clusters; the bridge sits between them.”</span> Then show Figure 3 on the real corpus.</li>
@@ -529,7 +529,7 @@ function solve(bridge){
     document.getElementById("w-eigs").innerHTML = S.values.map((v,k)=>`<div><span>${v.toFixed(2)}</span><span class="b ${k===mode?"on":""}" style="height:${(4+50*v/2).toFixed(0)}px"></span><span>λ${"₁₂₃₄₅₆₇"[k]}</span></div>`).join("");
     const share = total>1e-9 ? Math.round(100*costs[5]/total) : 0;
     const txt = [
-      `<b>Pattern 1</b>, λ₁ = ${lam.toFixed(3)}. Every chunk moves in proportion to √degree, so no spring stretches and the energy is zero. It says nothing about groups, so SpectRAG skips it.`,
+      `<b>Pattern 1</b>, λ₁ = ${lam.toFixed(3)}. Every chunk moves in proportion to √degree, so no spring stretches and the energy is zero. It says nothing about groups, so SpectraFuse skips it.`,
       `<b>Pattern 2</b>, λ₂ = ${lam.toFixed(3)}. Orion and Helix swing opposite, and ${share}% of the energy sits on the c4–c6 bridge: the split falls on the weakest link. c4 moves least on its side (${sgn(u[3])}).`,
     ][mode] ?? `<b>Pattern ${mode+1}</b>, λ${"₁₂₃₄₅₆₇"[mode]} = ${lam.toFixed(3)}. Too expensive to hide on the bridge (${share}% there), so it makes chunks disagree inside the groups. Finer detail, less about communities.`;
     document.getElementById("w-read").innerHTML = txt;
